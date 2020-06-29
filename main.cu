@@ -21,7 +21,7 @@ int serialReduce(int* ints, int size) {
 void reducePlayground() {
     printf("Begin reducePlayground\n");
 
-    constexpr int kSize = 1024 * 1024 * 32;
+    constexpr int kSize = 1024 * 1024 * 128;
 
     int* in = (int*) malloc(kSize *sizeof(int));
 

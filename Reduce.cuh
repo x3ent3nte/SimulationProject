@@ -10,6 +10,27 @@ namespace Reduce {
 namespace {
 
 template<typename T, T (*FN)(T, T)>
+__device__
+void lastWarpReduce(volatile T* sharedInts, int tid, int size) {
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+
+    size >>= 1;
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+
+    size >>= 1;
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+
+    size >>= 1;
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+
+    size >>= 1;
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+
+    size >>= 1;
+    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+}
+
+template<typename T, T (*FN)(T, T)>
 __global__
 void reduceKernel(T* in, T* out, int size) {
     extern __shared__ int sharedInts[];
@@ -30,12 +51,15 @@ void reduceKernel(T* in, T* out, int size) {
     __syncthreads();
 
     int localSize = min(blockDim.x, size - blockStart);
-    for (int offset = localSize / 2; offset > 0; offset >>= 1) {
+    int offset = localSize / 2;
+    for (; offset > 32; offset >>= 1) {
         if (tid < offset) {
             sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]);
         }
         __syncthreads();
     }
+
+    if (tid < 32) { lastWarpReduce<T, FN>(sharedInts, tid, offset); }
 
     if (tid == 0) {
         out[blockIdx.x] = sharedInts[0];
