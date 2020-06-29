@@ -9,28 +9,40 @@ namespace Reduce {
 
 namespace {
 
-template<typename T, T (*FN)(T, T)>
+template<typename T, T (*FN)(T, T), int blockSize>
 __device__
-void lastWarpReduce(volatile T* sharedInts, int tid, int size) {
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
-
-    size >>= 1;
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
-
-    size >>= 1;
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
-
-    size >>= 1;
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
-
-    size >>= 1;
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
-
-    size >>= 1;
-    if (tid < size) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + size]); }
+void lastWarpReduce(volatile T* sharedInts, int tid, int offset) {
+    if (blockSize >= 64) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        offset >>= 1;
+    }
+    
+    if (blockSize >= 32) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        offset >>= 1;
+    }
+   
+    if (blockSize >= 16) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        offset >>= 1;
+    }
+    
+    if (blockSize >= 8) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        offset >>= 1;
+    }
+    
+    if (blockSize >= 4) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        offset >>= 1;
+    }
+    
+    if (blockSize >= 2) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+    }
 }
 
-template<typename T, T (*FN)(T, T)>
+template<typename T, T (*FN)(T, T), int blockSize>
 __global__
 void reduceKernel(T* in, T* out, int size) {
     extern __shared__ int sharedInts[];
@@ -50,16 +62,39 @@ void reduceKernel(T* in, T* out, int size) {
 
     __syncthreads();
 
-    int localSize = min(blockDim.x, size - blockStart);
-    int offset = localSize / 2;
-    for (; offset > 32; offset >>= 1) {
+    int offset = min(blockDim.x, size - blockStart) >> 1;
+    /*for (; offset > 32; offset >>= 1) {
         if (tid < offset) {
             sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]);
         }
         __syncthreads();
+    }*/
+    
+    if (blockSize >= 1024) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        __syncthreads();
+        offset >>= 1;
     }
 
-    if (tid < 32) { lastWarpReduce<T, FN>(sharedInts, tid, offset); }
+    if (blockSize >= 512) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        __syncthreads();
+        offset >>= 1;
+    }
+
+    if (blockSize >= 256) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        __syncthreads();
+        offset >>= 1;
+    }
+
+    if (blockSize >= 128) {
+        if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
+        __syncthreads();
+        offset >>= 1;
+    }
+
+    if (tid < 32) { lastWarpReduce<T, FN, blockSize>(sharedInts, tid, offset); }
 
     if (tid == 0) {
         out[blockIdx.x] = sharedInts[0];
@@ -70,10 +105,12 @@ void reduceKernel(T* in, T* out, int size) {
 
 template<typename T, T (*FN)(T, T)>
 int Reduce::reduce(T* d_a, T* d_b, int size) {
-    int threadsPerBlock = 256;
+    
+    constexpr int threadsPerBlock = 256;
+    
     while (size > 1) {
         int numBlocks = ceil(size / ((float) threadsPerBlock * 2));
-        reduceKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(d_a, d_b, size);
+        reduceKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(d_a, d_b, size);
         size = numBlocks;
 
         printf("Size is %d\n", size);
