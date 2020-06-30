@@ -3,14 +3,26 @@
 
 namespace Scan {
     template<typename T, T (*FN)(T, T)>
-    void scan(T* in, T* out, int size);
+    void scan(T* in, T* out, T* offsets, int size);
 }
 
 namespace {
 
 template<typename T, T (*FN)(T, T)>
 __global__
-void scanKernel(T* in,  T* out, int size) {
+void addBlockOffsets(T* ints, T* offsets, int size) {
+    int tid = threadIdx.x;
+    int globalOffset = blockDim.x * blockIdx.x;
+    int gid = globalOffset + tid;
+
+    if (gid >= size) { return; }
+
+    ints[gid] = FN(ints[gid], offsets[blockIdx.x]);
+}
+
+template<typename T, T (*FN)(T, T)>
+__global__
+void scanKernel(T* in, T* out, T* offsets, int size) {
     int tid = threadIdx.x;
     int globalOffset = blockDim.x * blockIdx.x;
     int gid = globalOffset + tid;
@@ -19,7 +31,7 @@ void scanKernel(T* in,  T* out, int size) {
 
     extern __shared__ int sharedInts[];
 
-    int localSize = size - globalOffset;
+    int localSize = min(blockDim.x, size - globalOffset);
 
     sharedInts[tid] = in[gid];
 
@@ -44,14 +56,28 @@ void scanKernel(T* in,  T* out, int size) {
     }
 
     out[gid] = sharedInts[tid];
+
+    if ((tid + 1) == localSize) {
+        offsets[blockIdx.x] = sharedInts[tid];
+    }
 }
 
 } // namespace anonymous
 
 template<typename T, T (*FN)(T, T)>
-void Scan::scan(T* in, T* out, int size) {
-    int threadsPerBlock = 1024;
-    scanKernel<T, FN><<<1, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, threadsPerBlock);
+void Scan::scan(T* in, T* out, T* offsets, int size) {
+    constexpr int threadsPerBlock = 512;
+    int numBlocks = ceil(size / float(threadsPerBlock));
+    scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
+
+    if (numBlocks > 1) { 
+        int sizeOfOffsetAdd = size - threadsPerBlock;
+        int numBlocksToAddOffsets = ceil(sizeOfOffsetAdd / (float) threadsPerBlock);
+         
+        // *Scan sum the offsets placeholder*
+        
+        addBlockOffsets<T, FN><<<numBlocksToAddOffsets, threadsPerBlock>>>(out + threadsPerBlock, offsets, sizeOfOffsetAdd);
+    }
 }
 
 #endif

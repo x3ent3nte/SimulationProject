@@ -61,7 +61,7 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1024;
+    constexpr int kSize = 1024 * 4;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
@@ -70,24 +70,26 @@ void scanPlayground() {
         input[i] = 1;
     }
 
-    int* d_a;
-    int* d_b;
+    int* d_in;
+    int* d_out;
+    int* d_offsets;
 
-    cudaMalloc(&d_a, kSize * sizeof(int));
-    cudaMalloc(&d_b, kSize * sizeof(int));
+    cudaMalloc(&d_in, kSize * sizeof(int));
+    cudaMalloc(&d_out, kSize * sizeof(int));
+    cudaMalloc(&d_offsets, kSize * sizeof(int));
 
-    cudaMemcpy(d_a, input, kSize * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemset(d_b, 0, kSize * sizeof(int));
+    cudaMemcpy(d_in, input, kSize * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemset(d_out, 0, kSize * sizeof(int));
 
     {
         Timer timer;
-        Scan::scan<int, add>(d_a, d_b,kSize);
+        Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
     }
 
-    cudaMemcpy(output, d_b, kSize * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, d_out, kSize * sizeof(int), cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < kSize; ++i) {
-        //printf("%d %d\n", i, output[i]);
+        printf("%d %d\n", i, output[i]);
     }
 
     printf("\nEnd scanPlayground\n\n");
