@@ -61,7 +61,7 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1024 * 4;
+    constexpr int kSize = 1024 * 1021 * 17;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
@@ -88,8 +88,14 @@ void scanPlayground() {
 
     cudaMemcpy(output, d_out, kSize * sizeof(int), cudaMemcpyDeviceToHost);
 
+    int expected = 0;
     for (int i = 0; i < kSize; ++i) {
-        printf("%d %d\n", i, output[i]);
+        expected += input[i];
+
+        int actual = output[i];
+        if (expected != actual) {
+            printf("Mismatch i %d exp %d act %d\n", i, expected, actual);
+        }
     }
 
     printf("\nEnd scanPlayground\n\n");

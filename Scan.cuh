@@ -67,14 +67,14 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
 template<typename T, T (*FN)(T, T)>
 void Scan::scan(T* in, T* out, T* offsets, int size) {
     constexpr int threadsPerBlock = 512;
-    int numBlocks = ceil(size / float(threadsPerBlock));
+    int numBlocks = ceil(size / (float) threadsPerBlock);
     scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
 
-    if (numBlocks > 1) { 
+    if (numBlocks > 1) {
+        Scan::scan<T, FN>(offsets, offsets, offsets + numBlocks, numBlocks);
+        
         int sizeOfOffsetAdd = size - threadsPerBlock;
         int numBlocksToAddOffsets = ceil(sizeOfOffsetAdd / (float) threadsPerBlock);
-         
-        // *Scan sum the offsets placeholder*
         
         addBlockOffsets<T, FN><<<numBlocksToAddOffsets, threadsPerBlock>>>(out + threadsPerBlock, offsets, sizeOfOffsetAdd);
     }
