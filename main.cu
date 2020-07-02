@@ -61,13 +61,13 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1024 * 1021 * 17;
+    constexpr int kSize = 892 * 1513 * 3;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
-        input[i] = 1;
+        input[i] = i % 23;
     }
 
     int* d_in;
