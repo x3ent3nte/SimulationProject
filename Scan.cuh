@@ -29,7 +29,7 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
 
     if (gid >= size) { return; }
 
-    extern __shared__ int sharedInts[];
+    extern __shared__ T sharedInts[];
 
     int localSize = min(blockDim.x, size - globalOffset);
 

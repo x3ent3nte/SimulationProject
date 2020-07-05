@@ -4,6 +4,7 @@
 #include "Timer.h"
 #include "Reduce.cuh"
 #include "Scan.cuh"
+#include "InsertionSort.cuh"
 
 __device__
 int add(int a, int b) {
@@ -21,7 +22,7 @@ int serialReduce(int* ints, int size) {
 void reducePlayground() {
     printf("Begin reducePlayground\n");
 
-    constexpr int kSize = 1024 * 1024 * 32;
+    constexpr int kSize = 1024 * 256;
 
     int* in = (int*) malloc(kSize *sizeof(int));
 
@@ -61,13 +62,13 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 892 * 1513 * 3;
+    constexpr int kSize = 1024 * 16;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
-        input[i] = i % 23;
+        input[i] = i;
     }
 
     int* d_in;
@@ -98,10 +99,63 @@ void scanPlayground() {
         }
     }
 
+    free(input);
+    free(output);
+    cudaFree(d_in);
+    cudaFree(d_out);
+    cudaFree(d_offsets);
+
     printf("\nEnd scanPlayground\n\n");
+}
+
+__device__
+int intGreater(int a, int b) {
+    return a > b;
+}
+
+void insertionSortPlayground() {
+    printf("Being insertionSortPlayground\n");
+
+    constexpr int kSize = 1024;
+    int * nums = (int*) malloc(kSize * sizeof(int));
+
+    for (int i = 0; i < kSize; ++i) {
+        nums[i] = i % 10;
+    }
+
+    int* d_nums;
+    int* d_needsSorting;
+    cudaMalloc(&d_nums, kSize * sizeof(int));
+    cudaMalloc(&d_needsSorting, sizeof(int));
+
+    cudaMemcpy(d_nums, nums, kSize * sizeof(int), cudaMemcpyHostToDevice);
+
+    {
+        Timer timer;
+        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
+    }
+
+    cudaMemcpy(nums, d_nums, kSize * sizeof(int), cudaMemcpyDeviceToHost);
+
+    for (int i = 1; i < kSize; ++i) {
+        int left = nums[i - 1];
+        int right = nums[i];
+
+        if (left > right) {
+            printf("Index %d Value %d greater than %d\n", i, left, right);
+        }
+    }
+
+    free(nums);
+
+    cudaFree(d_nums);
+    cudaFree(d_needsSorting);
+
+    printf("\nEnd insertionSortPlayground\n");
 }
 
 int main() {
     reducePlayground();
     scanPlayground();
+    insertionSortPlayground();
 }

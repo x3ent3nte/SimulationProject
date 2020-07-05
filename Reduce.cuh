@@ -45,7 +45,7 @@ void lastWarpReduce(volatile T* sharedInts, int tid, int offset) {
 template<typename T, T (*FN)(T, T), int blockSize>
 __global__
 void reduceKernel(T* in, T* out, int size) {
-    extern __shared__ int sharedInts[];
+    extern __shared__ T sharedInts[];
 
     int tid = threadIdx.x;
     int blockStart = blockDim.x * blockIdx.x * 2;
