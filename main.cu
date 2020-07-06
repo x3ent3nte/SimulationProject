@@ -22,7 +22,7 @@ int serialReduce(int* ints, int size) {
 void reducePlayground() {
     printf("Begin reducePlayground\n");
 
-    constexpr int kSize = 1024 * 256;
+    constexpr int kSize = 1024 * 32;
 
     int* in = (int*) malloc(kSize *sizeof(int));
 
@@ -62,13 +62,13 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1024 * 16;
+    constexpr int kSize = 1024 * 3;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
-        input[i] = i;
+        input[i] = i  % 23;
     }
 
     int* d_in;
@@ -114,13 +114,13 @@ int intGreater(int a, int b) {
 }
 
 void insertionSortPlayground() {
-    printf("Being insertionSortPlayground\n");
+    printf("Begin insertionSortPlayground\n");
 
-    constexpr int kSize = 1024;
+    constexpr int kSize = 1024 * 9;
     int * nums = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
-        nums[i] = i % 10;
+        nums[i] = i % 100;
     }
 
     int* d_nums;
@@ -129,6 +129,16 @@ void insertionSortPlayground() {
     cudaMalloc(&d_needsSorting, sizeof(int));
 
     cudaMemcpy(d_nums, nums, kSize * sizeof(int), cudaMemcpyHostToDevice);
+
+    {
+        Timer timer;
+        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
+    }
+
+    {
+        Timer timer;
+        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
+    }
 
     {
         Timer timer;

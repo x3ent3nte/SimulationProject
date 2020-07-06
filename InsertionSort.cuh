@@ -1,6 +1,8 @@
 #ifndef INSERTION_SORT_CUH
 #define INSERTION_SORT_CUH
 
+#include <stdio.h>
+
 namespace InsertionSort {
     template<typename T, int (*FN)(T, T)>
     void sort(T* elements, int* needsSortingFlag, int size);
@@ -96,21 +98,18 @@ void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
 
     int numBlocks = ceil(size / (float) (threadsPerBlock * 2));
 
-    int loops = 0;
+    int numIterations = 0;
 
     do {
         cudaMemset(needsSortingFlag, 0, sizeof(int));
         
-        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(int)>>>(elements, needsSortingFlag, size);
-        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(int)>>>(elements + offset, needsSortingFlag, size - offset);
+        numIterations += 1;
 
-        printf("Loop %d finished\n", loops);
-        loops += 1;
-
-        if (loops > 1000) {
-            //break;
-        }
+        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, 2 * threadsPerBlock * sizeof(int)>>>(elements, needsSortingFlag, size);
+        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, 2 * threadsPerBlock * sizeof(int)>>>(elements + offset, needsSortingFlag, size - offset);
     } while (needsSorting(needsSortingFlag));
+
+    printf("numIterations = %d\n", numIterations);
 }
 
 #endif
