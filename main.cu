@@ -22,7 +22,7 @@ int serialReduce(int* ints, int size) {
 void reducePlayground() {
     printf("Begin reducePlayground\n");
 
-    constexpr int kSize = 1024 * 32;
+    constexpr int kSize = 1024 * 1024 * 32;
 
     int* in = (int*) malloc(kSize *sizeof(int));
 
@@ -62,13 +62,13 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1024 * 3;
+    constexpr int kSize = 1021 * 1079 * 3;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
-        input[i] = i  % 23;
+        input[i] = 1;
     }
 
     int* d_in;
@@ -81,6 +81,7 @@ void scanPlayground() {
 
     cudaMemcpy(d_in, input, kSize * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemset(d_out, 0, kSize * sizeof(int));
+    cudaMemset(d_offsets, 0, kSize * sizeof(int));
 
     {
         Timer timer;
@@ -90,14 +91,18 @@ void scanPlayground() {
     cudaMemcpy(output, d_out, kSize * sizeof(int), cudaMemcpyDeviceToHost);
 
     int expected = 0;
+    int numErrors = 0;
     for (int i = 0; i < kSize; ++i) {
         expected += input[i];
 
         int actual = output[i];
         if (expected != actual) {
-            printf("Mismatch i %d exp %d act %d\n", i, expected, actual);
+            //printf("Mismatch i %d exp %d act %d\n", i, expected, actual);
+            numErrors += 1;
         }
     }
+
+    printf("Num scan errors %d\n", numErrors);
 
     free(input);
     free(output);
@@ -116,7 +121,7 @@ int intGreater(int a, int b) {
 void insertionSortPlayground() {
     printf("Begin insertionSortPlayground\n");
 
-    constexpr int kSize = 1024 * 9;
+    constexpr int kSize = 1024 * 17;
     int * nums = (int*) malloc(kSize * sizeof(int));
 
     for (int i = 0; i < kSize; ++i) {
@@ -163,6 +168,8 @@ void insertionSortPlayground() {
 
     printf("\nEnd insertionSortPlayground\n");
 }
+
+// For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
     reducePlayground();

@@ -106,7 +106,7 @@ void reduceKernel(T* in, T* out, int size) {
 template<typename T, T (*FN)(T, T)>
 int Reduce::reduce(T* d_a, T* d_b, int size) {
     
-    constexpr int threadsPerBlock = 256;
+    constexpr int threadsPerBlock = 1024;
     
     while (size > 1) {
         int numBlocks = ceil(size / ((float) threadsPerBlock * 2));

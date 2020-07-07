@@ -1,6 +1,8 @@
 #ifndef SCAN_CUH
 #define SCAN_CUH
 
+#include <stdio.h>
+
 namespace Scan {
     template<typename T, T (*FN)(T, T)>
     void scan(T* in, T* out, T* offsets, int size);
@@ -10,7 +12,7 @@ namespace {
 
 template<typename T, T (*FN)(T, T)>
 __global__
-void addBlockOffsets(T* ints, T* offsets, int size) {
+void applyBlockOffsets(T* ints, T* offsets, int size) {
     int tid = threadIdx.x;
     int globalOffset = blockDim.x * blockIdx.x;
     int gid = globalOffset + tid;
@@ -62,13 +64,39 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
     }
 }
 
+void printOffsets(int* offsets, int size) {
+    int* offsetsHost = (int*) malloc(size * sizeof(int));
+    cudaMemcpy(offsetsHost, offsets, size * sizeof(int), cudaMemcpyDeviceToHost);
+
+    int prev = -1;
+    int total = 0;
+    for (int i = 0; i < size; ++i) {
+        int value = offsetsHost[i];
+        total += value;
+        
+        if ((prev != value) && (i != 0)) {
+            printf("Outlier at %d %d prev was %d\n", i, value, prev);
+        }
+
+        prev = value;
+    }
+
+    free(offsetsHost);
+
+    printf("Offset Size %d Total %d\n", size, total);
+}
+
 } // namespace anonymous
 
 template<typename T, T (*FN)(T, T)>
 void Scan::scan(T* in, T* out, T* offsets, int size) {
-    constexpr int threadsPerBlock = 512;
+
+    printf("Scan size %d\n", size);
+    constexpr int threadsPerBlock = 1024;
     int numBlocks = ceil(size / (float) threadsPerBlock);
     scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
+
+    printOffsets(offsets, numBlocks);
 
     if (numBlocks > 1) {
         Scan::scan<T, FN>(offsets, offsets, offsets + numBlocks, numBlocks);
@@ -76,7 +104,7 @@ void Scan::scan(T* in, T* out, T* offsets, int size) {
         int sizeOfOffsetAdd = size - threadsPerBlock;
         int numBlocksToAddOffsets = ceil(sizeOfOffsetAdd / (float) threadsPerBlock);
         
-        addBlockOffsets<T, FN><<<numBlocksToAddOffsets, threadsPerBlock>>>(out + threadsPerBlock, offsets, sizeOfOffsetAdd);
+        applyBlockOffsets<T, FN><<<numBlocksToAddOffsets, threadsPerBlock>>>(out + threadsPerBlock, offsets, sizeOfOffsetAdd);
     }
 }
 
