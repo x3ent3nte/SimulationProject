@@ -36,7 +36,7 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
     int localSize = min(blockDim.x, size - globalOffset);
 
     sharedInts[tid] = in[gid];
-
+    
     __syncthreads();
 
     for (int offset = 1; offset < localSize; offset <<= 1) {
@@ -75,7 +75,7 @@ void printOffsets(int* offsets, int size) {
         total += value;
         
         if ((prev != value) && (i != 0)) {
-            printf("Outlier at %d %d prev was %d\n", i, value, prev);
+            printf("XXXX Outlier at %d %d prev was %d\n", i, value, prev);
         }
 
         prev = value;
@@ -92,7 +92,7 @@ template<typename T, T (*FN)(T, T)>
 void Scan::scan(T* in, T* out, T* offsets, int size) {
 
     printf("Scan size %d\n", size);
-    constexpr int threadsPerBlock = 1024;
+    constexpr int threadsPerBlock = 256;
     int numBlocks = ceil(size / (float) threadsPerBlock);
     scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
 

@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <iostream>
-#include <chrono>
 #include "Timer.h"
-#include "Reduce.cuh"
-#include "Scan.cuh"
-#include "InsertionSort.cuh"
+#include "Kernel/Reduce.cuh"
+#include "Kernel/Scan.cuh"
+#include "Test/InsertionSortTest.cuh"
 
 __device__
 int add(int a, int b) {
@@ -62,7 +61,7 @@ void reducePlayground() {
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
-    constexpr int kSize = 1021 * 1079 * 3;
+    constexpr int kSize = 1024 * 1024 * 4;
 
     int* input = (int*) malloc(kSize * sizeof(int));
     int* output = (int*) malloc(kSize * sizeof(int));
@@ -113,66 +112,10 @@ void scanPlayground() {
     printf("\nEnd scanPlayground\n\n");
 }
 
-__device__
-int intGreater(int a, int b) {
-    return a > b;
-}
-
-void insertionSortPlayground() {
-    printf("Begin insertionSortPlayground\n");
-
-    constexpr int kSize = 1024 * 17;
-    int * nums = (int*) malloc(kSize * sizeof(int));
-
-    for (int i = 0; i < kSize; ++i) {
-        nums[i] = i % 100;
-    }
-
-    int* d_nums;
-    int* d_needsSorting;
-    cudaMalloc(&d_nums, kSize * sizeof(int));
-    cudaMalloc(&d_needsSorting, sizeof(int));
-
-    cudaMemcpy(d_nums, nums, kSize * sizeof(int), cudaMemcpyHostToDevice);
-
-    {
-        Timer timer;
-        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
-    }
-
-    {
-        Timer timer;
-        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
-    }
-
-    {
-        Timer timer;
-        InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, kSize);
-    }
-
-    cudaMemcpy(nums, d_nums, kSize * sizeof(int), cudaMemcpyDeviceToHost);
-
-    for (int i = 1; i < kSize; ++i) {
-        int left = nums[i - 1];
-        int right = nums[i];
-
-        if (left > right) {
-            printf("Index %d Value %d greater than %d\n", i, left, right);
-        }
-    }
-
-    free(nums);
-
-    cudaFree(d_nums);
-    cudaFree(d_needsSorting);
-
-    printf("\nEnd insertionSortPlayground\n");
-}
-
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
     reducePlayground();
     scanPlayground();
-    insertionSortPlayground();
+    InsertionSortTest::run();
 }

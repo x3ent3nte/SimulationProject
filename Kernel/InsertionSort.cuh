@@ -93,7 +93,7 @@ int needsSorting(int* needsSortingFlag) {
 template<typename T, int (*FN)(T, T)>
 void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
 
-    constexpr int threadsPerBlock = 512;
+    constexpr int threadsPerBlock = 256;
     int offset = threadsPerBlock / 2; 
 
     int numBlocks = ceil(size / (float) (threadsPerBlock * 2));
