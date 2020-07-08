@@ -74,7 +74,7 @@ void printOffsets(int* offsets, int size) {
         int value = offsetsHost[i];
         total += value;
         
-        if ((prev != value) && (i != 0)) {
+        if ((prev != value)) {
             printf("XXXX Outlier at %d %d prev was %d\n", i, value, prev);
         }
 
@@ -91,20 +91,17 @@ void printOffsets(int* offsets, int size) {
 template<typename T, T (*FN)(T, T)>
 void Scan::scan(T* in, T* out, T* offsets, int size) {
 
-    printf("Scan size %d\n", size);
-    constexpr int threadsPerBlock = 256;
+    //printf("Scan size %d\n", size);
+    constexpr int threadsPerBlock = 1024;
     int numBlocks = ceil(size / (float) threadsPerBlock);
     scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
 
-    printOffsets(offsets, numBlocks);
+    //printOffsets(offsets, numBlocks);
 
     if (numBlocks > 1) {
         Scan::scan<T, FN>(offsets, offsets, offsets + numBlocks, numBlocks);
-        
-        int sizeOfOffsetAdd = size - threadsPerBlock;
-        int numBlocksToAddOffsets = ceil(sizeOfOffsetAdd / (float) threadsPerBlock);
-        
-        applyBlockOffsets<T, FN><<<numBlocksToAddOffsets, threadsPerBlock>>>(out + threadsPerBlock, offsets, sizeOfOffsetAdd);
+
+        applyBlockOffsets<T, FN><<<numBlocks - 1, threadsPerBlock>>>(out + threadsPerBlock, offsets, size - threadsPerBlock);
     }
 }
 

@@ -5,6 +5,16 @@
 #include "Kernel/Scan.cuh"
 #include "Test/InsertionSortTest.cuh"
 
+#define checkCudaErrors(call)                                \
+  do {                                                        \
+    cudaError_t err = call;                                   \
+    if (err != cudaSuccess) {                                 \
+      printf("CUDA error at %s %d: %s\n", __FILE__, __LINE__, \
+             cudaGetErrorString(err));                        \
+      exit(EXIT_FAILURE);                                     \
+    }                                                         \
+  } while (0)
+
 __device__
 int add(int a, int b) {
     return a + b;
@@ -58,6 +68,26 @@ void reducePlayground() {
     printf("\nEnd reducePlayground\n\n");
 }
 
+void checkScanErrors(int* input, int * output, int* d_out, int size) {
+    cudaMemcpy(output, d_out, size * sizeof(int), cudaMemcpyDeviceToHost);
+
+    int expected = 0;
+    int numErrors = 0;
+    for (int i = 0; i < size; ++i) {
+        expected += input[i];
+
+        int actual = output[i];
+        if (expected != actual) {
+            //printf("Mismatch i %d exp %d act %d\n", i, expected, actual);
+            numErrors += 1;
+        }
+    }
+
+    if (numErrors > 0) {
+        printf("Num scan errors %d\n", numErrors);
+    }
+}
+
 void scanPlayground() {
     printf("Begin scanPlayground\n");
 
@@ -74,7 +104,7 @@ void scanPlayground() {
     int* d_out;
     int* d_offsets;
 
-    cudaMalloc(&d_in, kSize * sizeof(int));
+    checkCudaErrors(cudaMalloc(&d_in, kSize * sizeof(int)));
     cudaMalloc(&d_out, kSize * sizeof(int));
     cudaMalloc(&d_offsets, kSize * sizeof(int));
 
@@ -84,24 +114,11 @@ void scanPlayground() {
 
     {
         Timer timer;
-        Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
-    }
-
-    cudaMemcpy(output, d_out, kSize * sizeof(int), cudaMemcpyDeviceToHost);
-
-    int expected = 0;
-    int numErrors = 0;
-    for (int i = 0; i < kSize; ++i) {
-        expected += input[i];
-
-        int actual = output[i];
-        if (expected != actual) {
-            //printf("Mismatch i %d exp %d act %d\n", i, expected, actual);
-            numErrors += 1;
+        for (int i = 0; i < 1000; ++i) {
+            Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
+            checkScanErrors(input, output, d_out, kSize);
         }
     }
-
-    printf("Num scan errors %d\n", numErrors);
 
     free(input);
     free(output);
