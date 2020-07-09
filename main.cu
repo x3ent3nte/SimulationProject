@@ -3,6 +3,7 @@
 #include "Timer.h"
 #include "Kernel/Reduce.cuh"
 #include "Kernel/Scan.cuh"
+#include "Kernel/RadixSort.cuh"
 #include "Test/InsertionSortTest.cuh"
 
 #define checkCudaErrors(call)                                \

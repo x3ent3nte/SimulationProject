@@ -92,7 +92,7 @@ template<typename T, T (*FN)(T, T)>
 void Scan::scan(T* in, T* out, T* offsets, int size) {
 
     //printf("Scan size %d\n", size);
-    constexpr int threadsPerBlock = 128;
+    constexpr int threadsPerBlock = 32;
     int numBlocks = ceil(size / (float) threadsPerBlock);
     scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
 
