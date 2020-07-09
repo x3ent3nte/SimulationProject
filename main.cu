@@ -114,7 +114,7 @@ void scanPlayground() {
 
     {
         Timer timer;
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < 100; ++i) {
             Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
             checkScanErrors(input, output, d_out, kSize);
         }

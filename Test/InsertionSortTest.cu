@@ -62,6 +62,8 @@ void runTest(T* nums, int size) {
 } // namespace anonymous
 
 void InsertionSortTest::run() {
+    printf("Begin InsertionSortTest\n");
+
     int size = 1024 * 17;
     int * nums = (int*) malloc(size * sizeof(int));
 
