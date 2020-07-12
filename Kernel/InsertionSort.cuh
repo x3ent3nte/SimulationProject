@@ -52,11 +52,11 @@ void insertionSortHelper(T* elements, int* wasSwappedFlag, int leftIndex, int si
     } while (needsSortingFlag[0]);
 }
 
-template<typename T, int (*FN)(T, T)>
+template<typename T, int (*FN)(T, T), int THREADS_PER_BLOCK>
 __global__
 void insertionSortKernel(T* elements, int* wasSwappedFlag, int size) {
 
-    extern __shared__ T sharedElements[];
+    __shared__ T sharedElements[2 * THREADS_PER_BLOCK * sizeof(T)];
 
     int globalOffset = blockDim.x * blockIdx.x * 2;
     int leftIndex = threadIdx.x * 2;
@@ -105,8 +105,8 @@ void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
         
         numIterations += 1;
 
-        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, 2 * threadsPerBlock * sizeof(int)>>>(elements, needsSortingFlag, size);
-        insertionSortKernel<T, FN><<<numBlocks, threadsPerBlock, 2 * threadsPerBlock * sizeof(int)>>>(elements + offset, needsSortingFlag, size - offset);
+        insertionSortKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(elements, needsSortingFlag, size);
+        insertionSortKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(elements + offset, needsSortingFlag, size - offset);
     } while (needsSorting(needsSortingFlag));
 
     printf("numIterations = %d\n", numIterations);

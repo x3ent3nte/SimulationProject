@@ -22,7 +22,7 @@ void applyBlockOffsets(T* ints, T* offsets, int size) {
     ints[gid] = FN(ints[gid], offsets[blockIdx.x]);
 }
 
-template<typename T, T (*FN)(T, T)>
+template<typename T, T (*FN)(T, T), int THREADS_PER_BLOCK>
 __global__
 void scanKernel(T* in, T* out, T* offsets, int size) {
     int tid = threadIdx.x;
@@ -31,7 +31,7 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
 
     if (gid >= size) { return; }
 
-    extern __shared__ T sharedInts[];
+    __shared__ T sharedInts[THREADS_PER_BLOCK * sizeof(T)];
 
     int localSize = min(blockDim.x, size - globalOffset);
 
@@ -94,7 +94,7 @@ void Scan::scan(T* in, T* out, T* offsets, int size) {
     //printf("Scan size %d\n", size);
     constexpr int threadsPerBlock = 32;
     int numBlocks = ceil(size / (float) threadsPerBlock);
-    scanKernel<T, FN><<<numBlocks, threadsPerBlock, threadsPerBlock * sizeof(T)>>>(in, out, offsets, size);
+    scanKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(in, out, offsets, size);
 
     //printOffsets(offsets, numBlocks);
 

@@ -30,7 +30,7 @@ int serialReduce(int* ints, int size) {
 }
 
 void reducePlayground() {
-    printf("Begin reducePlayground\n");
+    printf("\nBegin reducePlayground\n");
 
     constexpr int kSize = 1024 * 1024 * 32;
 
@@ -90,7 +90,7 @@ void checkScanErrors(int* input, int * output, int* d_out, int size) {
 }
 
 void scanPlayground() {
-    printf("Begin scanPlayground\n");
+    printf("\nBegin scanPlayground\n");
 
     constexpr int kSize = 1024 * 1024 * 4;
 
@@ -132,9 +132,9 @@ void scanPlayground() {
 
 void radixSortPlayground() {
 
-    printf("Begin radixSortPlayground\n");
+    printf("\nBegin radixSortPlayground\n");
 
-    constexpr int kSize = 1024 * 1024;
+    constexpr int kSize = 1024 * 1024 * 4;
     
     unsigned int* input = (unsigned int*) malloc(kSize * sizeof(unsigned int));
     unsigned int* output = (unsigned int*) malloc(kSize * sizeof(unsigned int));
@@ -165,6 +165,15 @@ void radixSortPlayground() {
 
     cudaMemcpy(output, sorted, kSize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
+    for (int i = 1; i < kSize; ++i) {
+        unsigned int left = output[i - 1];
+        unsigned int right = output[i];
+
+        if (left > right) {
+            //printf("Radix Sort Mismatch at Index %d Left %d Right %d\n", i, left, right);
+        }
+    }
+
     free(input);
     free(output);
     cudaFree(d_a);
@@ -181,5 +190,5 @@ int main() {
     reducePlayground();
     scanPlayground();
     InsertionSortTest::run();
-    //radixSortPlayground();
+    radixSortPlayground();
 }

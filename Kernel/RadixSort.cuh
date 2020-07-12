@@ -15,11 +15,6 @@ uint4 uint4Add(uint4 a, uint4 b) {
     return {a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w};
 }
 
-__device__
-int uint4Dot(uint4 a, uint4 b) {
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w);
-}
-
 template<typename T>
 __global__
 void mark(const T* elements, uint4* flags, int pos, int size) {
@@ -30,11 +25,10 @@ void mark(const T* elements, uint4* flags, int pos, int size) {
 
     if (gid >= size) { return; }
 
-    T mask = 3 << pos;
-    T index = (elements[gid] & mask) >> pos;
+    T index = (elements[gid] >> pos) & 3;
     
     uint4 flag = {0, 0, 0, 0};
-    //flag[index] = 1;
+    *((&flag.x) + index) = 1;
     
     flags[gid] = flag;
 }
@@ -49,28 +43,28 @@ void scatter(const T* in, T* out, const uint4* addresses, uint4 totalOffset, int
     if (gid >= size) { return; }
 
     T value = in[gid];
+
+    T index = (value >> pos) & 3;
     
-    uint4 address;
+    uint4 addressVector;
     if (tid == 0) {
-        address = {0, 0, 0, 0};
+        addressVector = {0, 0, 0, 0};
     } else {
-        address = addresses[gid - 1];
+        addressVector = addresses[gid - 1];
     }
 
-    address = uint4Add(address, totalOffset);
+    unsigned int address = *((&addressVector.x) + index);
+    unsigned int offset = *((&totalOffset.x) + index);
+    address += offset;
 
-    T mask = 3 << pos;
-    T index = (value & mask) >> pos;
-    uint4 flag = {0, 0, 0, 0};
-    //flag[index] = 1;
-
-    out[uint4Dot(flag, address)] = value;
+    out[address] = value;
 }
 
 } // namespace anonymous
 
 template<typename T>
 T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
+    
     constexpr int numBits = sizeof(T) * 8;
     constexpr int threadsPerBlock = 1024;
     const int numBlocks = ceil(size / (float) threadsPerBlock);
@@ -79,8 +73,17 @@ T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
 
         mark<T><<<numBlocks, threadsPerBlock>>>(a, flags_a, pos, size);
         
-        //Scan::scan<uint4, uint4Add>(flags_a, flags_a, flags_b, size);
+        Scan::scan<uint4, uint4Add>(flags_a, flags_a, flags_b, size);
+        
         uint4 totalOffset = {0, 0, 0, 0};
+        uint4* lastFlag = flags_a + (size - 1);
+        cudaMemcpy(&totalOffset, lastFlag, sizeof(uint4), cudaMemcpyDeviceToHost);
+        totalOffset.w = totalOffset.z;
+        totalOffset.z = totalOffset.y;
+        totalOffset.y = totalOffset.x;
+        totalOffset.x = 0;
+
+        printf("Total Offset %d %d %d %d\n", totalOffset.x, totalOffset.y, totalOffset.z, totalOffset.w);
         
         scatter<T><<<numBlocks, threadsPerBlock>>>(a, b, flags_a, totalOffset, pos, size);
 
