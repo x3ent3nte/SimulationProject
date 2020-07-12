@@ -115,7 +115,7 @@ void scanPlayground() {
 
     {
         Timer timer;
-        for (int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 10; ++i) {
             Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
             checkScanErrors(input, output, d_out, kSize);
         }
@@ -134,13 +134,13 @@ void radixSortPlayground() {
 
     printf("\nBegin radixSortPlayground\n");
 
-    constexpr int kSize = 1024 * 1024 * 4;
+    constexpr int kSize = 1024 * 1024 * 64;
     
     unsigned int* input = (unsigned int*) malloc(kSize * sizeof(unsigned int));
     unsigned int* output = (unsigned int*) malloc(kSize * sizeof(unsigned int));
 
     for (int i = 0; i < kSize; ++i) {
-        input[i] = i % 100;
+        input[i] = 100 - (i % 100);
         output[i] = 0;
     }
     
@@ -165,14 +165,18 @@ void radixSortPlayground() {
 
     cudaMemcpy(output, sorted, kSize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
+    int numErrors = 0;
     for (int i = 1; i < kSize; ++i) {
         unsigned int left = output[i - 1];
         unsigned int right = output[i];
 
         if (left > right) {
-            //printf("Radix Sort Mismatch at Index %d Left %d Right %d\n", i, left, right);
+            printf("Radix Sort Mismatch at Index %d Left %d Right %d\n", i, left, right);
+            numErrors += 1;
         }
     }
+
+    printf("Radix Sort numErrors %d\n", numErrors);
 
     free(input);
     free(output);
