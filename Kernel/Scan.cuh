@@ -40,7 +40,7 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
     __syncthreads();
 
     for (int offset = 1; offset < localSize; offset <<= 1) {
-        int leftValue;
+        T leftValue;
         int leftIndex = tid - offset;
 
         int validLeft = leftIndex >= 0;

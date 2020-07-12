@@ -130,10 +130,56 @@ void scanPlayground() {
     printf("\nEnd scanPlayground\n\n");
 }
 
+void radixSortPlayground() {
+
+    printf("Begin radixSortPlayground\n");
+
+    constexpr int kSize = 1024 * 1024;
+    
+    unsigned int* input = (unsigned int*) malloc(kSize * sizeof(unsigned int));
+    unsigned int* output = (unsigned int*) malloc(kSize * sizeof(unsigned int));
+
+    for (int i = 0; i < kSize; ++i) {
+        input[i] = i % 100;
+        output[i] = 0;
+    }
+    
+    unsigned int* d_a;
+    unsigned int* d_b;
+    uint4* d_flags_a;
+    uint4* d_flags_b;
+
+    cudaMalloc(&d_a, kSize * sizeof(unsigned int));
+    cudaMalloc(&d_b, kSize * sizeof(unsigned int));
+    cudaMalloc(&d_flags_a, kSize * sizeof(uint4));
+    cudaMalloc(&d_flags_b, kSize * sizeof(uint4));
+
+    cudaMemcpy(d_a, input, kSize * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    cudaMemset(d_b, 0, kSize * sizeof(unsigned int));
+
+    unsigned int* sorted;
+    {
+        Timer timer;
+        sorted = RadixSort::sort<unsigned int>(d_a, d_b, d_flags_a, d_flags_b, kSize);
+    }
+
+    cudaMemcpy(output, sorted, kSize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+
+    free(input);
+    free(output);
+    cudaFree(d_a);
+    cudaFree(d_b);
+    cudaFree(d_flags_a);
+    cudaFree(d_flags_b);
+
+    printf("\nEnd radixSortPlayground\n");
+}
+
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
     reducePlayground();
     scanPlayground();
     InsertionSortTest::run();
+    //radixSortPlayground();
 }
