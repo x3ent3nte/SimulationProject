@@ -8,6 +8,12 @@ typedef struct {
     int index;
 } MaxXAndIndex;
 
+typedef struct {
+    int one;
+    int two;
+    float seconds;
+} CollisionAndTime;
+
 class ContinuousCollision {
 
 public:
@@ -20,6 +26,8 @@ private:
     MaxXAndIndex* m_maxXAndIndexes;
     int* m_needsSortingFlag;
     Agent* m_agentsBuffer;
+    CollisionAndTime* m_collisions;
+    int* m_collisionFlags;
 };
 
 #endif
