@@ -4,6 +4,8 @@
 #include "Kernel/Reduce.cuh"
 #include "Kernel/Scan.cuh"
 #include "Kernel/RadixSort.cuh"
+#include "Kernel/Agent.cuh"
+#include "Kernel/ContinuousCollision.cuh"
 #include "Test/InsertionSortTest.cuh"
 
 #define checkCudaErrors(call)                                \
@@ -134,7 +136,7 @@ void radixSortPlayground() {
 
     printf("\nBegin radixSortPlayground\n");
 
-    constexpr int kSize = 1024 * 1024 * 64;
+    constexpr int kSize = 1024 * 32;
     
     unsigned int* input = (unsigned int*) malloc(kSize * sizeof(unsigned int));
     unsigned int* output = (unsigned int*) malloc(kSize * sizeof(unsigned int));
