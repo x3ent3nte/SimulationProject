@@ -7,5 +7,6 @@ Kernel/InsertionSort.cu \
 Kernel/RadixSort.cu \
 Kernel/Agent.cu \
 Kernel/ContinuousCollision.cu \
+Kernel/MyMath.cu \
 Test/TestUtils.cxx \
 Test/InsertionSortTest.cu
