@@ -1,9 +1,20 @@
 #include "ContinuousCollision.cuh"
 
 #include "InsertionSort.cuh"
+#include "Scan.cuh"
+#include "Reduce.cuh"
 #include "MyMath.cuh"
 
 namespace {
+
+__device__
+CollisionAndTime minCollisionAndTime(CollisionAndTime a, CollisionAndTime b) {
+    if (a.seconds < b.seconds) {
+        return a;
+    } else {
+        return b;
+    }
+}
 
 __device__
 float agentMaxX(Agent& agent, float seconds) {
@@ -61,6 +72,11 @@ float3 quadraticFromFloat2(float2 a) {
 __device__
 float3 float3Add(float3 a, float3 b) {
     return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+__device__
+float3 float3Scale(float3 a, float b) {
+    return {a.x * b, a.y * b, a.z * b};
 }
 
 __device__
@@ -126,6 +142,15 @@ float calculateTimeOfCollision(Agent& one, Agent& two) {
     }
 }
 
+__device__
+float distanceSquaredBetween(float3 a, float3 b) {
+    float xd = a.x - b.x;
+    float yd = a.y - b.y;
+    float zd = a.z - b.z;
+
+    return (xd * xd) + (yd * yd) + (zd * zd);
+}
+
 __global__
 void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* collisions, int* collisionFlags) {
     int tid = threadIdx.x;
@@ -139,7 +164,7 @@ void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* 
     float myMinX = agentMinX(agent, seconds);
 
     int collisionFlag = 0;
-    CollisionAndTime collision = {0, 0, seconds + 1};
+    CollisionAndTime collision = {-1, -1, seconds};
 
     for (int i = gid - 1; i >= 0; --i) {
         Agent other = agents[i];
@@ -150,12 +175,19 @@ void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* 
             break;
         }
 
-        float secondsOfCollision = calculateTimeOfCollision(agent, other);
+        float radiusSum = agent.radius + other.radius;
+        float radiusSumSquared = radiusSum * radiusSum;
 
-        if (secondsOfCollision >= 0 && secondsOfCollision < seconds) {
-            if (secondsOfCollision < collision.seconds) {
-                collisionFlag = 1;
-                collision = {gid, i, secondsOfCollision};
+        // only collide if they are not already intersecting
+        if (distanceSquaredBetween(agent.position, other.position) > radiusSumSquared) {
+            
+            float secondsOfCollision = calculateTimeOfCollision(agent, other);
+            
+            if (secondsOfCollision >= 0 && secondsOfCollision < seconds) {
+                if (secondsOfCollision < collision.seconds) {
+                    collisionFlag = 1;
+                    collision = {gid, i, secondsOfCollision};
+                }
             }
         }
     }
@@ -164,22 +196,42 @@ void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* 
     collisionFlags[gid] = collisionFlag;
 }
 
+__global__
+void advanceTime(Agent* agents, int size, float seconds) {
+    int tid = threadIdx.x;
+    int globalOffset = blockDim.x * blockIdx.x;
+    int gid = globalOffset + tid;
+
+    if (gid >= size) { return; }
+
+    Agent agent = agents[gid];
+    agents[gid].position = float3Add(agent.position, float3Scale(agent.velocity, seconds));
+}
+
 } // namespace anonymous
 
 ContinuousCollision::ContinuousCollision(int maxAgents) {
     cudaMalloc(&m_maxXAndIndexes, maxAgents * sizeof(MaxXAndIndex));
     cudaMalloc(&m_needsSortingFlag, sizeof(int));
     cudaMalloc(&m_agentsBuffer, maxAgents * sizeof(Agent));
+    
     cudaMalloc(&m_collisions, maxAgents * sizeof(CollisionAndTime));
+    cudaMalloc(&m_collisionsBuffer, maxAgents * sizeof(CollisionAndTime));
+    
     cudaMalloc(&m_collisionFlags, maxAgents * sizeof(int));
+    cudaMalloc(&m_collisionFlagsOffsets, maxAgents * sizeof(int));
 }
 
 ContinuousCollision::~ContinuousCollision() {
     cudaFree(m_maxXAndIndexes);
     cudaFree(m_needsSortingFlag);
     cudaFree(m_agentsBuffer);
+    
     cudaFree(m_collisions);
+    cudaFree(m_collisionsBuffer);
+    
     cudaFree(m_collisionFlags);
+    cudaFree(m_collisionFlagsOffsets);
 }
 
 __device__
@@ -187,14 +239,9 @@ int compareMaxXAndIndex(MaxXAndIndex a, MaxXAndIndex b) {
     return a.maxX > b.maxX;
 }
 
-typedef struct {
-    int hadCollisions;
-    float seconds;
-} HadCollisionAndSecondsEllapsed;
-
-HadCollisionAndSecondsEllapsed resolveCollisions(Agent* agents, CollisionAndTime* collisions, int size, float seconds) {
-    // TODO advance time to earliest collision and apply it
-    return {1, 0.5};
+__device__
+int addx(int a, int b) {
+    return a + b;
 }
 
 void ContinuousCollision::collide(Agent* agents, int size, float seconds) {
@@ -215,12 +262,18 @@ void ContinuousCollision::collide(Agent* agents, int size, float seconds) {
 
         detectCollisions<<<numBlocks, kThreadsPerBlock>>>(m_agentsBuffer, size, seconds, m_collisions, m_collisionFlags);
 
-        // TODO compact the collisions by scanning collisionFlags
-
-        HadCollisionAndSecondsEllapsed result = resolveCollisions(m_agentsBuffer, m_collisions, size, seconds);
-
-        seconds -= result.seconds;
-        hadCollisions = result.hadCollisions;
-
+        CollisionAndTime earliestCollision = Reduce::reduce<CollisionAndTime, minCollisionAndTime>(m_collisions, m_collisionsBuffer, size);
+        
+        if (earliestCollision.one != -1) {
+            advanceTime<<<numBlocks, kThreadsPerBlock>>>(m_agentsBuffer, size, earliestCollision.seconds);
+            
+            // TODO Resolve collision
+            
+            seconds -= earliestCollision.seconds;
+            hadCollisions = 1;
+        } else {
+            advanceTime<<<numBlocks, kThreadsPerBlock>>>(m_agentsBuffer, size, seconds);
+            hadCollisions = 0;
+        }
     } while (hadCollisions);
 }

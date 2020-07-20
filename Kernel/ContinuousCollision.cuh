@@ -26,8 +26,12 @@ private:
     MaxXAndIndex* m_maxXAndIndexes;
     int* m_needsSortingFlag;
     Agent* m_agentsBuffer;
+    
     CollisionAndTime* m_collisions;
+    CollisionAndTime* m_collisionsBuffer;
+    
     int* m_collisionFlags;
+    int* m_collisionFlagsOffsets;
 };
 
 #endif

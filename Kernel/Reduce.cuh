@@ -4,7 +4,7 @@
 namespace Reduce {
     
     template<typename T, T (*FN)(T, T)>
-    int reduce(T* d_a, T* d_b, int size);
+    T reduce(T* d_a, T* d_b, int size);
 }
 
 namespace {
@@ -63,13 +63,14 @@ void reduceKernel(T* in, T* out, int size) {
     __syncthreads();
 
     int offset = min(blockDim.x, size - blockStart) >> 1;
-    /*for (; offset > 32; offset >>= 1) {
+    for (; offset > 0; offset >>= 1) {
         if (tid < offset) {
             sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]);
         }
         __syncthreads();
-    }*/
+    }
     
+    /*
     if (blockSize >= 1024) {
         if (tid < offset) { sharedInts[tid] = FN(sharedInts[tid], sharedInts[tid + offset]); }
         __syncthreads();
@@ -95,7 +96,7 @@ void reduceKernel(T* in, T* out, int size) {
     }
 
     if (tid < 32) { lastWarpReduce<T, FN, blockSize>(sharedInts, tid, offset); }
-
+    */
     if (tid == 0) {
         out[blockIdx.x] = sharedInts[0];
     }
@@ -104,7 +105,7 @@ void reduceKernel(T* in, T* out, int size) {
 } // namespace anonymous
 
 template<typename T, T (*FN)(T, T)>
-int Reduce::reduce(T* d_a, T* d_b, int size) {
+T Reduce::reduce(T* d_a, T* d_b, int size) {
     
     constexpr int threadsPerBlock = 128;
     
@@ -115,13 +116,13 @@ int Reduce::reduce(T* d_a, T* d_b, int size) {
 
         printf("Size is %d\n", size);
 
-        int* temp = d_a;
+        T* temp = d_a;
         d_a = d_b;
         d_b = temp;
     }
 
-    int result = 0;
-    cudaMemcpy(&result, d_a, sizeof(int), cudaMemcpyDeviceToHost);
+    T result;
+    cudaMemcpy(&result, d_a, sizeof(T), cudaMemcpyDeviceToHost);
     return result;
 }
 
