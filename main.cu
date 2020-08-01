@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <iostream>
+
+#include <vulkan/vulkan.h>
+
 #include "Timer.h"
 #include "Kernel/Reduce.cuh"
 #include "Kernel/Scan.cuh"
@@ -193,6 +196,12 @@ void radixSortPlayground() {
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
+
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    std::cout << extensionCount << " extensions supported\n";
+
     reducePlayground();
     scanPlayground();
     InsertionSortTest::run();

@@ -9,4 +9,7 @@ Kernel/Agent.cu \
 Kernel/ContinuousCollision.cu \
 Kernel/MyMath.cu \
 Test/TestUtils.cxx \
-Test/InsertionSortTest.cu
+Test/InsertionSortTest.cu \
+-I/c/VulkanSDK/1.2.141.2/Include \
+-L/c/VulkanSDK/1.2.141.2/Lib \
+-lvulkan-1
