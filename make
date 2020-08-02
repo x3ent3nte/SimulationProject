@@ -1,16 +1,12 @@
 nvcc -o main \
+ \
 main.cu \
-Timer.cxx \
-Renderer.cxx \
-Kernel/Reduce.cu \
-Kernel/Scan.cu \
-Kernel/InsertionSort.cu \
-Kernel/RadixSort.cu \
-Kernel/Agent.cu \
-Kernel/ContinuousCollision.cu \
-Test/TestUtils.cxx \
-Test/InsertionSortTest.cu \
--I $(PWD) \
+src/*.cxx \
+src/Kernel/*.cu \
+src/Test/*.cxx \
+src/Test/*.cu \
+ \
+-I $(PWD)/src \
 -I/c/Users/m202-/Desktop/Developer/glm \
 -I/c/Users/m202-/Desktop/Developer/glfw-3.3.2.bin.WIN64/include \
 -I/c/VulkanSDK/1.2.141.2/Include \
