@@ -1,1 +1,1 @@
-#include "InsertionSort.cuh"
+#include <Kernel/InsertionSort.cuh>

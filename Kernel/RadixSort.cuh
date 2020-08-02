@@ -1,7 +1,7 @@
 #ifndef RADIX_SORT_CUH
 #define RADIX_SORT_CUH
 
-#include "Scan.cuh"
+#include <Kernel/Scan.cuh>
 #include <set>
 
 namespace RadixSort {

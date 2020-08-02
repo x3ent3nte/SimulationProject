@@ -1,1 +1,1 @@
-#include "Reduce.cuh"
+#include <Kernel/Reduce.cuh>

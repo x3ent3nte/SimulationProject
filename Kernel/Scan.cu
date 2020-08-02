@@ -1,1 +1,1 @@
-#include "Scan.cuh"
+#include <Kernel/Scan.cuh>

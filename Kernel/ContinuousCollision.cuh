@@ -1,7 +1,7 @@
 #ifndef CONTINUOUS_COLLISION_CUH
 #define CONTINUOUS_COLLISION_CUH
 
-#include "Agent.cuh"
+#include <Kernel/Agent.cuh>
 
 typedef struct {
     float maxX;

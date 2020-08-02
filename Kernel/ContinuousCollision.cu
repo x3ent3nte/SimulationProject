@@ -1,9 +1,8 @@
-#include "ContinuousCollision.cuh"
+#include <Kernel/ContinuousCollision.cuh>
 
-#include "InsertionSort.cuh"
-#include "Scan.cuh"
-#include "Reduce.cuh"
-#include "MyMath.cuh"
+#include <Kernel/InsertionSort.cuh>
+#include <Kernel/Scan.cuh>
+#include <Kernel/Reduce.cuh>
 
 namespace {
 

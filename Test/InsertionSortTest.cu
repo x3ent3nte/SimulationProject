@@ -1,7 +1,7 @@
-#include "InsertionSortTest.cuh"
+#include <Test/InsertionSortTest.cuh>
 
-#include "../Kernel/InsertionSort.cuh"
-#include "../Timer.h"
+#include <Kernel/InsertionSort.cuh>
+#include <Timer.h>
 #include <stdio.h>
 #include <string>
 #include <iostream>
