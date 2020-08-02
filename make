@@ -1,7 +1,7 @@
 nvcc -o main \
  \
-main.cu \
 src/*.cxx \
+src/*.cu \
 src/Kernel/*.cu \
 src/Test/*.cxx \
 src/Test/*.cu \
