@@ -3,7 +3,7 @@
 
 class Renderer {
 public:
-    void render();
+    int render();
 };
 
 #endif
