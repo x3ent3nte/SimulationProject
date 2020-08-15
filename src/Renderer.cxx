@@ -15,7 +15,7 @@ namespace {
     const uint32_t kWidth = 800;
     const uint32_t kHeight = 600;
 
-    const std::vector<const char*> validationLayers = {
+    const std::vector<const char*> kValidationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
 
@@ -34,8 +34,13 @@ public:
 private:
 
     GLFWwindow* m_window;
+    
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
+    
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_device;
+    VkQueue m_graphicsQueue;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -104,7 +109,7 @@ private:
         std::vector<VkLayerProperties> availableLayers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        for (const char* layerName : validationLayers) {
+        for (const char* layerName : kValidationLayers) {
             bool layerFound = false;
 
             for (const auto& layerProperties : availableLayers) {
@@ -175,8 +180,8 @@ private:
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
         if (kEnableValidationLayers) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
+            createInfo.enabledLayerCount = static_cast<uint32_t>(kValidationLayers.size());
+            createInfo.ppEnabledLayerNames = kValidationLayers.data();
 
             populateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
@@ -203,6 +208,136 @@ private:
     void initVulkan() {
         createInstance();
         setupDebugMessenger();
+        pickPhysicalDevice();
+        createLogicalDevice();
+    }
+
+    void createLogicalDevice() {
+        QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.m_graphicsFamily;
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = 0;
+
+        if (kEnableValidationLayers) {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(kValidationLayers.size());
+            createInfo.ppEnabledLayerNames = kValidationLayers.data();
+        } else {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create logical device");
+        }
+
+        vkGetDeviceQueue(m_device, indices.m_graphicsFamily, 0, &m_graphicsQueue);
+    }
+
+    struct QueueFamilyIndices {
+        uint32_t m_graphicsFamily;
+        bool m_hasGraphicsFamily;
+
+        bool isComplete() {
+            return m_hasGraphicsFamily;
+        }
+    };
+
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+        QueueFamilyIndices indices{0, false};
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies) {
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                indices.m_graphicsFamily = i;
+                indices.m_hasGraphicsFamily = true;
+            }
+
+            i += 1;
+        }
+
+        return indices;
+    }
+
+    int rateDeviceSuitability(VkPhysicalDevice device) {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        std::cout << "Device Name: " << deviceProperties.deviceName << "\n";
+        
+        int score = 0;
+
+        auto indices = findQueueFamilies(device);
+        
+        if (!indices.isComplete()) {
+            return score;
+        }
+        
+        if (!deviceFeatures.geometryShader) {
+            return score;
+        }
+
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            score = 1000;
+        }
+
+        score += deviceProperties.limits.maxImageDimension2D;
+
+        return score;
+    }
+
+    void pickPhysicalDevice() {
+        uint32_t deviceCount;
+        vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+
+        std::cout << "Found " << deviceCount << " devices\n";
+
+        if (deviceCount == 0) {
+            throw std::runtime_error("Failed to find GPUs with Vulkan support");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+
+
+        int highestScore = 0;
+        for (const auto& device : devices) {
+            std::cout << "Device: " << device << "\n";
+
+            int score = rateDeviceSuitability(device);
+            std::cout << "Score: " << score << "\n";
+            if (score > highestScore) {
+                highestScore = score;
+                m_physicalDevice = device;
+            }
+        }
+
+        if (m_physicalDevice == VK_NULL_HANDLE) {
+            throw std::runtime_error("Failed to find a suitable GPU");
+        }
     }
 
     void mainLoop() {
@@ -212,6 +347,7 @@ private:
     }
 
     void cleanUp() {
+        vkDestroyDevice(m_device, nullptr);
 
         if(kEnableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
