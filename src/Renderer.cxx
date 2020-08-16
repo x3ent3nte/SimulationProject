@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <set>
 
 namespace {
     const uint32_t kWidth = 800;
@@ -30,24 +31,27 @@ public:
         mainLoop();
         cleanUp();
     }
-    
+
 private:
 
     GLFWwindow* m_window;
-    
+
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
-    
+
+    VkSurfaceKHR m_surface;
+
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue m_graphicsQueue;
+    VkQueue m_presentQueue;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData) {
-        
+
         if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
             std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
         }
@@ -73,7 +77,7 @@ private:
         VkInstance instance,
         VkDebugUtilsMessengerEXT debugMessenger,
         const VkAllocationCallbacks* pAllocator) {
-        
+
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
@@ -83,9 +87,9 @@ private:
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | 
+        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | 
+        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
         createInfo.pUserData = nullptr; // Optional
@@ -157,7 +161,7 @@ private:
     }
 
     void createInstance() {
-        
+
         if (kEnableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("Validation layers requested, but not available");
         }
@@ -208,31 +212,45 @@ private:
     void initVulkan() {
         createInstance();
         setupDebugMessenger();
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
+    }
+
+    void createSurface() {
+        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create window surface");
+        }
     }
 
     void createLogicalDevice() {
         QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = indices.m_graphicsFamily;
-        queueCreateInfo.queueCount = 1;
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily};
 
         float queuePriority = 1.0f;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        for (uint32_t queueFamily : uniqueQueueFamilies) {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
 
         VkPhysicalDeviceFeatures deviceFeatures{};
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-        createInfo.pQueueCreateInfos = &queueCreateInfo;
-        createInfo.queueCreateInfoCount = 1;
         createInfo.pEnabledFeatures = &deviceFeatures;
-
         createInfo.enabledExtensionCount = 0;
+
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
         if (kEnableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(kValidationLayers.size());
@@ -246,19 +264,22 @@ private:
         }
 
         vkGetDeviceQueue(m_device, indices.m_graphicsFamily, 0, &m_graphicsQueue);
+        vkGetDeviceQueue(m_device, indices.m_presentFamily, 0, &m_presentQueue);
     }
 
     struct QueueFamilyIndices {
         uint32_t m_graphicsFamily;
         bool m_hasGraphicsFamily;
+        uint32_t m_presentFamily;
+        bool m_hasPresentFamily;
 
         bool isComplete() {
-            return m_hasGraphicsFamily;
+            return m_hasGraphicsFamily && m_hasPresentFamily;
         }
     };
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-        QueueFamilyIndices indices{0, false};
+        QueueFamilyIndices indices{0, false, 0, false};
 
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -271,6 +292,14 @@ private:
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.m_graphicsFamily = i;
                 indices.m_hasGraphicsFamily = true;
+            }
+
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
+
+            if (presentSupport) {
+                indices.m_presentFamily = i;
+                indices.m_hasPresentFamily = true;
             }
 
             i += 1;
@@ -287,15 +316,15 @@ private:
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
         std::cout << "Device Name: " << deviceProperties.deviceName << "\n";
-        
+
         int score = 0;
 
         auto indices = findQueueFamilies(device);
-        
+
         if (!indices.isComplete()) {
             return score;
         }
-        
+
         if (!deviceFeatures.geometryShader) {
             return score;
         }
@@ -353,7 +382,9 @@ private:
             DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
 
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
+
         glfwDestroyWindow(m_window);
         glfwTerminate();
     }
