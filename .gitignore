@@ -2,3 +2,4 @@ main.exe
 main.exp
 main.lib
 glfw3.dll
+*.spv
