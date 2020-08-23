@@ -77,6 +77,8 @@ private:
     std::vector<VkFence> m_imagesInFlight;
     size_t m_currentFrame = 0;
 
+    bool m_frameBufferResized = false;
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -232,12 +234,42 @@ private:
         printAvailableExtensions();
     }
 
+    static void frameBufferResizeCallback(GLFWwindow* window, int width, int height) {
+        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+        app->m_frameBufferResized = true;
+    }
+
     void initWindow() {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         m_window = glfwCreateWindow(kWidth, kHeight, "Vulkan", nullptr, nullptr);
+        glfwSetWindowUserPointer(m_window, this);
+        glfwSetFramebufferSizeCallback(m_window, frameBufferResizeCallback);
+    }
+
+    void recreateSwapChain() {
+        std::cout << "recreateSwapChain called\n";
+
+        int width = 0;
+        int height = 0;
+
+        glfwGetFramebufferSize(m_window, &width, &height);
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(m_window, &width, &height);
+            glfwWaitEvents();
+        }
+
+        vkDeviceWaitIdle(m_logicalDevice);
+
+        cleanUpSwapChain();
+
+        createSwapChain();
+        createImageViews();
+        createRenderPass();
+        createGraphicsPipeline();
+        createFrameBuffers();
+        createCommandBuffers();
     }
 
     void initVulkan() {
@@ -720,13 +752,20 @@ private:
         if (capabilities.currentExtent.width != UINT32_MAX) {
             return capabilities.currentExtent;
         } else {
-            VkExtent2D actualExtent = {kWidth, kHeight};
+            int width, height;
+            glfwGetFramebufferSize(m_window, &width, &height);
+
+            VkExtent2D actualExtent = {
+                static_cast<uint32_t>(width),
+                static_cast<uint32_t>(height)};
+
             actualExtent.width = std::max(
                 capabilities.minImageExtent.width,
                 std::min(capabilities.maxImageExtent.width, actualExtent.width));
             actualExtent.height = std::max(
                 capabilities.minImageExtent.height,
                 std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
             return actualExtent;
         }
     }
@@ -940,16 +979,26 @@ private:
 
     void drawFrame() {
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-        vkResetFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame]);
 
         uint32_t imageIndex;
-        vkAcquireNextImageKHR(
+        VkResult acquireImageResult = vkAcquireNextImageKHR(
             m_logicalDevice,
             m_swapChain,
             UINT64_MAX,
             m_imageAvailableSemaphores[m_currentFrame],
             VK_NULL_HANDLE,
             &imageIndex);
+
+        if (acquireImageResult == VK_SUBOPTIMAL_KHR) {
+            std::cout << "Suboptimal Swap Chain\n";
+        }
+
+        if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapChain();
+            return;
+        } else if (acquireImageResult != VK_SUCCESS && acquireImageResult != VK_SUBOPTIMAL_KHR) {
+            throw std::runtime_error("Failed to acquire swap chain image");
+        }
 
         if (m_imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(m_logicalDevice, 1, &m_imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
@@ -990,23 +1039,24 @@ private:
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr;
 
-        vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        VkResult presentResult = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || m_frameBufferResized) {
+            m_frameBufferResized = false;
+            recreateSwapChain();
+        } else if (presentResult != VK_SUCCESS) {
+            throw std::runtime_error("Failed to present swap chain image");
+        }
 
         m_currentFrame = (m_currentFrame + 1) % kMaxFramesInFlight;
     }
 
-    void cleanUp() {
-        for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
-            vkDestroySemaphore(m_logicalDevice, m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
-        }
-
-        vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
-
+    void cleanUpSwapChain() {
         for (auto frameBuffer : m_swapChainFrameBuffers) {
             vkDestroyFramebuffer(m_logicalDevice, frameBuffer, nullptr);
         }
+
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
 
         vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
@@ -1017,6 +1067,19 @@ private:
         }
 
         vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
+    }
+
+    void cleanUp() {
+        cleanUpSwapChain();
+
+        for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
+            vkDestroySemaphore(m_logicalDevice, m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
+        }
+
+        vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
+
         vkDestroyDevice(m_logicalDevice, nullptr);
 
         if(kEnableValidationLayers) {
