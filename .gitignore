@@ -4,3 +4,4 @@ main.lib
 glfw3.dll
 *.spv
 textures
+models
