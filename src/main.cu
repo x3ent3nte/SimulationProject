@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include <Timer.h>
-#include <Renderer.h>
+#include <Renderer/Renderer.h>
 #include <Kernel/Reduce.cuh>
 #include <Kernel/Scan.cuh>
 #include <Kernel/RadixSort.cuh>
@@ -139,7 +139,7 @@ void radixSortPlayground() {
     printf("\nBegin radixSortPlayground\n");
 
     constexpr int kSize = 1024 * 32;
-    
+
     unsigned int* input = (unsigned int*) malloc(kSize * sizeof(unsigned int));
     unsigned int* output = (unsigned int*) malloc(kSize * sizeof(unsigned int));
 
@@ -147,7 +147,7 @@ void radixSortPlayground() {
         input[i] = 100 - (i % 100);
         output[i] = 0;
     }
-    
+
     unsigned int* d_a;
     unsigned int* d_b;
     uint4* d_flags_a;
