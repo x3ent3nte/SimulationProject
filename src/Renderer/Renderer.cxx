@@ -2,7 +2,9 @@
 #include <Renderer/Utils.h>
 #include <Renderer/Vertex.h>
 #include <Renderer/Instance.h>
+#include <Renderer/Surface.h>
 #include <Renderer/PhysicalDevice.h>
+#include <Renderer/LogicalDevice.h>
 #include <Renderer/Constants.h>
 
 #define GLFW_INCLUDE_VULKAN
@@ -43,7 +45,7 @@ struct UniformBufferObject {
 class HelloTriangleApplication {
 public:
     void run() {
-        initWindow();
+        m_window = Surface::createWindow();
         initVulkan();
         mainLoop();
         cleanUp();
@@ -51,7 +53,7 @@ public:
 
 private:
 
-    GLFWwindow* m_window;
+    std::shared_ptr<Surface::Window> m_window;
 
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -107,8 +109,6 @@ private:
     VkDeviceMemory m_depthImageMemory;
     VkImageView m_depthImageView;
 
-    bool m_frameBufferResized = false;
-
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
 
@@ -118,29 +118,15 @@ private:
     VkDeviceMemory m_colourImageMemory;
     VkImageView m_colourImageView;
 
-    static void frameBufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-        app->m_frameBufferResized = true;
-    }
-
-    void initWindow() {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        m_window = glfwCreateWindow(Constants::kWidth, Constants::kHeight, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(m_window, this);
-        glfwSetFramebufferSizeCallback(m_window, frameBufferResizeCallback);
-    }
-
     void recreateSwapChain() {
         std::cout << "recreateSwapChain called\n";
 
         int width = 0;
         int height = 0;
 
-        glfwGetFramebufferSize(m_window, &width, &height);
+        glfwGetFramebufferSize(m_window->m_window, &width, &height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(m_window, &width, &height);
+            glfwGetFramebufferSize(m_window->m_window, &width, &height);
             glfwWaitEvents();
         }
 
@@ -164,10 +150,10 @@ private:
     void initVulkan() {
         m_instance = Instance::createInstance();
         Instance::setupDebugMessenger(m_instance, m_debugMessenger);
-        createSurface();
+        m_surface = Surface::createSurface(m_instance, m_window->m_window);
         m_physicalDevice = PhysicalDevice::pickPhysicalDevice(m_instance, m_surface);
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
-        createLogicalDevice();
+        LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -1299,67 +1285,12 @@ private:
         }
     }
 
-    void createSurface() {
-        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create window surface");
-        }
-    }
-
-    void createLogicalDevice() {
-        PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(m_physicalDevice, m_surface);
-
-        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily};
-
-        float queuePriority = 1.0f;
-
-        for (uint32_t queueFamily : uniqueQueueFamilies) {
-            VkDeviceQueueCreateInfo queueCreateInfo{};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 1;
-            queueCreateInfo.pQueuePriorities = &queuePriority;
-
-            queueCreateInfos.push_back(queueCreateInfo);
-        }
-
-        VkPhysicalDeviceFeatures deviceFeatures{};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-        deviceFeatures.sampleRateShading = VK_TRUE;
-
-        VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-        createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = 0;
-
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(Constants::kDeviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = Constants::kDeviceExtensions.data();
-
-        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-        if (Constants::kEnableValidationLayers) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(Constants::kValidationLayers.size());
-            createInfo.ppEnabledLayerNames = Constants::kValidationLayers.data();
-        } else {
-            createInfo.enabledLayerCount = 0;
-        }
-
-        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_logicalDevice) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create logical device");
-        }
-
-        vkGetDeviceQueue(m_logicalDevice, indices.m_graphicsFamily, 0, &m_graphicsQueue);
-        vkGetDeviceQueue(m_logicalDevice, indices.m_presentFamily, 0, &m_presentQueue);
-    }
-
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
         if (capabilities.currentExtent.width != UINT32_MAX) {
             return capabilities.currentExtent;
         } else {
             int width, height;
-            glfwGetFramebufferSize(m_window, &width, &height);
+            glfwGetFramebufferSize(m_window->m_window, &width, &height);
 
             VkExtent2D actualExtent = {
                 static_cast<uint32_t>(width),
@@ -1457,7 +1388,7 @@ private:
     }
 
     void mainLoop() {
-        while (!glfwWindowShouldClose(m_window)) {
+        while (!glfwWindowShouldClose(m_window->m_window)) {
             glfwPollEvents();
             drawFrame();
         }
@@ -1550,8 +1481,8 @@ private:
 
         VkResult presentResult = vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || m_frameBufferResized) {
-            m_frameBufferResized = false;
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || m_window->m_hasBeenResized) {
+            m_window->m_hasBeenResized = false;
             recreateSwapChain();
         } else if (presentResult != VK_SUCCESS) {
             throw std::runtime_error("Failed to present swap chain image");
@@ -1627,7 +1558,7 @@ private:
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
 
-        glfwDestroyWindow(m_window);
+        glfwDestroyWindow(m_window->m_window);
         glfwTerminate();
     }
 };
