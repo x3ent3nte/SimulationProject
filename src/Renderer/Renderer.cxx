@@ -9,6 +9,7 @@
 #include <Renderer/Pipeline.h>
 #include <Renderer/SwapChain.h>
 #include <Renderer/Command.h>
+#include <Renderer/Buffer.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -198,8 +199,29 @@ private:
         createTextureImageView();
         createTextureSampler();
         Utils::loadModel(m_vertices, m_indices, Constants::kModelPath);
-        createVertexBuffer();
-        createIndexBuffer();
+
+        Buffer::createReadOnlyBuffer(
+            m_vertices.data(),
+            sizeof(m_vertices[0]) * m_vertices.size(),
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            m_physicalDevice,
+            m_logicalDevice,
+            m_commandPool,
+            m_graphicsQueue,
+            m_vertexBuffer,
+            m_vertexBufferMemory);
+
+       Buffer::createReadOnlyBuffer(
+            m_indices.data(),
+            sizeof(m_indices[0]) * m_indices.size(),
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            m_physicalDevice,
+            m_logicalDevice,
+            m_commandPool,
+            m_graphicsQueue,
+            m_indexBuffer,
+            m_indexBufferMemory);
+
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
@@ -364,7 +386,7 @@ private:
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+        allocInfo.memoryTypeIndex = PhysicalDevice::findMemoryType(m_physicalDevice, memRequirements.memoryTypeBits, properties);
 
         if (vkAllocateMemory(m_logicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate image memory");
@@ -498,7 +520,9 @@ private:
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
 
-        createBuffer(
+        Buffer::createBuffer(
+            m_physicalDevice,
+            m_logicalDevice,
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -531,12 +555,14 @@ private:
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             m_mipLevels);
 
-        copyBufferToImage(
+        Buffer::copyBufferToImage(
+            m_logicalDevice,
+            m_commandPool,
+            m_graphicsQueue,
             stagingBuffer,
             m_textureImage,
             static_cast<uint32_t>(texWidth),
             static_cast<uint32_t>(texHeight));
-
 
         /*transitionImageLayout(
             m_textureImage,
@@ -550,29 +576,6 @@ private:
         vkFreeMemory(m_logicalDevice, stagingBufferMemory, nullptr);
 
         generateMipMaps(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
-    }
-
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
-
-        VkBufferImageCopy region{};
-        region.bufferOffset = 0;
-        region.bufferRowLength = 0;
-        region.bufferImageHeight = 0;
-
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount = 1;
-
-        region.imageOffset = {0, 0, 0};
-        region.imageExtent = {width, height, 1};
-
-        vkCmdCopyBufferToImage(
-            commandBuffer, buffer, image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
@@ -729,110 +732,6 @@ private:
         }
     }
 
-    void createBuffer(
-        VkDeviceSize size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VkBuffer& buffer,
-        VkDeviceMemory& bufferMemory) {
-
-        VkBufferCreateInfo bufferInfo{};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateBuffer(m_logicalDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create vertex buffer");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(m_logicalDevice, buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(m_logicalDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate vertex buffer memory");
-        }
-
-        vkBindBufferMemory(m_logicalDevice, buffer, bufferMemory, 0);
-    }
-
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
-    }
-
-    void createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(m_vertices[0]) * m_vertices.size();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            stagingBuffer,
-            stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(m_logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, m_vertices.data(), (size_t) bufferSize);
-        vkUnmapMemory(m_logicalDevice, stagingBufferMemory);
-
-        createBuffer(
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_vertexBuffer,
-            m_vertexBufferMemory);
-
-        copyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
-
-        vkDestroyBuffer(m_logicalDevice, stagingBuffer, nullptr);
-        vkFreeMemory(m_logicalDevice, stagingBufferMemory, nullptr);
-    }
-
-    void createIndexBuffer() {
-        VkDeviceSize bufferSize = sizeof(m_indices[0]) * m_indices.size();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            stagingBuffer,
-            stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(m_logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, m_indices.data(), (size_t) bufferSize);
-        vkUnmapMemory(m_logicalDevice, stagingBufferMemory);
-
-        createBuffer(
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            m_indexBuffer,
-            m_indexBufferMemory);
-
-        copyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
-
-        vkDestroyBuffer(m_logicalDevice, stagingBuffer, nullptr);
-        vkFreeMemory(m_logicalDevice, stagingBufferMemory, nullptr);
-    }
-
     void createUniformBuffers() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -840,26 +739,15 @@ private:
         m_uniformBuffersMemory.resize(m_swapChainImages.size());
 
         for (size_t i = 0; i < m_swapChainImages.size(); ++i) {
-            createBuffer(
+            Buffer::createBuffer(
+                m_physicalDevice,
+                m_logicalDevice,
                 bufferSize,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 m_uniformBuffers[i],
                 m_uniformBuffersMemory[i]);
         }
-    }
-
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
-
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                return i;
-            }
-        }
-
-        throw std::runtime_error("Failed to find suitable memory type");
     }
 
     void createSyncObjects() {

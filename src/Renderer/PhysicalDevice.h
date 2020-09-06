@@ -28,6 +28,11 @@ namespace PhysicalDevice {
 
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
+    uint32_t findMemoryType(
+        VkPhysicalDevice physicalDevice,
+        uint32_t typeFilter,
+        VkMemoryPropertyFlags properties);
+
     VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice device);
 }
 
