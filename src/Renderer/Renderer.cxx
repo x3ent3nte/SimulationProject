@@ -28,16 +28,8 @@
 
 #include <chrono>
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
-#include <cstdlib>
 #include <vector>
-#include <cstring>
-#include <set>
-#include <cstdint>
-#include <algorithm>
-#include <array>
-#include <unordered_map>
 
 class HelloTriangleApplication {
 public:
