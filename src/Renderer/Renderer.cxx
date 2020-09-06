@@ -10,6 +10,7 @@
 #include <Renderer/SwapChain.h>
 #include <Renderer/Command.h>
 #include <Renderer/Buffer.h>
+#include <Renderer/Descriptors.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -39,12 +40,6 @@
 #include <algorithm>
 #include <array>
 #include <unordered_map>
-
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
 
 class HelloTriangleApplication {
 public:
@@ -159,7 +154,11 @@ private:
         createDepthResources();
         createFrameBuffers();
         createUniformBuffers();
-        createDescriptorPool();
+
+        m_descriptorPool = Descriptors::createDescriptorPool(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()));
+
         createDescriptorSets();
         createCommandBuffers();
     }
@@ -180,7 +179,7 @@ private:
             findDepthFormat(),
             m_msaaSamples);
 
-        createDescriptorSetLayout();
+        m_descriptorSetLayout = Descriptors::createDescriptorSetLayout(m_logicalDevice);
 
         Pipeline::createPipeline(
             m_pipelineLayout,
@@ -223,10 +222,26 @@ private:
             m_indexBufferMemory);
 
         createUniformBuffers();
-        createDescriptorPool();
+
+        m_descriptorPool = Descriptors::createDescriptorPool(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()));
+
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+    }
+
+    void createDescriptorSets() {
+        Descriptors::createDescriptorSets(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()),
+            m_descriptorSetLayout,
+            m_descriptorPool,
+            m_uniformBuffers,
+            m_textureImageView,
+            m_textureSampler,
+            m_descriptorSets);
     }
 
     void createColourResources() {
@@ -637,101 +652,6 @@ private:
         Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
-    void createDescriptorPool() {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(m_swapChainImages.size());
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(m_swapChainImages.size());
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(m_swapChainImages.size());
-
-        if (vkCreateDescriptorPool(m_logicalDevice, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor pool");
-        }
-    }
-
-    void createDescriptorSets() {
-        std::vector<VkDescriptorSetLayout> layouts(m_swapChainImages.size(), m_descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(m_swapChainImages.size());
-        allocInfo.pSetLayouts = layouts.data();
-
-        m_descriptorSets.resize(m_swapChainImages.size());
-        if (vkAllocateDescriptorSets(m_logicalDevice, &allocInfo, m_descriptorSets.data()) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate descriptor sets");
-        }
-
-        for (size_t i = 0; i < m_swapChainImages.size(); ++i) {
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = m_uniformBuffers[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = m_textureImageView;
-            imageInfo.sampler = m_textureSampler;
-
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = m_descriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = m_descriptorSets[i];
-            descriptorWrites[1].dstBinding = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(
-                m_logicalDevice,
-                static_cast<uint32_t>(descriptorWrites.size()),
-                descriptorWrites.data(),
-                0,
-                nullptr);
-        }
-    }
-
-    void createDescriptorSetLayout() {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(m_logicalDevice, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create descriptor set layout");
-        }
-    }
-
     void createUniformBuffers() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -774,26 +694,14 @@ private:
     }
 
     void createFrameBuffers() {
-        m_swapChainFrameBuffers.resize(m_swapChainImageViews.size());
-
-        for (size_t i = 0; i < m_swapChainImageViews.size(); ++i) {
-
-            std::array<VkImageView, 3> attachments = {m_colourImageView, m_depthImageView, m_swapChainImageViews[i]};
-
-            VkFramebufferCreateInfo frameBufferInfo{};
-            frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            frameBufferInfo.renderPass = m_renderPass;
-            frameBufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            frameBufferInfo.pAttachments = attachments.data();
-            frameBufferInfo.width = m_swapChainExtent.width;
-            frameBufferInfo.height = m_swapChainExtent.height;
-            frameBufferInfo.layers = 1;
-
-            if (vkCreateFramebuffer(m_logicalDevice, &frameBufferInfo, nullptr, &m_swapChainFrameBuffers[i]) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to create frame buffer");
-            }
-        }
-
+        SwapChain::createFrameBuffers(
+            m_logicalDevice,
+            m_renderPass,
+            m_swapChainExtent,
+            m_colourImageView,
+            m_depthImageView,
+            m_swapChainImageViews,
+            m_swapChainFrameBuffers);
     }
 
     void createCommandBuffers() {

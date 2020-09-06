@@ -3,6 +3,7 @@
 #include <Renderer/PhysicalDevice.h>
 
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -156,4 +157,35 @@ void SwapChain::createSwapChain(
     vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapImageCount, swapChainImages.data());
 
     createImageViews(logicalDevice, swapChainImageFormat, swapChainImages, swapChainImageViews);
+}
+
+void SwapChain::createFrameBuffers(
+    VkDevice logicalDevice,
+    VkRenderPass renderPass,
+    VkExtent2D swapChainExtent,
+    VkImageView colourImageView,
+    VkImageView depthImageView,
+    const std::vector<VkImageView>& swapChainImageViews,
+    std::vector<VkFramebuffer>& swapChainFrameBuffers) {
+
+    swapChainFrameBuffers.resize(swapChainImageViews.size());
+
+    for (size_t i = 0; i < swapChainImageViews.size(); ++i) {
+
+        std::array<VkImageView, 3> attachments = {colourImageView, depthImageView, swapChainImageViews[i]};
+
+        VkFramebufferCreateInfo frameBufferInfo{};
+        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = renderPass;
+        frameBufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        frameBufferInfo.pAttachments = attachments.data();
+        frameBufferInfo.width = swapChainExtent.width;
+        frameBufferInfo.height = swapChainExtent.height;
+        frameBufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(logicalDevice, &frameBufferInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create frame buffer");
+        }
+    }
+
 }

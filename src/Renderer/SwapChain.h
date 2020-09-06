@@ -21,6 +21,15 @@ namespace SwapChain {
         std::vector<VkImage>& swapChainImages,
         std::vector<VkImageView>& swapChainImageViews);
 
+    void createFrameBuffers(
+        VkDevice logicalDevice,
+        VkRenderPass renderPass,
+        VkExtent2D swapChainExtent,
+        VkImageView colourImageView,
+        VkImageView depthImageView,
+        const std::vector<VkImageView>& swapChainImageViews,
+        std::vector<VkFramebuffer>& swapChainFrameBuffers);
+
 }
 
 #endif
