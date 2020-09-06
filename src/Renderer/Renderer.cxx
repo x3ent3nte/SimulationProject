@@ -8,6 +8,7 @@
 #include <Renderer/Constants.h>
 #include <Renderer/Pipeline.h>
 #include <Renderer/SwapChain.h>
+#include <Renderer/Command.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -189,7 +190,7 @@ private:
             m_descriptorSetLayout,
             m_renderPass);
 
-        createCommandPool();
+        m_commandPool = Command::createCommandPool(m_physicalDevice, m_logicalDevice, m_surface);
         createColourResources();
         createDepthResources();
         createFrameBuffers();
@@ -380,7 +381,7 @@ private:
             throw std::runtime_error("Texture image format does not support linear blitting");
         }
 
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -481,7 +482,7 @@ private:
             1,
             &barrier);
 
-        endSingleTimeCommands(commandBuffer);
+        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
     void createTextureImage() {
@@ -552,7 +553,7 @@ private:
     }
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -571,11 +572,11 @@ private:
             commandBuffer, buffer, image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(commandBuffer);
+        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -630,40 +631,7 @@ private:
             sourceStage, destinationStage,
             0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-        endSingleTimeCommands(commandBuffer);
-    }
-
-    VkCommandBuffer beginSingleTimeCommands() {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = m_commandPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        return commandBuffer;
-    }
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer) {
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(m_graphicsQueue);
-
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &commandBuffer);
+        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
     void createDescriptorPool() {
@@ -794,7 +762,7 @@ private:
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(m_logicalDevice, m_commandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;
@@ -802,7 +770,7 @@ private:
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(commandBuffer);
+        Command::endSingleTimeCommands(commandBuffer, m_graphicsQueue, m_logicalDevice, m_commandPool);
     }
 
     void createVertexBuffer() {
@@ -917,79 +885,6 @@ private:
         }
     }
 
-    void createCommandBuffers() {
-        m_commandBuffers.resize(m_swapChainFrameBuffers.size());
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = m_commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t) m_commandBuffers.size();
-
-        if (vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, m_commandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate command buffers");
-        }
-
-        for (size_t i = 0; i < m_commandBuffers.size(); ++i) {
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = 0;
-            beginInfo.pInheritanceInfo = nullptr;
-
-            if (vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to begin recording command buffer");
-            }
-
-            VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = m_renderPass;
-            renderPassInfo.framebuffer = m_swapChainFrameBuffers[i];
-            renderPassInfo.renderArea.offset = {0, 0};
-            renderPassInfo.renderArea.extent = m_swapChainExtent;
-
-            std::array<VkClearValue, 2> clearValues{};
-            clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-            clearValues[1].depthStencil = {1.0f, 0};
-
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
-
-            vkCmdBeginRenderPass(m_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
-
-            VkBuffer vertexBuffers[] = {m_vertexBuffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(m_commandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-            vkCmdBindIndexBuffer(m_commandBuffers[i], m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-            vkCmdBindDescriptorSets(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-                0, 1, &m_descriptorSets[i], 0, nullptr);
-
-            vkCmdDrawIndexed(m_commandBuffers[i], static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
-
-            vkCmdEndRenderPass(m_commandBuffers[i]);
-
-            if (vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to record command buffer");
-            }
-        }
-    }
-
-    void createCommandPool() {
-        PhysicalDevice::QueueFamilyIndices queueFamilyIndices = PhysicalDevice::findQueueFamilies(m_physicalDevice, m_surface);
-
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.m_graphicsFamily;
-        poolInfo.flags = 0;
-
-        if (vkCreateCommandPool(m_logicalDevice, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create command pool");
-        }
-    }
-
     void createFrameBuffers() {
         m_swapChainFrameBuffers.resize(m_swapChainImageViews.size());
 
@@ -1013,8 +908,23 @@ private:
 
     }
 
-    void createSwapChain() {
+    void createCommandBuffers() {
+        Command::createCommandBuffers(
+            m_swapChainFrameBuffers,
+            m_commandPool,
+            m_logicalDevice,
+            m_renderPass,
+            m_swapChainExtent,
+            m_vertexBuffer,
+            m_indexBuffer,
+            static_cast<uint32_t>(m_indices.size()),
+            m_descriptorSets,
+            m_graphicsPipeline,
+            m_pipelineLayout,
+            m_commandBuffers);
+    }
 
+    void createSwapChain() {
         SwapChain::createSwapChain(
             m_physicalDevice,
             m_logicalDevice,
