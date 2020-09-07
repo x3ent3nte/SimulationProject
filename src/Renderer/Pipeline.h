@@ -12,13 +12,13 @@ namespace Pipeline {
         VkSampleCountFlagBits msaaSamples);
 
     void createPipeline(
-        VkPipelineLayout& pipelineLayout,
-        VkPipeline& graphicsPipeline,
         VkDevice device,
         VkExtent2D swapChainExtent,
         VkSampleCountFlagBits msaaSamples,
         VkDescriptorSetLayout descriptorSetLayout,
-        VkRenderPass renderPass);
+        VkRenderPass renderPass,
+        VkPipelineLayout& pipelineLayout,
+        VkPipeline& graphicsPipeline);
 }
 
 #endif

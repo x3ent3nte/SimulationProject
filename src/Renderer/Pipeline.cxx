@@ -126,13 +126,13 @@ VkRenderPass Pipeline::createRenderPass(
 }
 
 void Pipeline::createPipeline(
-    VkPipelineLayout& pipelineLayout,
-    VkPipeline& graphicsPipeline,
     VkDevice device,
     VkExtent2D swapChainExtent,
     VkSampleCountFlagBits msaaSamples,
     VkDescriptorSetLayout descriptorSetLayout,
-    VkRenderPass renderPass) {
+    VkRenderPass renderPass,
+    VkPipelineLayout& pipelineLayout,
+    VkPipeline& graphicsPipeline) {
 
     auto vertShaderCode = readFile("src/GLSL/vert.spv");
     auto fragShaderCode = readFile("src/GLSL/frag.spv");

@@ -132,13 +132,13 @@ private:
             m_msaaSamples);
 
         Pipeline::createPipeline(
-            m_pipelineLayout,
-            m_graphicsPipeline,
             m_logicalDevice,
             m_swapChainExtent,
             m_msaaSamples,
             m_descriptorSetLayout,
-            m_renderPass);
+            m_renderPass,
+            m_pipelineLayout,
+            m_graphicsPipeline);
 
         createColourResources();
         createDepthResources();
@@ -172,13 +172,13 @@ private:
         m_descriptorSetLayout = Descriptors::createDescriptorSetLayout(m_logicalDevice);
 
         Pipeline::createPipeline(
-            m_pipelineLayout,
-            m_graphicsPipeline,
             m_logicalDevice,
             m_swapChainExtent,
             m_msaaSamples,
             m_descriptorSetLayout,
-            m_renderPass);
+            m_renderPass,
+            m_pipelineLayout,
+            m_graphicsPipeline);
 
         m_commandPool = Command::createCommandPool(m_physicalDevice, m_logicalDevice, m_surface);
         createColourResources();
