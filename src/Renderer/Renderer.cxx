@@ -12,6 +12,7 @@
 #include <Renderer/Buffer.h>
 #include <Renderer/Descriptors.h>
 #include <Renderer/Image.h>
+#include <Renderer/KeyboardControl.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -34,14 +35,16 @@
 class HelloTriangleApplication {
 public:
     void run() {
-        m_window = Surface::createWindow();
+        m_keyboardControl = std::make_shared<KeyboardControl>();
+        m_window = Surface::createWindow(m_keyboardControl);
         initVulkan();
         mainLoop();
         cleanUp();
     }
 
 private:
-
+    glm::vec3 m_cameraPosition;
+    std::shared_ptr<KeyboardControl> m_keyboardControl;
     std::shared_ptr<Surface::Window> m_window;
 
     VkInstance m_instance;
@@ -154,6 +157,8 @@ private:
     }
 
     void initVulkan() {
+        m_cameraPosition = glm::vec3(2.0f, 0.0f, 1.0f);
+
         m_instance = Instance::createInstance();
         Instance::setupDebugMessenger(m_instance, m_debugMessenger);
         m_surface = Surface::createSurface(m_instance, m_window->m_window);
@@ -414,9 +419,38 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+        KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
+        float delta = 0.01f;
+
+        if (keyboardState.m_keyW) {
+            m_cameraPosition.x -= delta;
+        }
+
+        if (keyboardState.m_keyS) {
+            m_cameraPosition.x += delta;
+        }
+
+        if (keyboardState.m_keyA) {
+            m_cameraPosition.y -= delta;
+        }
+
+        if (keyboardState.m_keyD) {
+            m_cameraPosition.y += delta;
+        }
+
+        if (keyboardState.m_keyZ) {
+            m_cameraPosition.z -= delta;
+        }
+
+        if (keyboardState.m_keyX) {
+            m_cameraPosition.z += delta;
+        }
+        //std::cout << "Camera x: " << m_cameraPosition.x << " y: " << m_cameraPosition.y << " z:" << m_cameraPosition.z << " Time: " << time << "\n";
+
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.model = glm::mat4(1.0f);
+        ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition - glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 10.f);
 
         ubo.proj[1][1] *= -1;

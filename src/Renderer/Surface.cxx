@@ -11,18 +11,29 @@ namespace {
         app->m_hasBeenResized = true;
     }
 
+    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+        auto app = reinterpret_cast<Surface::Window*>(glfwGetWindowUserPointer(window));
+        app->keyboardActivity(key, scancode, action, mods);
+    }
+
 } // namespace anonymous
 
-std::shared_ptr<Surface::Window> Surface::createWindow() {
+void Surface::Window::keyboardActivity(int key, int scancode, int action, int mods) {
+    m_keyboardControl->keyActivity(key, scancode, action, mods);
+}
+
+std::shared_ptr<Surface::Window> Surface::createWindow(std::shared_ptr<KeyboardControl> keyboardControl) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     GLFWwindow* window = glfwCreateWindow(Constants::kWidth, Constants::kHeight, "Vulkan Game", nullptr, nullptr);
 
-    auto windowAndResizeFlag = std::shared_ptr<Window>(new Window{window, false});
+    auto windowAndResizeFlag = std::shared_ptr<Window>(new Window{window, false, keyboardControl});
 
     glfwSetWindowUserPointer(window, windowAndResizeFlag.get());
     glfwSetFramebufferSizeCallback(window, frameBufferResizeCallback);
+
+    glfwSetKeyCallback(window, keyCallback);
 
     return windowAndResizeFlag;
 }
