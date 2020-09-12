@@ -10,7 +10,6 @@ KeyboardState KeyboardControl::getKeyboardState() {
 
 void KeyboardControl::keyActivity(int key, int scancode, int action, int mods) {
     std::lock_guard<std::mutex> guard(m_mutex);
-    //std::cout << "KeyCallback: key: " << key << " scancode: " << scancode << " action: " << action << " mods: " << mods << "\n";
 
     bool valueToSet = (bool) action;
     switch (key) {
@@ -29,5 +28,13 @@ void KeyboardControl::keyActivity(int key, int scancode, int action, int mods) {
         case 90: { m_keyboardState.m_keyZ = valueToSet; break; }
 
         case 88: { m_keyboardState.m_keyX = valueToSet; break; }
+
+        case 265: { m_keyboardState.m_keyUp = valueToSet; break; }
+
+        case 263: { m_keyboardState.m_keyLeft = valueToSet; break; }
+
+        case 264: { m_keyboardState.m_keyDown = valueToSet; break; }
+
+        case 262: { m_keyboardState.m_keyRight = valueToSet; break; }
     }
 }

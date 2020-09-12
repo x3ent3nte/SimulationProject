@@ -12,6 +12,10 @@ struct KeyboardState {
     bool m_keyE = false;
     bool m_keyZ = false;
     bool m_keyX = false;
+    bool m_keyUp = false;
+    bool m_keyLeft = false;
+    bool m_keyDown = false;
+    bool m_keyRight = false;
 };
 
 class KeyboardControl {

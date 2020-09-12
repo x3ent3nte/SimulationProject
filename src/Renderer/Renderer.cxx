@@ -13,6 +13,7 @@
 #include <Renderer/Descriptors.h>
 #include <Renderer/Image.h>
 #include <Renderer/KeyboardControl.h>
+#include <Renderer/MyMath.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -43,7 +44,14 @@ public:
     }
 
 private:
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;
+
     glm::vec3 m_cameraPosition;
+    glm::vec3 m_cameraForward;
+    glm::vec3 m_cameraUp;
+    glm::vec3 m_cameraRight;
+
     std::shared_ptr<KeyboardControl> m_keyboardControl;
     std::shared_ptr<Surface::Window> m_window;
 
@@ -158,6 +166,9 @@ private:
 
     void initVulkan() {
         m_cameraPosition = glm::vec3(2.0f, 0.0f, 1.0f);
+        m_cameraForward = glm::vec3(-1.0f, 0.0f, 0.0f);
+        m_cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
+        m_cameraRight = glm::vec3(0.0f, 1.0f, 0.0f);
 
         m_instance = Instance::createInstance();
         Instance::setupDebugMessenger(m_instance, m_debugMessenger);
@@ -405,6 +416,7 @@ private:
     }
 
     void mainLoop() {
+        m_prevTime = std::chrono::high_resolution_clock::now();
         while (!glfwWindowShouldClose(m_window->m_window)) {
             glfwPollEvents();
             drawFrame();
@@ -414,43 +426,75 @@ private:
     }
 
     void updateUniformBuffer(uint32_t currentImage) {
-        static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_prevTime).count();
 
         KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
-        float delta = 0.01f;
+        float delta = 10.0f * time;
 
         if (keyboardState.m_keyW) {
-            m_cameraPosition.x -= delta;
+            m_cameraPosition += m_cameraForward * delta;
         }
 
         if (keyboardState.m_keyS) {
-            m_cameraPosition.x += delta;
+            m_cameraPosition -= m_cameraForward * delta;
         }
 
         if (keyboardState.m_keyA) {
-            m_cameraPosition.y -= delta;
+            m_cameraPosition -= m_cameraRight * delta;
         }
 
         if (keyboardState.m_keyD) {
-            m_cameraPosition.y += delta;
+            m_cameraPosition += m_cameraRight * delta;
         }
 
         if (keyboardState.m_keyZ) {
-            m_cameraPosition.z -= delta;
+            m_cameraPosition -= m_cameraUp * delta;
         }
 
         if (keyboardState.m_keyX) {
-            m_cameraPosition.z += delta;
+            m_cameraPosition += m_cameraUp * delta;
         }
+
+        float angleDelta = 5.0f * time;
+
+        if (keyboardState.m_keyQ) {
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, -angleDelta);
+            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, -angleDelta);
+        }
+
+        if (keyboardState.m_keyE) {
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, angleDelta);
+            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, angleDelta);
+        }
+
+        if (keyboardState.m_keyUp) {
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, -angleDelta);
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, -angleDelta);
+        }
+
+        if (keyboardState.m_keyDown) {
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, angleDelta);
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, angleDelta);
+        }
+
+        if (keyboardState.m_keyLeft) {
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, angleDelta);
+            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, angleDelta);
+        }
+
+        if (keyboardState.m_keyRight) {
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, -angleDelta);
+            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, -angleDelta);
+        }
+
         //std::cout << "Camera x: " << m_cameraPosition.x << " y: " << m_cameraPosition.y << " z:" << m_cameraPosition.z << " Time: " << time << "\n";
 
         UniformBufferObject ubo{};
         //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition - glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraForward, m_cameraUp);
         ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 10.f);
 
         ubo.proj[1][1] *= -1;
@@ -459,6 +503,8 @@ private:
         vkMapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
+
+        m_prevTime = currentTime;
     }
 
     void drawFrame() {
