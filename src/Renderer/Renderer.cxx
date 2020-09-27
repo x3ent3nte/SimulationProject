@@ -90,6 +90,10 @@ private:
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
 
+    const size_t m_numberOfInstances = 64;
+    std::vector<VkBuffer> m_instanceBuffers;
+    std::vector<VkDeviceMemory> m_instanceBufferMemories;
+
     std::vector<VkBuffer> m_uniformBuffers;
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;
 
@@ -213,6 +217,8 @@ private:
         m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
         Utils::loadModel(m_vertices, m_indices, Constants::kModelPath);
 
+        createInstanceBuffers();
+
         Buffer::createReadOnlyBuffer(
             m_vertices.data(),
             sizeof(m_vertices[0]) * m_vertices.size(),
@@ -244,6 +250,31 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+    }
+
+    void createInstanceBuffers() {
+        m_instanceBuffers.resize(m_swapChainImages.size());
+        m_instanceBufferMemories.resize(m_swapChainImages.size());
+
+        std::vector<glm::vec3> instancePositions;
+        instancePositions.resize(m_numberOfInstances);
+
+        for (size_t i = 0; i < instancePositions.size(); ++i) {
+            instancePositions[i] = glm::vec3(i, i, i);
+        }
+
+        for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
+            Buffer::createReadOnlyBuffer(
+                instancePositions.data(),
+                m_numberOfInstances * sizeof(glm::vec3),
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                m_physicalDevice,
+                m_logicalDevice,
+                m_commandPool,
+                m_graphicsQueue,
+                m_instanceBuffers[i],
+                m_instanceBufferMemories[i]);
+        }
     }
 
     void createDescriptorSets() {
@@ -393,9 +424,11 @@ private:
             m_logicalDevice,
             m_renderPass,
             m_swapChainExtent,
+            m_instanceBuffers,
             m_vertexBuffer,
             m_indexBuffer,
             static_cast<uint32_t>(m_indices.size()),
+            m_numberOfInstances,
             m_descriptorSets,
             m_graphicsPipeline,
             m_pipelineLayout,
@@ -633,6 +666,12 @@ private:
         vkDestroyBuffer(m_logicalDevice, m_vertexBuffer, nullptr);
         vkFreeMemory(m_logicalDevice, m_vertexBufferMemory, nullptr);
 
+        const size_t numberOfBuffers = m_instanceBuffers.size();
+        for (size_t i = 0; i < numberOfBuffers; ++i) {
+            vkDestroyBuffer(m_logicalDevice, m_instanceBuffers[i], nullptr);
+            vkFreeMemory(m_logicalDevice, m_instanceBufferMemories[i], nullptr);
+        }
+
         for (size_t i = 0; i < Constants::kMaxFramesInFlight; ++i) {
             vkDestroySemaphore(m_logicalDevice, m_renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
@@ -658,6 +697,7 @@ private:
 int Renderer::render() {
     HelloTriangleApplication app;
 
+    srand(time(NULL));
     try {
         app.run();
     } catch (const std::exception& e) {

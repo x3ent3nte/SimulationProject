@@ -68,9 +68,11 @@ void Command::createCommandBuffers(
     VkDevice logicalDevice,
     VkRenderPass renderPass,
     VkExtent2D swapChainExtent,
+    const std::vector<VkBuffer>& instanceBuffers,
     VkBuffer vertexBuffer,
     VkBuffer indexBuffer,
     uint32_t numIndices,
+    uint32_t numInstances,
     const std::vector<VkDescriptorSet>& descriptorSets,
     VkPipeline graphicsPipeline,
     VkPipelineLayout pipelineLayout,
@@ -116,16 +118,16 @@ void Command::createCommandBuffers(
 
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+        VkBuffer vertexBuffers[2] = {vertexBuffer, instanceBuffers[i]};
+        VkDeviceSize offsets[] = {0, 0};
+        vkCmdBindVertexBuffers(commandBuffers[i], 0, 2, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
             0, 1, &descriptorSets[i], 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffers[i], numIndices, 5, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffers[i], numIndices, numInstances, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffers[i]);
 
