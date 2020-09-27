@@ -14,8 +14,18 @@ layout(location = 2) in vec2 inTexCoord;
 layout(location = 0) out vec3 fragColour;
 layout(location = 1) out vec2 fragTexCoord;
 
+vec3 instanceTrans[5] = vec3[](
+    vec3(0.0, 0.0, 0.0),
+    vec3(1.0, 1.0, 1.0),
+    vec3(2.0, 2.0, 2.0),
+    vec3(3.0, 3.0, 3.0),
+    vec3(4.0, 4.0, 4.0));
+
 void main() {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    mat4 model = ubo.model;
+    model[3] = vec4(instanceTrans[gl_InstanceIndex], 1.0f);
+
+    gl_Position = ubo.proj * ubo.view * model * vec4(inPosition, 1.0);
     fragColour = inColour;
     fragTexCoord = inTexCoord;
 }
