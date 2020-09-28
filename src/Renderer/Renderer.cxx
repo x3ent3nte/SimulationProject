@@ -90,7 +90,7 @@ private:
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
 
-    const size_t m_numberOfInstances = 64;
+    const size_t m_numberOfInstances = 512;
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
 
@@ -252,6 +252,22 @@ private:
         createSyncObjects();
     }
 
+    float randomFloatBetweenZeroAndOne() {
+        return (float) rand() / (float) RAND_MAX;
+    }
+
+    float randomFloatBetweenMinusOneAndOne() {
+        return (randomFloatBetweenZeroAndOne() * 2.0f) - 1.0f;
+    }
+
+    glm::vec3 randomVec3InSphere(float radius) {
+        float x = randomFloatBetweenMinusOneAndOne();
+        float y = randomFloatBetweenMinusOneAndOne();
+        float z = randomFloatBetweenMinusOneAndOne();
+
+        return glm::normalize(glm::vec3(x, y, z)) * (radius * randomFloatBetweenZeroAndOne());
+    }
+
     void createInstanceBuffers() {
         m_instanceBuffers.resize(m_swapChainImages.size());
         m_instanceBufferMemories.resize(m_swapChainImages.size());
@@ -260,7 +276,7 @@ private:
         instancePositions.resize(m_numberOfInstances);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
-            instancePositions[i] = glm::vec3(i, i, i);
+            instancePositions[i] = randomVec3InSphere(128.0f);
         }
 
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
@@ -528,7 +544,7 @@ private:
         //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraForward, m_cameraUp);
-        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 100.f);
+        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
 
         ubo.proj[1][1] *= -1;
 
