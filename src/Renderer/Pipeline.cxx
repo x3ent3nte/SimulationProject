@@ -1,46 +1,12 @@
 #include <Renderer/Pipeline.h>
 
 #include <Renderer/Vertex.h>
+#include <Renderer/Utils.h>
 
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <vector>
-
-namespace {
-
-    std::vector<char> readFile(const std::string& filename) {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open file!");
-        }
-
-        size_t fileSize = (size_t) file.tellg();
-        std::vector<char> buffer(fileSize);
-
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-        file.close();
-
-        return buffer;
-    }
-
-    VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create shader module");
-        }
-
-        return shaderModule;
-    }
-
-} // namespace anonymous
 
 VkRenderPass Pipeline::createRenderPass(
     VkDevice device,
@@ -134,11 +100,11 @@ void Pipeline::createPipeline(
     VkPipelineLayout& pipelineLayout,
     VkPipeline& graphicsPipeline) {
 
-    auto vertShaderCode = readFile("src/GLSL/vert.spv");
-    auto fragShaderCode = readFile("src/GLSL/frag.spv");
+    auto vertShaderCode = Utils::readFile("src/GLSL/vert.spv");
+    auto fragShaderCode = Utils::readFile("src/GLSL/frag.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    VkShaderModule vertShaderModule = Utils::createShaderModule(device, vertShaderCode);
+    VkShaderModule fragShaderModule = Utils::createShaderModule(device, fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

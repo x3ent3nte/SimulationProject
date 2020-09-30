@@ -12,12 +12,13 @@ void LogicalDevice::createLogicalDevice(
         VkSurfaceKHR surface,
         VkDevice& logicalDevice,
         VkQueue& graphicsQueue,
-        VkQueue& presentQueue) {
+        VkQueue& presentQueue,
+        VkQueue& computeQueue) {
 
         PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily};
+        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily, indices.m_computeFamily};
 
         float queuePriority = 1.0f;
 
@@ -60,4 +61,5 @@ void LogicalDevice::createLogicalDevice(
 
         vkGetDeviceQueue(logicalDevice, indices.m_graphicsFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(logicalDevice, indices.m_presentFamily, 0, &presentQueue);
+        vkGetDeviceQueue(logicalDevice, indices.m_computeFamily, 0, &computeQueue);
     }
