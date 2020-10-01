@@ -57,7 +57,9 @@ void Buffer::createBuffer(
         throw std::runtime_error("Failed to allocate vertex buffer memory");
     }
 
-    vkBindBufferMemory(logicalDevice, buffer, bufferMemory, 0);
+    if (vkBindBufferMemory(logicalDevice, buffer, bufferMemory, 0) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to bind buffer");
+    }
 }
 
 void Buffer::createReadOnlyBuffer(

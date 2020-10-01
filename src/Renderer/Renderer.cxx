@@ -33,6 +33,11 @@
 #include <stdexcept>
 #include <vector>
 
+#define X_DIM 512
+#define NUM_ELEMENTS 16 * X_DIM
+//#define BUFFER_SIZE NUM_ELEMENTS * sizeof(float)
+#define BUFFER_SIZE NUM_ELEMENTS * sizeof(glm::vec2)
+
 class HelloTriangleApplication {
 public:
     void run() {
@@ -198,7 +203,7 @@ private:
         descriptorSetLayoutCreateInfo.bindingCount = 1;
         descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
 
-        if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, NULL, &descriptorSetLayout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute descriptor set layout");
         }
 
@@ -218,7 +223,7 @@ private:
         descriptorPoolCreateInfo.poolSizeCount = 1;
         descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
 
-        if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, NULL, &descriptorPool) != VK_SUCCESS) {
+        if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute descriptor pool");
         }
 
@@ -257,7 +262,7 @@ private:
         writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
 
-        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, NULL);
+        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
 
         return descriptorSet;
     }
@@ -273,7 +278,7 @@ private:
         pipelineLayoutCreateInfo.setLayoutCount = 1;
         pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 
-        if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, NULL, &pipelineLayout) != VK_SUCCESS) {
+        if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create pipeline layout");
         }
 
@@ -292,12 +297,11 @@ private:
         pipelineCreateInfo.stage = shaderStageCreateInfo;
         pipelineCreateInfo.layout = pipelineLayout;
 
-        if (vkCreateComputePipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, NULL, &pipeline) != VK_SUCCESS) {
+        if (vkCreateComputePipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute pipeline");
         }
 
         vkDestroyShaderModule(logicalDevice, kernelShaderModule, nullptr);
-
     }
 
     VkCommandPool createComputeCommandPool(VkDevice logicalDevice) {
@@ -347,9 +351,8 @@ private:
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-        size_t xThreads = 16;
-        size_t yThreads = 32;
-        vkCmdDispatch(commandBuffer, xThreads, yThreads, 1);
+        size_t xThreads = NUM_ELEMENTS / X_DIM;
+        vkCmdDispatch(commandBuffer, xThreads, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -386,6 +389,39 @@ private:
         vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     }
 
+    void extractComputeResult() {
+        void* mappedMemory = NULL;
+
+        if (vkMapMemory(m_logicalDevice, m_computeBufferMemory, 0, BUFFER_SIZE, 0, &mappedMemory) != VK_SUCCESS) {
+            throw std::runtime_error("Error mapping memory");
+        }
+
+        //float* floatMappedMemory = (float*) mappedMemory;
+        //std::vector<float> nums(NUM_ELEMENTS);
+
+        //glm::vec4* floatMappedMemory = (glm::vec4*) mappedMemory;
+        //std::vector<glm::vec4> nums(NUM_ELEMENTS);
+
+        glm::vec2* floatMappedMemory = (glm::vec2*) mappedMemory;
+        std::vector<glm::vec2> nums(NUM_ELEMENTS);
+
+        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+            nums[i] = floatMappedMemory[i];
+        }
+
+        vkUnmapMemory(m_logicalDevice, m_computeBufferMemory);
+
+        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+            //std::cout << "i " << i << " n " << nums[i] << "\n";
+
+            //glm::vec4 v = nums[i];
+            //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
+
+            glm::vec2 v = nums[i];
+            std::cout << "i " << i << " " << v.x << " " << v.y << "\n";
+        }
+    }
+
     void cleanUpComputeResources() {
 
         vkFreeMemory(m_logicalDevice, m_computeBufferMemory, nullptr);
@@ -405,11 +441,10 @@ private:
         m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
         m_computeDescriptorPool = createComputeDescriptorPool(m_logicalDevice);
 
-        VkDeviceSize bufferSize = 128;
         Buffer::createBuffer(
             m_physicalDevice,
             m_logicalDevice,
-            bufferSize,
+            BUFFER_SIZE,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             m_computeBuffer,
@@ -420,7 +455,7 @@ private:
             m_computeDescriptorSetLayout,
             m_computeDescriptorPool,
             m_computeBuffer,
-            bufferSize);
+            BUFFER_SIZE);
 
         createComputePipeline(m_logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayout, m_computePipeline);
 
@@ -436,6 +471,7 @@ private:
         m_computeFence = createComputeFence();
 
         runComputeCommandBuffer();
+        extractComputeResult();
     }
 
     void initVulkan() {
