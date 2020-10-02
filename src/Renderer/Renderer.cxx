@@ -117,7 +117,7 @@ private:
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
 
-    const size_t m_numberOfInstances = 512;
+    const size_t m_numberOfInstances = 4096;
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
 
@@ -468,7 +468,7 @@ private:
             //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
 
             glm::vec2 v = nums[i];
-            std::cout << "i " << i << " " << v.x << " " << v.y << "\n";
+            //std::cout << "i " << i << " " << v.x << " " << v.y << "\n";
         }
     }
 
@@ -680,7 +680,7 @@ private:
         instancePositions.resize(m_numberOfInstances);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
-            instancePositions[i] = randomVec3InSphere(128.0f);
+            instancePositions[i] = randomVec3InSphere(512.0f);
         }
 
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
@@ -961,6 +961,9 @@ private:
     }
 
     void drawFrame() {
+
+        runComputeCommandBuffer();
+        extractComputeResult();
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
