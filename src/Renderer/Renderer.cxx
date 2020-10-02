@@ -77,10 +77,16 @@ private:
 
     VkCommandPool m_computeCommandPool;
     VkCommandBuffer m_computeCommandBuffer;
-
-    VkBuffer m_computeBuffer;
-    VkDeviceMemory m_computeBufferMemory;
     VkFence m_computeFence;
+
+    VkBuffer m_computeBufferA;
+    VkDeviceMemory m_computeBufferMemoryA;
+
+    VkBuffer m_computeBufferB;
+    VkDeviceMemory m_computeBufferMemoryB;
+
+    VkBuffer m_computeBufferC;
+    VkDeviceMemory m_computeBufferMemoryC;
 
     VkDescriptorPool m_computeDescriptorPool;
     VkDescriptorSet m_computeDescriptorSet;
@@ -192,16 +198,30 @@ private:
     VkDescriptorSetLayout createComputeDescriptorSetLayout(VkDevice logicalDevice) {
         VkDescriptorSetLayout descriptorSetLayout;
 
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
-        descriptorSetLayoutBinding.binding = 0;
-        descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBinding.descriptorCount = 1;
-        descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingA = {};
+        descriptorSetLayoutBindingA.binding = 0;
+        descriptorSetLayoutBindingA.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descriptorSetLayoutBindingA.descriptorCount = 1;
+        descriptorSetLayoutBindingA.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingB = {};
+        descriptorSetLayoutBindingB.binding = 1;
+        descriptorSetLayoutBindingB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descriptorSetLayoutBindingB.descriptorCount = 1;
+        descriptorSetLayoutBindingB.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingC = {};
+        descriptorSetLayoutBindingC.binding = 2;
+        descriptorSetLayoutBindingC.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descriptorSetLayoutBindingC.descriptorCount = 1;
+        descriptorSetLayoutBindingC.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        std::array<VkDescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings = {descriptorSetLayoutBindingA, descriptorSetLayoutBindingB, descriptorSetLayoutBindingC};
 
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.bindingCount = 1;
-        descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
+        descriptorSetLayoutCreateInfo.bindingCount = 3;
+        descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
 
         if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute descriptor set layout");
@@ -215,7 +235,7 @@ private:
 
         VkDescriptorPoolSize descriptorPoolSize = {};
         descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorPoolSize.descriptorCount = 1;
+        descriptorPoolSize.descriptorCount = 3;
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
         descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -234,7 +254,9 @@ private:
         VkDevice logicalDevice,
         VkDescriptorSetLayout& descriptorSetLayout ,
         VkDescriptorPool& descriptorPool,
-        VkBuffer buffer,
+        VkBuffer bufferA,
+        VkBuffer bufferB,
+        VkBuffer bufferC,
         size_t bufferSize) {
 
         VkDescriptorSet descriptorSet;
@@ -249,20 +271,48 @@ private:
             throw std::runtime_error("Failed to create compute descriptor sets");
         }
 
-        VkDescriptorBufferInfo descriptorBufferInfo = {};
-        descriptorBufferInfo.buffer = buffer;
-        descriptorBufferInfo.offset = 0;
-        descriptorBufferInfo.range = bufferSize;
+        VkDescriptorBufferInfo descriptorBufferInfoA = {};
+        descriptorBufferInfoA.buffer = bufferA;
+        descriptorBufferInfoA.offset = 0;
+        descriptorBufferInfoA.range = bufferSize;
 
-        VkWriteDescriptorSet writeDescriptorSet = {};
-        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSet.dstSet = descriptorSet;
-        writeDescriptorSet.dstBinding = 0;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
+        VkWriteDescriptorSet writeDescriptorSetA = {};
+        writeDescriptorSetA.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSetA.dstSet = descriptorSet;
+        writeDescriptorSetA.dstBinding = 0;
+        writeDescriptorSetA.descriptorCount = 1;
+        writeDescriptorSetA.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writeDescriptorSetA.pBufferInfo = &descriptorBufferInfoA;
 
-        vkUpdateDescriptorSets(logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+        VkDescriptorBufferInfo descriptorBufferInfoB = {};
+        descriptorBufferInfoB.buffer = bufferB;
+        descriptorBufferInfoB.offset = 0;
+        descriptorBufferInfoB.range = bufferSize;
+
+        VkWriteDescriptorSet writeDescriptorSetB = {};
+        writeDescriptorSetB.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSetB.dstSet = descriptorSet;
+        writeDescriptorSetB.dstBinding = 1;
+        writeDescriptorSetB.descriptorCount = 1;
+        writeDescriptorSetB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writeDescriptorSetB.pBufferInfo = &descriptorBufferInfoB;
+
+        VkDescriptorBufferInfo descriptorBufferInfoC = {};
+        descriptorBufferInfoC.buffer = bufferC;
+        descriptorBufferInfoC.offset = 0;
+        descriptorBufferInfoC.range = bufferSize;
+
+        VkWriteDescriptorSet writeDescriptorSetC = {};
+        writeDescriptorSetC.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSetC.dstSet = descriptorSet;
+        writeDescriptorSetC.dstBinding = 2;
+        writeDescriptorSetC.descriptorCount = 1;
+        writeDescriptorSetC.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writeDescriptorSetC.pBufferInfo = &descriptorBufferInfoC;
+
+        std::array<VkWriteDescriptorSet, 3> writeDescriptorSets = {writeDescriptorSetA, writeDescriptorSetB, writeDescriptorSetC};
+
+        vkUpdateDescriptorSets(logicalDevice, 3, writeDescriptorSets.data(), 0, nullptr);
 
         return descriptorSet;
     }
@@ -392,7 +442,7 @@ private:
     void extractComputeResult() {
         void* mappedMemory = NULL;
 
-        if (vkMapMemory(m_logicalDevice, m_computeBufferMemory, 0, BUFFER_SIZE, 0, &mappedMemory) != VK_SUCCESS) {
+        if (vkMapMemory(m_logicalDevice, m_computeBufferMemoryC, 0, BUFFER_SIZE, 0, &mappedMemory) != VK_SUCCESS) {
             throw std::runtime_error("Error mapping memory");
         }
 
@@ -409,7 +459,7 @@ private:
             nums[i] = floatMappedMemory[i];
         }
 
-        vkUnmapMemory(m_logicalDevice, m_computeBufferMemory);
+        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryC);
 
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
             //std::cout << "i " << i << " n " << nums[i] << "\n";
@@ -422,10 +472,34 @@ private:
         }
     }
 
+    void initializeComputeBuffers() {
+        void* mappedMemoryA = NULL;
+        vkMapMemory(m_logicalDevice, m_computeBufferMemoryA, 0, BUFFER_SIZE, 0, & mappedMemoryA);
+        glm::vec2* floatMappedMemoryA = (glm::vec2*) mappedMemoryA;
+        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+            floatMappedMemoryA[i] = glm::vec2(i, i + 1);
+        }
+        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryA);
+
+        void* mappedMemoryB = NULL;
+        vkMapMemory(m_logicalDevice, m_computeBufferMemoryB, 0, BUFFER_SIZE, 0, & mappedMemoryB);
+        glm::vec2* floatMappedMemoryB = (glm::vec2*) mappedMemoryB;
+        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+            floatMappedMemoryB[i] = glm::vec2(i, (2 * i) + 1);
+        }
+        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryB);
+    }
+
     void cleanUpComputeResources() {
 
-        vkFreeMemory(m_logicalDevice, m_computeBufferMemory, nullptr);
-        vkDestroyBuffer(m_logicalDevice, m_computeBuffer, nullptr);
+        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryA, nullptr);
+        vkDestroyBuffer(m_logicalDevice, m_computeBufferA, nullptr);
+
+        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryB, nullptr);
+        vkDestroyBuffer(m_logicalDevice, m_computeBufferB, nullptr);
+
+        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryC, nullptr);
+        vkDestroyBuffer(m_logicalDevice, m_computeBufferC, nullptr);
 
         vkDestroyFence(m_logicalDevice, m_computeFence, nullptr);
         vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffer);
@@ -447,15 +521,37 @@ private:
             BUFFER_SIZE,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            m_computeBuffer,
-            m_computeBufferMemory);
+            m_computeBufferA,
+            m_computeBufferMemoryA);
+
+        Buffer::createBuffer(
+            m_physicalDevice,
+            m_logicalDevice,
+            BUFFER_SIZE,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            m_computeBufferB,
+            m_computeBufferMemoryB);
+
+        Buffer::createBuffer(
+            m_physicalDevice,
+            m_logicalDevice,
+            BUFFER_SIZE,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            m_computeBufferC,
+            m_computeBufferMemoryC);
 
         m_computeDescriptorSet = createComputeDescriptorSet(
             m_logicalDevice,
             m_computeDescriptorSetLayout,
             m_computeDescriptorPool,
-            m_computeBuffer,
+            m_computeBufferA,
+            m_computeBufferB,
+            m_computeBufferC,
             BUFFER_SIZE);
+
+        initializeComputeBuffers();
 
         createComputePipeline(m_logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayout, m_computePipeline);
 

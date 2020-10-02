@@ -6,8 +6,16 @@
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
-layout (std430, binding = 0) buffer buf {
-    vec2 nums[];
+layout (std430, binding = 0) buffer bufA {
+    vec2 numsA[];
+};
+
+layout (std430, binding = 1) buffer bufB {
+    vec2 numsB[];
+};
+
+layout (std430, binding = 2) buffer bufC {
+    vec2 numsC[];
 };
 
 void main() {
@@ -15,5 +23,5 @@ void main() {
 
     if (index > NUM_ELEMENTS) { return; }
 
-    nums[index] = vec2(index * 2, (index * 2) + 1);
+    numsC[index] = numsA[index] + numsB[index];
 }
