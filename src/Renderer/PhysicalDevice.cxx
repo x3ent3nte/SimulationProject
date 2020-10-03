@@ -149,6 +149,24 @@ PhysicalDevice::QueueFamilyIndices PhysicalDevice::findQueueFamilies(VkPhysicalD
     return indices;
 }
 
+size_t PhysicalDevice::findComputeQueueIndex(VkPhysicalDevice device) {
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    size_t i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if ((queueFamily.queueCount > 0) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+            return i;
+        }
+        i += 1;
+    }
+
+    return 0;
+}
+
 PhysicalDevice::SwapChainSupportDetails PhysicalDevice::querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
     SwapChainSupportDetails details;
 

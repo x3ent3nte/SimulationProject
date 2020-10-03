@@ -9,8 +9,7 @@ namespace LogicalDevice {
         VkSurfaceKHR surface,
         VkDevice& logicalDevice,
         VkQueue& graphicsQueue,
-        VkQueue& presentQueue,
-        VkQueue& computeQueue);
+        VkQueue& presentQueue);
 }
 
 #endif

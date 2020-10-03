@@ -17,6 +17,12 @@ namespace MyMath {
     glm::vec3 rotatePointByQuaternion(glm::vec3 p, glm::vec4 q);
 
     glm::vec3 rotatePointByAxisAndTheta(glm::vec3 p, glm::vec3 axis, float theta);
+
+    float randomFloatBetweenZeroAndOne();
+
+    float randomFloatBetweenMinusOneAndOne();
+
+    glm::vec3 randomVec3InSphere(float radius);
 }
 
 #endif

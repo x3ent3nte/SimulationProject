@@ -37,3 +37,19 @@ glm::vec3 MyMath::rotatePointByQuaternion(glm::vec3 p, glm::vec4 q) {
 glm::vec3 MyMath::rotatePointByAxisAndTheta(glm::vec3 p, glm::vec3 axis, float theta) {
     return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
 }
+
+float MyMath::randomFloatBetweenZeroAndOne() {
+    return (float) rand() / (float) RAND_MAX;
+}
+
+float MyMath::randomFloatBetweenMinusOneAndOne() {
+    return (randomFloatBetweenZeroAndOne() * 2.0f) - 1.0f;
+}
+
+glm::vec3 MyMath::randomVec3InSphere(float radius) {
+    float x = randomFloatBetweenMinusOneAndOne();
+    float y = randomFloatBetweenMinusOneAndOne();
+    float z = randomFloatBetweenMinusOneAndOne();
+
+    return glm::normalize(glm::vec3(x, y, z)) * (radius * randomFloatBetweenZeroAndOne());
+}

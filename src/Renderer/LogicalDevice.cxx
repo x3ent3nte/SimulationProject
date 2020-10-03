@@ -12,8 +12,7 @@ void LogicalDevice::createLogicalDevice(
         VkSurfaceKHR surface,
         VkDevice& logicalDevice,
         VkQueue& graphicsQueue,
-        VkQueue& presentQueue,
-        VkQueue& computeQueue) {
+        VkQueue& presentQueue) {
 
         PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
 
@@ -61,5 +60,4 @@ void LogicalDevice::createLogicalDevice(
 
         vkGetDeviceQueue(logicalDevice, indices.m_graphicsFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(logicalDevice, indices.m_presentFamily, 0, &presentQueue);
-        vkGetDeviceQueue(logicalDevice, indices.m_computeFamily, 0, &computeQueue);
     }

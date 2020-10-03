@@ -28,6 +28,8 @@ namespace PhysicalDevice {
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
+    size_t findComputeQueueIndex(VkPhysicalDevice device);
+
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
     uint32_t findMemoryType(

@@ -1,4 +1,6 @@
 #include <Renderer/Renderer.h>
+
+#include <Renderer/Simulator.h>
 #include <Renderer/Utils.h>
 #include <Renderer/Vertex.h>
 #include <Renderer/Instance.h>
@@ -33,11 +35,6 @@
 #include <stdexcept>
 #include <vector>
 
-#define X_DIM 512
-#define NUM_ELEMENTS 16 * X_DIM
-//#define BUFFER_SIZE NUM_ELEMENTS * sizeof(float)
-#define BUFFER_SIZE NUM_ELEMENTS * sizeof(glm::vec2)
-
 class HelloTriangleApplication {
 public:
     void run() {
@@ -70,27 +67,7 @@ private:
     VkQueue m_graphicsQueue;
     VkQueue m_presentQueue;
 
-    VkQueue m_computeQueue;
-    VkPipeline m_computePipeline;
-    VkPipelineLayout m_computePipelineLayout;
-    VkShaderModule m_computeShaderModule;
-
-    VkCommandPool m_computeCommandPool;
-    VkCommandBuffer m_computeCommandBuffer;
-    VkFence m_computeFence;
-
-    VkBuffer m_computeBufferA;
-    VkDeviceMemory m_computeBufferMemoryA;
-
-    VkBuffer m_computeBufferB;
-    VkDeviceMemory m_computeBufferMemoryB;
-
-    VkBuffer m_computeBufferC;
-    VkDeviceMemory m_computeBufferMemoryC;
-
-    VkDescriptorPool m_computeDescriptorPool;
-    VkDescriptorSet m_computeDescriptorSet;
-    VkDescriptorSetLayout m_computeDescriptorSetLayout;
+    std::shared_ptr<Simulator> m_simulator;
 
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -195,381 +172,6 @@ private:
         createCommandBuffers();
     }
 
-    VkDescriptorSetLayout createComputeDescriptorSetLayout(VkDevice logicalDevice) {
-        VkDescriptorSetLayout descriptorSetLayout;
-
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingA = {};
-        descriptorSetLayoutBindingA.binding = 0;
-        descriptorSetLayoutBindingA.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBindingA.descriptorCount = 1;
-        descriptorSetLayoutBindingA.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingB = {};
-        descriptorSetLayoutBindingB.binding = 1;
-        descriptorSetLayoutBindingB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBindingB.descriptorCount = 1;
-        descriptorSetLayoutBindingB.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBindingC = {};
-        descriptorSetLayoutBindingC.binding = 2;
-        descriptorSetLayoutBindingC.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBindingC.descriptorCount = 1;
-        descriptorSetLayoutBindingC.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings = {descriptorSetLayoutBindingA, descriptorSetLayoutBindingB, descriptorSetLayoutBindingC};
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.bindingCount = 3;
-        descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
-
-        if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor set layout");
-        }
-
-        return descriptorSetLayout;
-    }
-
-    VkDescriptorPool createComputeDescriptorPool(VkDevice logicalDevice) {
-        VkDescriptorPool descriptorPool;
-
-        VkDescriptorPoolSize descriptorPoolSize = {};
-        descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorPoolSize.descriptorCount = 3;
-
-        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-        descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        descriptorPoolCreateInfo.maxSets = 1;
-        descriptorPoolCreateInfo.poolSizeCount = 1;
-        descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
-
-        if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor pool");
-        }
-
-        return descriptorPool;
-    }
-
-    VkDescriptorSet createComputeDescriptorSet(
-        VkDevice logicalDevice,
-        VkDescriptorSetLayout& descriptorSetLayout ,
-        VkDescriptorPool& descriptorPool,
-        VkBuffer bufferA,
-        VkBuffer bufferB,
-        VkBuffer bufferC,
-        size_t bufferSize) {
-
-        VkDescriptorSet descriptorSet;
-
-        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
-        descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-        descriptorSetAllocateInfo.descriptorSetCount = 1;
-        descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
-
-        if (vkAllocateDescriptorSets(logicalDevice, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor sets");
-        }
-
-        VkDescriptorBufferInfo descriptorBufferInfoA = {};
-        descriptorBufferInfoA.buffer = bufferA;
-        descriptorBufferInfoA.offset = 0;
-        descriptorBufferInfoA.range = bufferSize;
-
-        VkWriteDescriptorSet writeDescriptorSetA = {};
-        writeDescriptorSetA.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSetA.dstSet = descriptorSet;
-        writeDescriptorSetA.dstBinding = 0;
-        writeDescriptorSetA.descriptorCount = 1;
-        writeDescriptorSetA.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSetA.pBufferInfo = &descriptorBufferInfoA;
-
-        VkDescriptorBufferInfo descriptorBufferInfoB = {};
-        descriptorBufferInfoB.buffer = bufferB;
-        descriptorBufferInfoB.offset = 0;
-        descriptorBufferInfoB.range = bufferSize;
-
-        VkWriteDescriptorSet writeDescriptorSetB = {};
-        writeDescriptorSetB.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSetB.dstSet = descriptorSet;
-        writeDescriptorSetB.dstBinding = 1;
-        writeDescriptorSetB.descriptorCount = 1;
-        writeDescriptorSetB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSetB.pBufferInfo = &descriptorBufferInfoB;
-
-        VkDescriptorBufferInfo descriptorBufferInfoC = {};
-        descriptorBufferInfoC.buffer = bufferC;
-        descriptorBufferInfoC.offset = 0;
-        descriptorBufferInfoC.range = bufferSize;
-
-        VkWriteDescriptorSet writeDescriptorSetC = {};
-        writeDescriptorSetC.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSetC.dstSet = descriptorSet;
-        writeDescriptorSetC.dstBinding = 2;
-        writeDescriptorSetC.descriptorCount = 1;
-        writeDescriptorSetC.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSetC.pBufferInfo = &descriptorBufferInfoC;
-
-        std::array<VkWriteDescriptorSet, 3> writeDescriptorSets = {writeDescriptorSetA, writeDescriptorSetB, writeDescriptorSetC};
-
-        vkUpdateDescriptorSets(logicalDevice, 3, writeDescriptorSets.data(), 0, nullptr);
-
-        return descriptorSet;
-    }
-
-    void createComputePipeline(
-        VkDevice logicalDevice,
-        VkDescriptorSetLayout descriptorSetLayout,
-        VkPipelineLayout& pipelineLayout,
-        VkPipeline& pipeline) {
-
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
-
-        if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create pipeline layout");
-        }
-
-        auto kernelShaderCode = Utils::readFile("src/GLSL/kernel.spv");
-
-        VkShaderModule kernelShaderModule = Utils::createShaderModule(logicalDevice, kernelShaderCode);
-
-        VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
-        shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        shaderStageCreateInfo.module = kernelShaderModule;
-        shaderStageCreateInfo.pName = "main";
-
-        VkComputePipelineCreateInfo pipelineCreateInfo = {};
-        pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.stage = shaderStageCreateInfo;
-        pipelineCreateInfo.layout = pipelineLayout;
-
-        if (vkCreateComputePipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute pipeline");
-        }
-
-        vkDestroyShaderModule(logicalDevice, kernelShaderModule, nullptr);
-    }
-
-    VkCommandPool createComputeCommandPool(VkDevice logicalDevice) {
-        VkCommandPool commandPool;
-
-        VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.flags = 0;
-
-        PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(m_physicalDevice, m_surface);
-        commandPoolCreateInfo.queueFamilyIndex = indices.m_computeFamily;
-
-        if (vkCreateCommandPool(logicalDevice, &commandPoolCreateInfo, nullptr, &commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute command pool");
-        }
-
-        return commandPool;
-    }
-
-    VkCommandBuffer createComputeCommandBuffer(
-        VkDevice logicalDevice,
-        VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet) {
-
-        VkCommandBuffer commandBuffer;
-
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        commandBufferAllocateInfo.commandPool = commandPool;
-        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        commandBufferAllocateInfo.commandBufferCount = 1;
-
-        if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute command buffer");
-        }
-
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to begin compute command buffer");
-        }
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-
-        size_t xThreads = NUM_ELEMENTS / X_DIM;
-        vkCmdDispatch(commandBuffer, xThreads, 1, 1);
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to end compute command buffer");
-        }
-
-        return commandBuffer;
-    }
-
-    VkFence createComputeFence() {
-        VkFence fence;
-        VkFenceCreateInfo fenceCreateInfo = {};
-        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        if (vkCreateFence(m_logicalDevice, &fenceCreateInfo, nullptr, &fence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute fence");
-        }
-
-        return fence;
-    }
-
-    void runComputeCommandBuffer() {
-        vkResetFences(m_logicalDevice, 1, &m_computeFence);
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_computeCommandBuffer;
-
-        if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit compute command buffer");
-        }
-
-        vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
-    }
-
-    void extractComputeResult() {
-        void* mappedMemory = NULL;
-
-        if (vkMapMemory(m_logicalDevice, m_computeBufferMemoryC, 0, BUFFER_SIZE, 0, &mappedMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Error mapping memory");
-        }
-
-        //float* floatMappedMemory = (float*) mappedMemory;
-        //std::vector<float> nums(NUM_ELEMENTS);
-
-        //glm::vec4* floatMappedMemory = (glm::vec4*) mappedMemory;
-        //std::vector<glm::vec4> nums(NUM_ELEMENTS);
-
-        glm::vec2* floatMappedMemory = (glm::vec2*) mappedMemory;
-        std::vector<glm::vec2> nums(NUM_ELEMENTS);
-
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            nums[i] = floatMappedMemory[i];
-        }
-
-        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryC);
-
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            //std::cout << "i " << i << " n " << nums[i] << "\n";
-
-            //glm::vec4 v = nums[i];
-            //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
-
-            glm::vec2 v = nums[i];
-            //std::cout << "i " << i << " " << v.x << " " << v.y << "\n";
-        }
-    }
-
-    void initializeComputeBuffers() {
-        void* mappedMemoryA = NULL;
-        vkMapMemory(m_logicalDevice, m_computeBufferMemoryA, 0, BUFFER_SIZE, 0, & mappedMemoryA);
-        glm::vec2* floatMappedMemoryA = (glm::vec2*) mappedMemoryA;
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            floatMappedMemoryA[i] = glm::vec2(i, i + 1);
-        }
-        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryA);
-
-        void* mappedMemoryB = NULL;
-        vkMapMemory(m_logicalDevice, m_computeBufferMemoryB, 0, BUFFER_SIZE, 0, & mappedMemoryB);
-        glm::vec2* floatMappedMemoryB = (glm::vec2*) mappedMemoryB;
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            floatMappedMemoryB[i] = glm::vec2(i, (2 * i) + 1);
-        }
-        vkUnmapMemory(m_logicalDevice, m_computeBufferMemoryB);
-    }
-
-    void cleanUpComputeResources() {
-
-        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryA, nullptr);
-        vkDestroyBuffer(m_logicalDevice, m_computeBufferA, nullptr);
-
-        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryB, nullptr);
-        vkDestroyBuffer(m_logicalDevice, m_computeBufferB, nullptr);
-
-        vkFreeMemory(m_logicalDevice, m_computeBufferMemoryC, nullptr);
-        vkDestroyBuffer(m_logicalDevice, m_computeBufferC, nullptr);
-
-        vkDestroyFence(m_logicalDevice, m_computeFence, nullptr);
-        vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffer);
-        vkDestroyCommandPool(m_logicalDevice, m_computeCommandPool, nullptr);
-
-        vkDestroyDescriptorPool(m_logicalDevice, m_computeDescriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(m_logicalDevice, m_computeDescriptorSetLayout, nullptr);
-        vkDestroyPipelineLayout(m_logicalDevice, m_computePipelineLayout, nullptr);
-        vkDestroyPipeline(m_logicalDevice, m_computePipeline, nullptr);
-    }
-
-    void initVulkanCompute() {
-        m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
-        m_computeDescriptorPool = createComputeDescriptorPool(m_logicalDevice);
-
-        Buffer::createBuffer(
-            m_physicalDevice,
-            m_logicalDevice,
-            BUFFER_SIZE,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            m_computeBufferA,
-            m_computeBufferMemoryA);
-
-        Buffer::createBuffer(
-            m_physicalDevice,
-            m_logicalDevice,
-            BUFFER_SIZE,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            m_computeBufferB,
-            m_computeBufferMemoryB);
-
-        Buffer::createBuffer(
-            m_physicalDevice,
-            m_logicalDevice,
-            BUFFER_SIZE,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            m_computeBufferC,
-            m_computeBufferMemoryC);
-
-        m_computeDescriptorSet = createComputeDescriptorSet(
-            m_logicalDevice,
-            m_computeDescriptorSetLayout,
-            m_computeDescriptorPool,
-            m_computeBufferA,
-            m_computeBufferB,
-            m_computeBufferC,
-            BUFFER_SIZE);
-
-        initializeComputeBuffers();
-
-        createComputePipeline(m_logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayout, m_computePipeline);
-
-        m_computeCommandPool = createComputeCommandPool(m_logicalDevice);
-
-        m_computeCommandBuffer = createComputeCommandBuffer(
-            m_logicalDevice,
-            m_computeCommandPool,
-            m_computePipeline,
-            m_computePipelineLayout,
-            m_computeDescriptorSet);
-
-        m_computeFence = createComputeFence();
-
-        runComputeCommandBuffer();
-        extractComputeResult();
-    }
-
     void initVulkan() {
         m_cameraPosition = glm::vec3(2.0f, 0.0f, 1.0f);
         m_cameraForward = glm::vec3(-1.0f, 0.0f, 0.0f);
@@ -581,7 +183,7 @@ private:
         m_surface = Surface::createSurface(m_instance, m_window->m_window);
         m_physicalDevice = PhysicalDevice::pickPhysicalDevice(m_instance, m_surface);
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
-        LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue, m_computeQueue);
+        LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
 
         createSwapChain();
 
@@ -653,23 +255,8 @@ private:
         createCommandBuffers();
         createSyncObjects();
 
-        initVulkanCompute();
-    }
-
-    float randomFloatBetweenZeroAndOne() {
-        return (float) rand() / (float) RAND_MAX;
-    }
-
-    float randomFloatBetweenMinusOneAndOne() {
-        return (randomFloatBetweenZeroAndOne() * 2.0f) - 1.0f;
-    }
-
-    glm::vec3 randomVec3InSphere(float radius) {
-        float x = randomFloatBetweenMinusOneAndOne();
-        float y = randomFloatBetweenMinusOneAndOne();
-        float z = randomFloatBetweenMinusOneAndOne();
-
-        return glm::normalize(glm::vec3(x, y, z)) * (radius * randomFloatBetweenZeroAndOne());
+        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_surface);
+        m_simulator->compute(m_logicalDevice);
     }
 
     void createInstanceBuffers() {
@@ -680,7 +267,7 @@ private:
         instancePositions.resize(m_numberOfInstances);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
-            instancePositions[i] = randomVec3InSphere(512.0f);
+            instancePositions[i] = MyMath::randomVec3InSphere(512.0f);
         }
 
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
@@ -962,9 +549,6 @@ private:
 
     void drawFrame() {
 
-        runComputeCommandBuffer();
-        extractComputeResult();
-
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1074,7 +658,7 @@ private:
     }
 
     void cleanUp() {
-        cleanUpComputeResources();
+        m_simulator->cleanUp(m_logicalDevice);
 
         cleanUpSwapChain();
 
