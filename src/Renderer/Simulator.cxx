@@ -210,7 +210,7 @@ namespace {
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("Failed to begin compute command buffer");
@@ -354,18 +354,35 @@ void Simulator::compute(VkDevice logicalDevice) {
     {
         Timer time("Simulator::compute");
         for (int i = 0; i < 1000; ++i) {
-            vkResetFences(logicalDevice, 1, &m_computeFence);
-
-            VkSubmitInfo submitInfo = {};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &m_computeCommandBuffer;
-
-            if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to submit compute command buffer");
+            {
+                Timer time("Reset Fence");
+                vkResetFences(logicalDevice, 1, &m_computeFence);
             }
 
-            vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+            size_t numCommands = 1;
+            std::vector<VkSubmitInfo> submitInfos(numCommands);
+            {
+                Timer time("Create submit info");
+                for (size_t  j = 0; j < numCommands; ++j) {
+                    VkSubmitInfo submitInfo = {};
+                    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                    submitInfo.commandBufferCount = 1;
+                    submitInfo.pCommandBuffers = &m_computeCommandBuffer;
+
+                    submitInfos[j] = submitInfo;
+                }
+            }
+            {
+                Timer time("Submit command");
+                if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
+                    throw std::runtime_error("Failed to submit compute command buffer");
+                }
+            }
+
+            {
+                Timer time("Wait for fence");
+                vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+            }
         }
     }
 

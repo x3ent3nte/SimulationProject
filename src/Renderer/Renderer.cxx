@@ -178,6 +178,9 @@ private:
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
         LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
 
+        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice);
+        m_simulator->compute(m_logicalDevice);
+
         createSwapChain();
 
         m_renderPass = Pipeline::createRenderPass(
@@ -247,9 +250,6 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
-
-        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice);
-        m_simulator->compute(m_logicalDevice);
     }
 
     void createInstanceBuffers() {

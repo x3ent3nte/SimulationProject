@@ -137,6 +137,8 @@ PhysicalDevice::QueueFamilyIndices PhysicalDevice::findQueueFamilies(VkPhysicalD
         i += 1;
     }
 
+    std::cout << "Graphics Queue: " << indices.m_graphicsFamily << " Present Queue: " << indices.m_presentFamily << "\n";
+
     return indices;
 }
 
@@ -147,15 +149,18 @@ size_t PhysicalDevice::findComputeQueueIndex(VkPhysicalDevice device) {
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+    std::cout << "Number of queues: " << queueFamilyCount << "\n";
+
     size_t i = 0;
     for (const auto& queueFamily : queueFamilies) {
         if ((queueFamily.queueCount > 0) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+            std::cout << "Compute queue: " << i << "\n";
             return i;
         }
         i += 1;
     }
 
-    return 0;
+    throw std::runtime_error("Could not find compute queue");
 }
 
 PhysicalDevice::SwapChainSupportDetails PhysicalDevice::querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {

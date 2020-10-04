@@ -61,13 +61,16 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
     float maxDistance = 10.0;
 
     CudaAgent agent = agents[gid];
-    float3 delta = subxx(agent.target, agent.position);
-    float distanceBetweenTargetAndPosition = magx(delta);
-    if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.position = agent.target;
-        agent.target = hashVec3(100.0, int(agent.position.x) + int(gid));
-    } else {
-        agent.position = addxx(agent.position, scalex(delta, maxDistance / distanceBetweenTargetAndPosition));
+
+    for (size_t i = 0; i < 1000; ++i) {
+        float3 delta = subxx(agent.target, agent.position);
+        float distanceBetweenTargetAndPosition = magx(delta);
+        if (distanceBetweenTargetAndPosition < maxDistance) {
+            agent.position = agent.target;
+            agent.target = hashVec3(100.0, int(agent.position.x) + int(gid));
+        } else {
+            agent.position = addxx(agent.position, scalex(delta, maxDistance / distanceBetweenTargetAndPosition));
+        }
     }
 
     agents[gid] = agent;
@@ -76,5 +79,7 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
 void CudaSimulator::simulate(CudaAgent* agents, float3* positions, size_t size) {
     const size_t threadsPerBlock = 512;
-    simulateKernel<<<ceil((float) size / (float) threadsPerBlock), threadsPerBlock>>>(agents, positions, size);
+    for (size_t i = 0; i < 1000; ++i) {
+        simulateKernel<<<ceil((float) size / (float) threadsPerBlock), threadsPerBlock>>>(agents, positions, size);
+    }
 }

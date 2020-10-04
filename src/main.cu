@@ -215,9 +215,10 @@ void cudaSimulator() {
     {
         Timer time("Cuda Simulator");
 
-        for (size_t i = 0; i < 1000; ++i) {
-            CudaSimulator::simulate(d_agents, d_positions, numElements);
-        }
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        CudaSimulator::simulate(d_agents, d_positions, numElements);
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        std::cout << "xxx duration: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds\n";
     }
 
     free(agents);
@@ -231,8 +232,8 @@ void cudaSimulator() {
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
-    cudaSimulator();
     Renderer().render();
+    cudaSimulator();
     //reducePlayground();
     //scanPlayground();
     //InsertionSortTest::run();
