@@ -1,9 +1,7 @@
 #ifndef MY_MATH_H
 #define MY_MATH_H
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include <Renderer/MyGLM.h>
 
 namespace MyMath {
     float cosineSimilarity(glm::vec3 a, glm::vec3 b);

@@ -1,11 +1,10 @@
 #include <Renderer/Simulator.h>
 
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-
 #include <Renderer/Buffer.h>
 #include <Renderer/Utils.h>
 #include <Renderer/PhysicalDevice.h>
-//#include <Renderer/MyMath.h>
+#include <Renderer/MyGLM.h>
+#include <Renderer/MyMath.h>
 
 #include <array>
 #include <stdexcept>
@@ -81,10 +80,10 @@ namespace {
         vkMapMemory(logicalDevice, memoryA, 0, NUM_ELEMENTS * sizeof(Agent), 0, & mappedMemoryA);
         Agent* floatMappedMemoryA = (Agent*) mappedMemoryA;
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            //glm::vec3 position = MyMath::randomVec3InSphere(512.0f);
-            //glm::vec3 target = MyMath::randomVec3InSphere(100.f) + position;
-            glm::vec3 position = glm::vec3(i);
-            glm::vec3 target = glm::vec3(i + 1);
+            glm::vec3 position = MyMath::randomVec3InSphere(4096.0f);
+            glm::vec3 target = MyMath::randomVec3InSphere(2048.f) + position;
+            //glm::vec3 position = glm::vec3(i);
+            //glm::vec3 target = glm::vec3(i + 1);
             floatMappedMemoryA[i] = {position, target};
         }
         vkUnmapMemory(logicalDevice, memoryA);
