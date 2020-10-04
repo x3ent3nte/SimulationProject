@@ -249,12 +249,6 @@ namespace {
             throw std::runtime_error("Error mapping memory");
         }
 
-        //float* floatMappedMemory = (float*) mappedMemory;
-        //std::vector<float> nums(NUM_ELEMENTS);
-
-        //glm::vec4* floatMappedMemory = (glm::vec4*) mappedMemory;
-        //std::vector<glm::vec4> nums(NUM_ELEMENTS);
-
         glm::vec3* floatMappedMemory = (glm::vec3*) mappedMemory;
         std::vector<glm::vec3> nums(NUM_ELEMENTS);
 
@@ -265,16 +259,10 @@ namespace {
         vkUnmapMemory(logicalDevice, memory);
 
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            //std::cout << "i " << i << " n " << nums[i] << "\n";
-
-            //glm::vec4 v = nums[i];
-            //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
-
             glm::vec3 v = nums[i];
             //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << "\n";
         }
     }
-
 } // namespace anonymous
 
 Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
@@ -287,6 +275,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
     m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(logicalDevice);
     m_computeDescriptorPool = createComputeDescriptorPool(logicalDevice);
 
+    /*
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
@@ -305,19 +294,42 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
         m_positionsBuffer,
         m_positionsBufferMemory);
 
-    /*
+    initializeComputeBuffers(logicalDevice, m_agentsBufferMemory);
+    */
+
+    std::vector<Agent> agents(NUM_ELEMENTS);
+    for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+        glm::vec3 position = MyMath::randomVec3InSphere(4096.0f);
+        glm::vec3 target = MyMath::randomVec3InSphere(2048.f) + position;
+        agents[i] = Agent{position, target};
+    }
+
     Buffer::createReadOnlyBuffer(
-        m_vertices.data(),
-        sizeof(m_vertices[0]) * m_vertices.size(),
+        agents.data(),
+        NUM_ELEMENTS * sizeof(Agent),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        m_physicalDevice,
-        m_logicalDevice,
-        m_commandPool,
+        physicalDevice,
+        logicalDevice,
+        m_computeCommandPool,
+        m_computeQueue,
+        m_agentsBuffer,
+        m_agentsBufferMemory);
+
+    std::vector<glm::vec3> positions(NUM_ELEMENTS);
+    for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+        positions[i] = glm::vec3(0);
+    }
+
+    Buffer::createReadOnlyBuffer(
+        positions.data(),
+        NUM_ELEMENTS * sizeof(glm::vec3),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        physicalDevice,
+        logicalDevice,
+        m_computeCommandPool,
         m_computeQueue,
         m_positionsBuffer,
-        m_positionsBufferMemoryC);*/
-
-    initializeComputeBuffers(logicalDevice, m_agentsBufferMemory);
+        m_positionsBufferMemory);
 
     m_computeDescriptorSet = createComputeDescriptorSet(
         logicalDevice,
@@ -341,7 +353,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
 void Simulator::compute(VkDevice logicalDevice) {
     {
         Timer time("Simulator::compute");
-        for (int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 1000; ++i) {
             vkResetFences(logicalDevice, 1, &m_computeFence);
 
             VkSubmitInfo submitInfo = {};
@@ -357,7 +369,7 @@ void Simulator::compute(VkDevice logicalDevice) {
         }
     }
 
-    //extractComputeResult(logicalDevice, m_positionsBufferMemoryC);
+    //extractComputeResult(logicalDevice, m_positionsBufferMemory);
 }
 
 void Simulator::cleanUp(VkDevice logicalDevice) {

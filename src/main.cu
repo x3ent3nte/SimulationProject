@@ -215,7 +215,7 @@ void cudaSimulator() {
     {
         Timer time("Cuda Simulator");
 
-        for (size_t i = 0; i < 100; ++i) {
+        for (size_t i = 0; i < 1000; ++i) {
             CudaSimulator::simulate(d_agents, d_positions, numElements);
         }
     }
