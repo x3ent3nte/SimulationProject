@@ -1,5 +1,7 @@
 #include <Renderer/Simulator.h>
 
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+
 #include <Renderer/Buffer.h>
 #include <Renderer/Utils.h>
 #include <Renderer/PhysicalDevice.h>
@@ -70,12 +72,17 @@ namespace {
         return descriptorPool;
     }
 
+    struct Agent {
+        glm::vec2 position;
+        glm::vec2 velocity;
+    };
+
     void initializeComputeBuffers(VkDevice logicalDevice, VkDeviceMemory memoryA, VkDeviceMemory memoryB) {
         void* mappedMemoryA = NULL;
-        vkMapMemory(logicalDevice, memoryA, 0, BUFFER_SIZE, 0, & mappedMemoryA);
-        glm::vec2* floatMappedMemoryA = (glm::vec2*) mappedMemoryA;
+        vkMapMemory(logicalDevice, memoryA, 0, NUM_ELEMENTS * sizeof(Agent), 0, & mappedMemoryA);
+        Agent* floatMappedMemoryA = (Agent*) mappedMemoryA;
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            floatMappedMemoryA[i] = glm::vec2(i, i + 1);
+            floatMappedMemoryA[i] = {glm::vec2(i, i + 1), glm::vec2(i, i + 2)};
         }
         vkUnmapMemory(logicalDevice, memoryA);
 
@@ -112,7 +119,7 @@ namespace {
         VkDescriptorBufferInfo descriptorBufferInfoA = {};
         descriptorBufferInfoA.buffer = bufferA;
         descriptorBufferInfoA.offset = 0;
-        descriptorBufferInfoA.range = bufferSize;
+        descriptorBufferInfoA.range = NUM_ELEMENTS * sizeof(Agent);
 
         VkWriteDescriptorSet writeDescriptorSetA = {};
         writeDescriptorSetA.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -138,7 +145,7 @@ namespace {
         VkDescriptorBufferInfo descriptorBufferInfoC = {};
         descriptorBufferInfoC.buffer = bufferC;
         descriptorBufferInfoC.offset = 0;
-        descriptorBufferInfoC.range = bufferSize;
+        descriptorBufferInfoC.range = NUM_ELEMENTS * sizeof(glm::vec3);
 
         VkWriteDescriptorSet writeDescriptorSetC = {};
         writeDescriptorSetC.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -265,7 +272,7 @@ namespace {
     void extractComputeResult(VkDevice logicalDevice, VkDeviceMemory memory) {
         void* mappedMemory = NULL;
 
-        if (vkMapMemory(logicalDevice, memory, 0, BUFFER_SIZE, 0, &mappedMemory) != VK_SUCCESS) {
+        if (vkMapMemory(logicalDevice, memory, 0, NUM_ELEMENTS * sizeof(glm::vec3), 0, &mappedMemory) != VK_SUCCESS) {
             throw std::runtime_error("Error mapping memory");
         }
 
@@ -275,8 +282,8 @@ namespace {
         //glm::vec4* floatMappedMemory = (glm::vec4*) mappedMemory;
         //std::vector<glm::vec4> nums(NUM_ELEMENTS);
 
-        glm::vec2* floatMappedMemory = (glm::vec2*) mappedMemory;
-        std::vector<glm::vec2> nums(NUM_ELEMENTS);
+        glm::vec3* floatMappedMemory = (glm::vec3*) mappedMemory;
+        std::vector<glm::vec3> nums(NUM_ELEMENTS);
 
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
             nums[i] = floatMappedMemory[i];
@@ -290,8 +297,8 @@ namespace {
             //glm::vec4 v = nums[i];
             //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
 
-            glm::vec2 v = nums[i];
-            std::cout << "i " << i << " " << v.x << " " << v.y << "\n";
+            glm::vec3 v = nums[i];
+            std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << "\n";
         }
     }
 
@@ -308,7 +315,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        BUFFER_SIZE,
+        NUM_ELEMENTS * sizeof(Agent),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         m_computeBufferA,
@@ -326,7 +333,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        BUFFER_SIZE,
+        NUM_ELEMENTS * sizeof(glm::vec3),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         m_computeBufferC,

@@ -6,8 +6,13 @@
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
+struct Agent {
+    vec2 position;
+    vec2 velocity;
+};
+
 layout (std430, binding = 0) buffer bufA {
-    vec2 numsA[];
+    Agent agents[];
 };
 
 layout (std430, binding = 1) buffer bufB {
@@ -15,7 +20,7 @@ layout (std430, binding = 1) buffer bufB {
 };
 
 layout (std430, binding = 2) buffer bufC {
-    vec2 numsC[];
+    vec3 numsC[];
 };
 
 void main() {
@@ -23,5 +28,8 @@ void main() {
 
     if (index > NUM_ELEMENTS) { return; }
 
-    numsC[index] = numsA[index] + numsB[index];
+    //numsC[index] = numsA[index] + numsB[index];
+
+    Agent agent = agents[index];
+    numsC[index] = vec3(agent.position + agent.velocity, index);
 }
