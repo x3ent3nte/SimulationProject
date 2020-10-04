@@ -30,7 +30,7 @@ private:
 
 public:
 
-    Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface);
+    Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
 
     void compute(VkDevice logicalDevice);
 

@@ -12,8 +12,6 @@ namespace PhysicalDevice {
         bool m_hasGraphicsFamily;
         uint32_t m_presentFamily;
         bool m_hasPresentFamily;
-        uint32_t m_computeFamily;
-        bool m_hasComputeFamily;
 
         bool isComplete();
     };

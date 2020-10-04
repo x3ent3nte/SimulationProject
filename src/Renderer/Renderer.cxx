@@ -256,7 +256,7 @@ private:
         createCommandBuffers();
         createSyncObjects();
 
-        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_surface);
+        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice);
         m_simulator->compute(m_logicalDevice);
     }
 

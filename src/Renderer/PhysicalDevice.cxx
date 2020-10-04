@@ -64,7 +64,7 @@ namespace {
 } // namespace anonymous
 
 bool PhysicalDevice::QueueFamilyIndices::isComplete() {
-    return m_hasGraphicsFamily && m_hasPresentFamily && m_hasComputeFamily;
+    return m_hasGraphicsFamily && m_hasPresentFamily;
 }
 
 VkPhysicalDevice PhysicalDevice::pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
@@ -105,7 +105,7 @@ VkPhysicalDevice PhysicalDevice::pickPhysicalDevice(VkInstance instance, VkSurfa
 }
 
 PhysicalDevice::QueueFamilyIndices PhysicalDevice::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    QueueFamilyIndices indices{0, false, 0, false, 0, false};
+    QueueFamilyIndices indices{0, false, 0, false};
 
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -134,15 +134,6 @@ PhysicalDevice::QueueFamilyIndices PhysicalDevice::findQueueFamilies(VkPhysicalD
             break;
         }
 
-        i += 1;
-    }
-
-    i = 0;
-    for (const auto& queueFamily : queueFamilies) {
-        if ((queueFamily.queueCount > 0) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
-            indices.m_computeFamily = i;
-            indices.m_hasComputeFamily = true;
-        }
         i += 1;
     }
 

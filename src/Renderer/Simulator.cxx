@@ -199,15 +199,13 @@ namespace {
         vkDestroyShaderModule(logicalDevice, kernelShaderModule, nullptr);
     }
 
-    VkCommandPool createComputeCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface) {
+    VkCommandPool createComputeCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, size_t computeQueueIndex) {
         VkCommandPool commandPool;
 
         VkCommandPoolCreateInfo commandPoolCreateInfo = {};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         commandPoolCreateInfo.flags = 0;
-
-        PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
-        commandPoolCreateInfo.queueFamilyIndex = indices.m_computeFamily;
+        commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
 
         if (vkCreateCommandPool(logicalDevice, &commandPoolCreateInfo, nullptr, &commandPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute command pool");
@@ -304,7 +302,7 @@ namespace {
 
 } // namespace anonymous
 
-Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface) {
+Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
 
     size_t computeQueueIndex = PhysicalDevice::findComputeQueueIndex(physicalDevice);
     vkGetDeviceQueue(logicalDevice, computeQueueIndex, 0, &m_computeQueue);
@@ -352,7 +350,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
 
     createComputePipeline(logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayout, m_computePipeline);
 
-    m_computeCommandPool = createComputeCommandPool(physicalDevice, logicalDevice, surface);
+    m_computeCommandPool = createComputeCommandPool(physicalDevice, logicalDevice, computeQueueIndex);
 
     m_computeCommandBuffer = createComputeCommandBuffer(
         logicalDevice,
