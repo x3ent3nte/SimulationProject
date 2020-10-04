@@ -15,7 +15,7 @@ int intGreater(int a, int b) {
 
 template<typename T>
 void runTest(T* nums, int size) {
-    
+
     int* d_nums;
     int* d_needsSorting;
     cudaMalloc(&d_nums, size * sizeof(int));
@@ -24,17 +24,17 @@ void runTest(T* nums, int size) {
     cudaMemcpy(d_nums, nums, size * sizeof(int), cudaMemcpyHostToDevice);
 
     {
-        Timer timer;
+        Timer timer("Insertion sort int greater");
         InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, size);
     }
 
     {
-        Timer timer;
+        Timer timer("Insertion sort int greater");
         InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, size);
     }
 
     {
-        Timer timer;
+        Timer timer("Insertion sort int greater");
         InsertionSort::sort<int, intGreater>(d_nums, d_needsSorting, size);
     }
 

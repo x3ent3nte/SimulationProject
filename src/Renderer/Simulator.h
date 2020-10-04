@@ -15,14 +15,11 @@ private:
     VkCommandBuffer m_computeCommandBuffer;
     VkFence m_computeFence;
 
-    VkBuffer m_computeBufferA;
-    VkDeviceMemory m_computeBufferMemoryA;
+    VkBuffer m_agentsBuffer;
+    VkDeviceMemory m_agentsBufferMemory;
 
-    VkBuffer m_computeBufferB;
-    VkDeviceMemory m_computeBufferMemoryB;
-
-    VkBuffer m_computeBufferC;
-    VkDeviceMemory m_computeBufferMemoryC;
+    VkBuffer m_positionsBuffer;
+    VkDeviceMemory m_positionsBufferMemory;
 
     VkDescriptorPool m_computeDescriptorPool;
     VkDescriptorSet m_computeDescriptorSet;

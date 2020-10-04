@@ -1,10 +1,12 @@
 #include <chrono>
+#include <string>
 
 class Timer {
 private:
-    std::chrono::steady_clock::time_point begin;
+    std::string m_label;
+    std::chrono::steady_clock::time_point m_begin;
 public:
-    Timer();
+    Timer(const std::string& label);
 
     ~Timer();
 };

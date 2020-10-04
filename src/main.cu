@@ -8,6 +8,7 @@
 #include <Kernel/RadixSort.cuh>
 #include <Kernel/Agent.cuh>
 #include <Kernel/ContinuousCollision.cuh>
+#include <Kernel/CudaSimulator.cuh>
 #include <Test/InsertionSortTest.cuh>
 
 #define checkCudaErrors(call)                                   \
@@ -54,13 +55,13 @@ void reducePlayground() {
     cudaMemset(d_out, 0, kSize * sizeof(int));
 
     {
-        Timer time;
+        Timer time("Reduce GPU");
         int result = Reduce::reduce<int, add>(d_in, d_out, kSize);
         printf("\nGPU result: %d\n", result);
     }
 
     {
-        Timer time;
+        Timer time("Reduce SER");
         int result = serialReduce(in, kSize);
         printf("\nSER result: %d\n", result);
     }
@@ -118,7 +119,7 @@ void scanPlayground() {
     cudaMemset(d_offsets, 0, kSize * sizeof(int));
 
     {
-        Timer timer;
+        Timer timer("GPU Scan");
         for (int i = 0; i < 10; ++i) {
             Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
             checkScanErrors(input, output, d_out, kSize);
@@ -163,7 +164,7 @@ void radixSortPlayground() {
 
     unsigned int* sorted;
     {
-        Timer timer;
+        Timer timer("GPU Radix Sort");
         sorted = RadixSort::sort<unsigned int>(d_a, d_b, d_flags_a, d_flags_b, kSize);
     }
 
@@ -192,9 +193,45 @@ void radixSortPlayground() {
     printf("\nEnd radixSortPlayground\n");
 }
 
+void cudaSimulator() {
+    printf("\nBegin Cuda Simulator\n");
+
+    size_t xDim = 512;
+    size_t numElements = 128 * xDim;
+
+    CudaAgent* agents = (CudaAgent*) malloc(numElements * sizeof(CudaAgent));
+    for (size_t i = 0; i < numElements; ++i) {
+        float fi = (float) i;
+        agents[i] = CudaAgent{float3{fi, fi, fi,}, float3{fi + 100, fi + 100, fi + 100}};
+    }
+
+    CudaAgent* d_agents;
+    cudaMalloc(&d_agents, numElements * sizeof(CudaAgent));
+    cudaMemcpy(d_agents, agents, numElements * sizeof(CudaAgent), cudaMemcpyHostToDevice);
+
+    float3* d_positions;
+    cudaMalloc(&d_positions, numElements * sizeof(float3));
+
+    {
+        Timer time("Cuda Simulator");
+
+        for (size_t i = 0; i < 100; ++i) {
+            CudaSimulator::simulate(d_agents, d_positions, numElements);
+        }
+    }
+
+    free(agents);
+    cudaFree(d_agents);
+    cudaFree(d_positions);
+
+    printf("\nEnd Cuda Simulator\n");
+}
+
+// TODO
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
+    cudaSimulator();
     Renderer().render();
     //reducePlayground();
     //scanPlayground();

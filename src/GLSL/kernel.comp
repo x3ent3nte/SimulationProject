@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
-#define NUM_ELEMENTS 16 * X_DIM
+#define NUM_ELEMENTS 128 * X_DIM
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -11,16 +11,12 @@ struct Agent {
     vec3 target;
 };
 
-layout (std430, binding = 0) buffer bufA {
+layout (std430, binding = 0) buffer bufAgents {
     Agent agents[];
 };
 
-layout (std430, binding = 1) buffer bufB {
-    vec2 numsB[];
-};
-
-layout (std430, binding = 2) buffer bufC {
-    vec3 numsC[];
+layout (std430, binding = 1) buffer bufPositions {
+    vec3 positions[];
 };
 
 int hashInt(int a) {
@@ -68,5 +64,5 @@ void main() {
     }
 
     agents[index] = agent;
-    numsC[index] = agent.position;
+    positions[index] = agent.position;
 }
