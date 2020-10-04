@@ -5,6 +5,7 @@
 #include <Renderer/Buffer.h>
 #include <Renderer/Utils.h>
 #include <Renderer/PhysicalDevice.h>
+//#include <Renderer/MyMath.h>
 
 #include <array>
 #include <stdexcept>
@@ -12,8 +13,6 @@
 
 #define X_DIM 512
 #define NUM_ELEMENTS 16 * X_DIM
-//#define BUFFER_SIZE NUM_ELEMENTS * sizeof(float)
-#define BUFFER_SIZE NUM_ELEMENTS * sizeof(glm::vec2)
 
 namespace {
 
@@ -74,7 +73,7 @@ namespace {
 
     struct Agent {
         glm::vec3 position;
-        glm::vec3 velocity;
+        glm::vec3 target;
     };
 
     void initializeComputeBuffers(VkDevice logicalDevice, VkDeviceMemory memoryA, VkDeviceMemory memoryB) {
@@ -82,12 +81,16 @@ namespace {
         vkMapMemory(logicalDevice, memoryA, 0, NUM_ELEMENTS * sizeof(Agent), 0, & mappedMemoryA);
         Agent* floatMappedMemoryA = (Agent*) mappedMemoryA;
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            floatMappedMemoryA[i] = {glm::vec3(i, i + 1, 2 * i), glm::vec3(i, i + 2, 3 * i)};
+            //glm::vec3 position = MyMath::randomVec3InSphere(512.0f);
+            //glm::vec3 target = MyMath::randomVec3InSphere(100.f) + position;
+            glm::vec3 position = glm::vec3(i);
+            glm::vec3 target = glm::vec3(i + 1);
+            floatMappedMemoryA[i] = {position, target};
         }
         vkUnmapMemory(logicalDevice, memoryA);
 
         void* mappedMemoryB = NULL;
-        vkMapMemory(logicalDevice, memoryB, 0, BUFFER_SIZE, 0, & mappedMemoryB);
+        vkMapMemory(logicalDevice, memoryB, 0, NUM_ELEMENTS * sizeof(glm::vec2), 0, & mappedMemoryB);
         glm::vec2* floatMappedMemoryB = (glm::vec2*) mappedMemoryB;
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
             floatMappedMemoryB[i] = glm::vec2(i, (2 * i) + 1);
@@ -101,8 +104,7 @@ namespace {
         VkDescriptorPool& descriptorPool,
         VkBuffer bufferA,
         VkBuffer bufferB,
-        VkBuffer bufferC,
-        size_t bufferSize) {
+        VkBuffer bufferC) {
 
         VkDescriptorSet descriptorSet;
 
@@ -132,7 +134,7 @@ namespace {
         VkDescriptorBufferInfo descriptorBufferInfoB = {};
         descriptorBufferInfoB.buffer = bufferB;
         descriptorBufferInfoB.offset = 0;
-        descriptorBufferInfoB.range = bufferSize;
+        descriptorBufferInfoB.range = NUM_ELEMENTS * sizeof(glm::vec2);
 
         VkWriteDescriptorSet writeDescriptorSetB = {};
         writeDescriptorSetB.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -322,7 +324,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        BUFFER_SIZE,
+        NUM_ELEMENTS * sizeof(glm::vec2),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         m_computeBufferB,
@@ -343,8 +345,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
         m_computeDescriptorPool,
         m_computeBufferA,
         m_computeBufferB,
-        m_computeBufferC,
-        BUFFER_SIZE);
+        m_computeBufferC);
 
     initializeComputeBuffers(logicalDevice, m_computeBufferMemoryA, m_computeBufferMemoryB);
 
@@ -363,18 +364,20 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
 }
 
 void Simulator::compute(VkDevice logicalDevice) {
-    vkResetFences(logicalDevice, 1, &m_computeFence);
+    for (int i = 0; i < 100; ++i) {
+        vkResetFences(logicalDevice, 1, &m_computeFence);
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_computeCommandBuffer;
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_computeCommandBuffer;
 
-    if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit compute command buffer");
+        if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to submit compute command buffer");
+        }
+
+        vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     }
-
-    vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
 
     extractComputeResult(logicalDevice, m_computeBufferMemoryC);
 }

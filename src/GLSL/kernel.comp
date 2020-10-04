@@ -8,7 +8,7 @@ layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
     vec3 position;
-    vec3 velocity;
+    vec3 target;
 };
 
 layout (std430, binding = 0) buffer bufA {
@@ -23,13 +23,50 @@ layout (std430, binding = 2) buffer bufC {
     vec3 numsC[];
 };
 
+int hashInt(int a) {
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+}
+
+float hashFloat(int a) {
+    a = hashInt(a);
+    int bound = (1 << 30) - 1;
+    a &= bound;
+    float b = float(a) / float(bound);
+    return b;
+}
+
+vec3 hashVec3(float radius, int seed)
+{
+    const float z = (2.0f * hashFloat(seed)) - 1.0f;
+    const float xyMag = sqrt(1.0f - (z * z));
+    const float azimuth = hashFloat(seed + 1) * 6.28318530718;
+    const float y = sin(azimuth) * xyMag;
+    const float x = cos(azimuth) * xyMag;
+    return vec3(x, y, z) * radius * hashFloat(seed + 10);
+}
+
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
     if (index > NUM_ELEMENTS) { return; }
 
-    //numsC[index] = numsA[index] + numsB[index];
+    float maxDistance = 10.0;
 
     Agent agent = agents[index];
-    numsC[index] = agent.position + agent.velocity;
+    vec3 delta = agent.target - agent.position;
+    float distanceBetweenTargetAndPosition = length(delta);
+    if (distanceBetweenTargetAndPosition < maxDistance) {
+        agent.position = agent.target;
+        agent.target = hashVec3(100.0, int(agent.position.x) + int(index));
+    } else {
+        agent.position += normalize(delta) * maxDistance;
+    }
+
+    agents[index] = agent;
+    numsC[index] = agent.position;
 }
