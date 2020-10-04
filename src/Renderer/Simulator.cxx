@@ -73,8 +73,8 @@ namespace {
     }
 
     struct Agent {
-        glm::vec2 position;
-        glm::vec2 velocity;
+        glm::vec3 position;
+        glm::vec3 velocity;
     };
 
     void initializeComputeBuffers(VkDevice logicalDevice, VkDeviceMemory memoryA, VkDeviceMemory memoryB) {
@@ -82,7 +82,7 @@ namespace {
         vkMapMemory(logicalDevice, memoryA, 0, NUM_ELEMENTS * sizeof(Agent), 0, & mappedMemoryA);
         Agent* floatMappedMemoryA = (Agent*) mappedMemoryA;
         for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            floatMappedMemoryA[i] = {glm::vec2(i, i + 1), glm::vec2(i, i + 2)};
+            floatMappedMemoryA[i] = {glm::vec3(i, i + 1, 2 * i), glm::vec3(i, i + 2, 3 * i)};
         }
         vkUnmapMemory(logicalDevice, memoryA);
 

@@ -7,8 +7,8 @@
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
-    vec2 position;
-    vec2 velocity;
+    vec3 position;
+    vec3 velocity;
 };
 
 layout (std430, binding = 0) buffer bufA {
@@ -31,5 +31,5 @@ void main() {
     //numsC[index] = numsA[index] + numsB[index];
 
     Agent agent = agents[index];
-    numsC[index] = vec3(agent.position + agent.velocity, index);
+    numsC[index] = agent.position + agent.velocity;
 }
