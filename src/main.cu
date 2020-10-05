@@ -210,7 +210,7 @@ void cudaSimulator() {
     printf("\nBegin Cuda Simulator\n");
 
     size_t xDim = 512;
-    size_t numElements = 128 * xDim;
+    size_t numElements = 32 * xDim;
 
     CudaAgent* agents = (CudaAgent*) malloc(numElements * sizeof(CudaAgent));
     for (size_t i = 0; i < numElements; ++i) {

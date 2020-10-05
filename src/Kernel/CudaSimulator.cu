@@ -40,8 +40,7 @@ float hashFloat(int a) {
 }
 
 __device__
-float3 hashVec3(float radius, int seed)
-{
+float3 hashVec3(float radius, int seed) {
     const float z = (2.0f * hashFloat(seed)) - 1.0f;
     const float xyMag = sqrt(1.0f - (z * z));
     const float azimuth = hashFloat(seed + 1) * 6.28318530718;
@@ -62,7 +61,7 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
     CudaAgent agent = agents[gid];
 
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 1; ++i) {
         float3 delta = subxx(agent.target, agent.position);
         float distanceBetweenTargetAndPosition = magx(delta);
         if (distanceBetweenTargetAndPosition < maxDistance) {
@@ -79,7 +78,7 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
 void CudaSimulator::simulate(CudaAgent* agents, float3* positions, size_t size) {
     const size_t threadsPerBlock = 512;
-    for (size_t i = 0; i < 1000; ++i) {
+    for (size_t i = 0; i < 100; ++i) {
         simulateKernel<<<ceil((float) size / (float) threadsPerBlock), threadsPerBlock>>>(agents, positions, size);
     }
 }

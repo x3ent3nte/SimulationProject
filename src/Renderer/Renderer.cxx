@@ -87,7 +87,7 @@ private:
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
 
-    const size_t m_numberOfInstances = 4096;
+    const size_t m_numberOfInstances = 32 * 512;
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
 

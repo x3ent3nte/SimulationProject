@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
-#define NUM_ELEMENTS 128 * X_DIM
+#define NUM_ELEMENTS 32 * X_DIM
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -36,8 +36,7 @@ float hashFloat(int a) {
     return b;
 }
 
-vec3 hashVec3(float radius, int seed)
-{
+vec3 hashVec3(float radius, int seed) {
     const float z = (2.0f * hashFloat(seed)) - 1.0f;
     const float xyMag = sqrt(1.0f - (z * z));
     const float azimuth = hashFloat(seed + 1) * 6.28318530718;
@@ -55,7 +54,7 @@ void main() {
 
     Agent agent = agents[index];
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 1; ++i) {
         vec3 delta = agent.target - agent.position;
         float distanceBetweenTargetAndPosition = length(delta);
         if (distanceBetweenTargetAndPosition < maxDistance) {

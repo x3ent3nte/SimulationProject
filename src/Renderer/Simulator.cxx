@@ -13,7 +13,7 @@
 #include <iostream>
 
 #define X_DIM 512
-#define NUM_ELEMENTS 128 * X_DIM
+#define NUM_ELEMENTS 32 * X_DIM
 
 namespace {
 
@@ -330,8 +330,8 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
 
 void Simulator::compute(VkDevice logicalDevice) {
     {
-        Timer time("Simulator::compute");
-        for (int i = 0; i < 1000; ++i) {
+        Timer time("Vulkan Simulator");
+        for (int i = 0; i < 100; ++i) {
             vkResetFences(logicalDevice, 1, &m_computeFence);
 
             size_t numCommands = 1;
