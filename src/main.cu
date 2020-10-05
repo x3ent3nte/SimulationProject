@@ -193,6 +193,19 @@ void radixSortPlayground() {
     printf("\nEnd radixSortPlayground\n");
 }
 
+void extractResultsFromCudaSimulator(CudaAgent* agents, float3* positions, size_t size) {
+    float3* h_positions = (float3*) malloc(size * sizeof(float3));
+
+    cudaMemcpy(h_positions, positions, size * sizeof(float3), cudaMemcpyDeviceToHost);
+
+    for (size_t i = 0; i < size; ++i) {
+        //float3 v = h_positions[i];
+        //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << "\n";
+    }
+
+    free(h_positions);
+}
+
 void cudaSimulator() {
     printf("\nBegin Cuda Simulator\n");
 
@@ -215,10 +228,8 @@ void cudaSimulator() {
     {
         Timer time("Cuda Simulator");
 
-        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         CudaSimulator::simulate(d_agents, d_positions, numElements);
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        std::cout << "xxx duration: " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " microseconds\n";
+        extractResultsFromCudaSimulator(d_agents, d_positions, numElements);
     }
 
     free(agents);

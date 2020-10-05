@@ -275,28 +275,6 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
     m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(logicalDevice);
     m_computeDescriptorPool = createComputeDescriptorPool(logicalDevice);
 
-    /*
-    Buffer::createBuffer(
-        physicalDevice,
-        logicalDevice,
-        NUM_ELEMENTS * sizeof(Agent),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        m_agentsBuffer,
-        m_agentsBufferMemory);
-
-    Buffer::createBuffer(
-        physicalDevice,
-        logicalDevice,
-        NUM_ELEMENTS * sizeof(glm::vec3),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        m_positionsBuffer,
-        m_positionsBufferMemory);
-
-    initializeComputeBuffers(logicalDevice, m_agentsBufferMemory);
-    */
-
     std::vector<Agent> agents(NUM_ELEMENTS);
     for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
         glm::vec3 position = MyMath::randomVec3InSphere(4096.0f);
@@ -354,15 +332,11 @@ void Simulator::compute(VkDevice logicalDevice) {
     {
         Timer time("Simulator::compute");
         for (int i = 0; i < 1000; ++i) {
-            {
-                Timer time("Reset Fence");
-                vkResetFences(logicalDevice, 1, &m_computeFence);
-            }
+            vkResetFences(logicalDevice, 1, &m_computeFence);
 
             size_t numCommands = 1;
             std::vector<VkSubmitInfo> submitInfos(numCommands);
             {
-                Timer time("Create submit info");
                 for (size_t  j = 0; j < numCommands; ++j) {
                     VkSubmitInfo submitInfo = {};
                     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -372,21 +346,15 @@ void Simulator::compute(VkDevice logicalDevice) {
                     submitInfos[j] = submitInfo;
                 }
             }
-            {
-                Timer time("Submit command");
-                if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
-                    throw std::runtime_error("Failed to submit compute command buffer");
-                }
+
+            if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
+                throw std::runtime_error("Failed to submit compute command buffer");
             }
 
-            {
-                Timer time("Wait for fence");
-                vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
-            }
+            vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
         }
+        //extractComputeResult(logicalDevice, m_positionsBufferMemory);
     }
-
-    //extractComputeResult(logicalDevice, m_positionsBufferMemory);
 }
 
 void Simulator::cleanUp(VkDevice logicalDevice) {
