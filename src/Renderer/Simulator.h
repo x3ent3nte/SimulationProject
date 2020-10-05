@@ -31,6 +31,8 @@ public:
 
     Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
 
+    virtual ~Simulator() = default;
+
     void compute(VkDevice logicalDevice);
 
     void cleanUp(VkDevice logicalDevice);

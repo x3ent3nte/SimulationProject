@@ -17,6 +17,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/MyMath.h>
 #include <Renderer/MyGLM.h>
+#include <Renderer/Connector.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -60,6 +61,7 @@ private:
     VkQueue m_graphicsQueue;
     VkQueue m_presentQueue;
 
+    std::shared_ptr<Connector> m_connector;
     std::shared_ptr<Simulator> m_simulator;
 
     VkSwapchainKHR m_swapChain;
@@ -204,6 +206,8 @@ private:
         createColourResources();
         createDepthResources();
         createFrameBuffers();
+
+        m_connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
 
         m_mipLevels = Image::createTextureImage(
             m_physicalDevice,
@@ -652,6 +656,7 @@ private:
 
     void cleanUp() {
         m_simulator->cleanUp(m_logicalDevice);
+        m_connector->cleanUp(m_logicalDevice);
 
         cleanUpSwapChain();
 

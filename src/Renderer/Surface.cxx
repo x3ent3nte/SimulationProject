@@ -26,7 +26,7 @@ std::shared_ptr<Surface::Window> Surface::createWindow(std::shared_ptr<KeyboardC
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    GLFWwindow* window = glfwCreateWindow(Constants::kWidth, Constants::kHeight, "Vulkan Game", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(Constants::kWidth, Constants::kHeight, "Cosmosis", nullptr, nullptr);
 
     auto windowAndResizeFlag = std::shared_ptr<Window>(new Window{window, false, keyboardControl});
 

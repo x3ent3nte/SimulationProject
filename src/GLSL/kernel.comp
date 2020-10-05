@@ -54,7 +54,7 @@ void main() {
 
     Agent agent = agents[index];
 
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 100; ++i) {
         vec3 delta = agent.target - agent.position;
         float distanceBetweenTargetAndPosition = length(delta);
         if (distanceBetweenTargetAndPosition < maxDistance) {

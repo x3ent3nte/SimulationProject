@@ -61,7 +61,7 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
     CudaAgent agent = agents[gid];
 
-    for (size_t i = 0; i < 1; ++i) {
+    for (size_t i = 0; i < 100; ++i) {
         float3 delta = subxx(agent.target, agent.position);
         float distanceBetweenTargetAndPosition = magx(delta);
         if (distanceBetweenTargetAndPosition < maxDistance) {
@@ -78,7 +78,7 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
 void CudaSimulator::simulate(CudaAgent* agents, float3* positions, size_t size) {
     const size_t threadsPerBlock = 512;
-    for (size_t i = 0; i < 100; ++i) {
+    for (size_t i = 0; i < 1; ++i) {
         simulateKernel<<<ceil((float) size / (float) threadsPerBlock), threadsPerBlock>>>(agents, positions, size);
     }
 }

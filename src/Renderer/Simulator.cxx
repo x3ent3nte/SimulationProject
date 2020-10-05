@@ -329,32 +329,30 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
 }
 
 void Simulator::compute(VkDevice logicalDevice) {
-    {
-        Timer time("Vulkan Simulator");
-        for (int i = 0; i < 100; ++i) {
-            vkResetFences(logicalDevice, 1, &m_computeFence);
+    Timer time("Vulkan Simulator");
+    for (int i = 0; i < 1; ++i) {
+        vkResetFences(logicalDevice, 1, &m_computeFence);
 
-            size_t numCommands = 1;
-            std::vector<VkSubmitInfo> submitInfos(numCommands);
-            {
-                for (size_t  j = 0; j < numCommands; ++j) {
-                    VkSubmitInfo submitInfo = {};
-                    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-                    submitInfo.commandBufferCount = 1;
-                    submitInfo.pCommandBuffers = &m_computeCommandBuffer;
+        size_t numCommands = 1;
+        std::vector<VkSubmitInfo> submitInfos(numCommands);
+        {
+            for (size_t  j = 0; j < numCommands; ++j) {
+                VkSubmitInfo submitInfo = {};
+                submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                submitInfo.commandBufferCount = 1;
+                submitInfo.pCommandBuffers = &m_computeCommandBuffer;
 
-                    submitInfos[j] = submitInfo;
-                }
+                submitInfos[j] = submitInfo;
             }
-
-            if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to submit compute command buffer");
-            }
-
-            vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
         }
-        //extractComputeResult(logicalDevice, m_positionsBufferMemory);
+
+        if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to submit compute command buffer");
+        }
+
+        vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     }
+    //extractComputeResult(logicalDevice, m_positionsBufferMemory);
 }
 
 void Simulator::cleanUp(VkDevice logicalDevice) {
