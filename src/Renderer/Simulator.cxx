@@ -241,28 +241,6 @@ namespace {
 
         return fence;
     }
-
-    void extractComputeResult(VkDevice logicalDevice, VkDeviceMemory memory) {
-        void* mappedMemory = NULL;
-
-        if (vkMapMemory(logicalDevice, memory, 0, NUM_ELEMENTS * sizeof(glm::vec3), 0, &mappedMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Error mapping memory");
-        }
-
-        glm::vec3* floatMappedMemory = (glm::vec3*) mappedMemory;
-        std::vector<glm::vec3> nums(NUM_ELEMENTS);
-
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            nums[i] = floatMappedMemory[i];
-        }
-
-        vkUnmapMemory(logicalDevice, memory);
-
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            glm::vec3 v = nums[i];
-            //std::cout << "i " << i << " " << v.x << " " << v.y << " " << v.z << "\n";
-        }
-    }
 } // namespace anonymous
 
 Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, std::shared_ptr<Connector> connector) {
@@ -363,7 +341,6 @@ void Simulator::runSimulatorTask(VkDevice logicalDevice) {
         numFrames++;
     }
     std::cout << "Number of frames simulated: " << numFrames << "\n";
-    //extractComputeResult(logicalDevice, m_positionsBufferMemory);
 }
 
 void Simulator::simulate(VkDevice logicalDevice) {
@@ -371,10 +348,28 @@ void Simulator::simulate(VkDevice logicalDevice) {
     m_simulateTask = std::thread(&Simulator::runSimulatorTask, this, logicalDevice);
 }
 
-void Simulator::cleanUp(VkDevice logicalDevice) {
-
+void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
     m_isActive = false;
     m_simulateTask.join();
+
+    std::vector<glm::vec3> positions(NUM_ELEMENTS);
+
+    Buffer::copyDeviceBufferToHost(
+        positions.data(),
+        NUM_ELEMENTS * sizeof(glm::vec3),
+        m_positionsBuffer,
+        physicalDevice,
+        logicalDevice,
+        m_computeCommandPool,
+        m_computeQueue);
+
+    for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+        glm::vec3 position = positions[i];
+        //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
+    }
+}
+
+void Simulator::cleanUp(VkDevice logicalDevice) {
 
     vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_agentsBuffer, nullptr);

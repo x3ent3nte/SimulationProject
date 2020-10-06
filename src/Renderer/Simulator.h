@@ -47,6 +47,8 @@ public:
 
     void simulate(VkDevice logicalDevice);
 
+    void stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
+
     void cleanUp(VkDevice logicalDevice);
 };
 

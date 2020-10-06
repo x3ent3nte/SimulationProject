@@ -657,6 +657,7 @@ private:
     }
 
     void cleanUp() {
+        m_simulator->stopSimulation(m_physicalDevice, m_logicalDevice);
         m_simulator->cleanUp(m_logicalDevice);
         m_connector->cleanUp(m_logicalDevice);
 

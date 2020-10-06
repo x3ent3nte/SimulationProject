@@ -24,6 +24,15 @@ namespace Buffer {
         VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
+    void copyDeviceBufferToHost(
+        void* data,
+        VkDeviceSize bufferSize,
+        VkBuffer buffer,
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkQueue queue);
+
     void copyBufferToImage(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
@@ -32,7 +41,6 @@ namespace Buffer {
         VkImage image,
         uint32_t width,
         uint32_t height);
-
 }
 
 #endif

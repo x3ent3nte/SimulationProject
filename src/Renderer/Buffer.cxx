@@ -93,12 +93,44 @@ void Buffer::createReadOnlyBuffer(
         physicalDevice,
         logicalDevice,
         bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         buffer,
         bufferMemory);
 
     copyBuffer(logicalDevice, commandPool, queue, stagingBuffer, buffer, bufferSize);
+
+    vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
+    vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
+}
+
+void Buffer::copyDeviceBufferToHost(
+    void* data,
+    VkDeviceSize bufferSize,
+    VkBuffer buffer,
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkQueue queue) {
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    Buffer::createBuffer(
+        physicalDevice,
+        logicalDevice,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingBuffer,
+        stagingBufferMemory);
+
+    copyBuffer(logicalDevice, commandPool, queue, buffer, stagingBuffer, bufferSize);
+
+    void* dataMap;
+    vkMapMemory(logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &dataMap);
+    memcpy(data, dataMap, (size_t) bufferSize);
+    vkUnmapMemory(logicalDevice, stagingBufferMemory);
 
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
