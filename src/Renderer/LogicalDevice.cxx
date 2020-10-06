@@ -17,7 +17,7 @@ void LogicalDevice::createLogicalDevice(
         PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily};
+        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily, 2};
 
         float queuePriority = 1.0f;
 

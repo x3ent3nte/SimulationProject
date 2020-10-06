@@ -28,6 +28,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <thread>
 
 class HelloTriangleApplication {
 public:
@@ -180,9 +181,6 @@ private:
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
         LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
 
-        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice);
-        m_simulator->compute(m_logicalDevice);
-
         createSwapChain();
 
         m_renderPass = Pipeline::createRenderPass(
@@ -208,6 +206,10 @@ private:
         createFrameBuffers();
 
         m_connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
+
+        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_connector);
+        m_simulator->simulate(m_logicalDevice);
+        //std::this_thread::sleep_for(std::chrono::seconds(20));
 
         m_mipLevels = Image::createTextureImage(
             m_physicalDevice,

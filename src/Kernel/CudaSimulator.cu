@@ -57,11 +57,11 @@ void simulateKernel(CudaAgent* agents, float3* positions, size_t size) {
 
     if (gid >= size) { return; }
 
-    float maxDistance = 10.0;
+    float maxDistance = 0.01;
 
     CudaAgent agent = agents[gid];
 
-    for (size_t i = 0; i < 100; ++i) {
+    for (size_t i = 0; i < 1; ++i) {
         float3 delta = subxx(agent.target, agent.position);
         float distanceBetweenTargetAndPosition = magx(delta);
         if (distanceBetweenTargetAndPosition < maxDistance) {

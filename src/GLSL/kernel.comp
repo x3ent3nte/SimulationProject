@@ -50,19 +50,17 @@ void main() {
 
     if (index > NUM_ELEMENTS) { return; }
 
-    float maxDistance = 10.0;
+    float maxDistance = 0.01;
 
     Agent agent = agents[index];
 
-    for (int i = 0; i < 100; ++i) {
-        vec3 delta = agent.target - agent.position;
-        float distanceBetweenTargetAndPosition = length(delta);
-        if (distanceBetweenTargetAndPosition < maxDistance) {
-            agent.position = agent.target;
-            agent.target = hashVec3(100.0, int(agent.position.x) + int(index));
-        } else {
-            agent.position += normalize(delta) * maxDistance;
-        }
+    vec3 delta = agent.target - agent.position;
+    float distanceBetweenTargetAndPosition = length(delta);
+    if (distanceBetweenTargetAndPosition < maxDistance) {
+        agent.position = agent.target;
+        agent.target = hashVec3(100.0, int(agent.position.x) + int(index));
+    } else {
+        agent.position += normalize(delta) * maxDistance;
     }
 
     agents[index] = agent;

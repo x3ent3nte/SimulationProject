@@ -89,8 +89,8 @@ namespace {
         VkDevice logicalDevice,
         VkDescriptorSetLayout& descriptorSetLayout ,
         VkDescriptorPool& descriptorPool,
-        VkBuffer bufferA,
-        VkBuffer bufferC) {
+        VkBuffer agentsBuffer,
+        VkBuffer positionsBuffer) {
 
         VkDescriptorSet descriptorSet;
 
@@ -104,33 +104,33 @@ namespace {
             throw std::runtime_error("Failed to create compute descriptor sets");
         }
 
-        VkDescriptorBufferInfo descriptorBufferInfoA = {};
-        descriptorBufferInfoA.buffer = bufferA;
-        descriptorBufferInfoA.offset = 0;
-        descriptorBufferInfoA.range = NUM_ELEMENTS * sizeof(Agent);
+        VkDescriptorBufferInfo agentsBufferDescriptor = {};
+        agentsBufferDescriptor.buffer = agentsBuffer;
+        agentsBufferDescriptor.offset = 0;
+        agentsBufferDescriptor.range = NUM_ELEMENTS * sizeof(Agent);
 
-        VkWriteDescriptorSet writeDescriptorSetA = {};
-        writeDescriptorSetA.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSetA.dstSet = descriptorSet;
-        writeDescriptorSetA.dstBinding = 0;
-        writeDescriptorSetA.descriptorCount = 1;
-        writeDescriptorSetA.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSetA.pBufferInfo = &descriptorBufferInfoA;
+        VkWriteDescriptorSet agentsWriteDescriptorSet = {};
+        agentsWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        agentsWriteDescriptorSet.dstSet = descriptorSet;
+        agentsWriteDescriptorSet.dstBinding = 0;
+        agentsWriteDescriptorSet.descriptorCount = 1;
+        agentsWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        agentsWriteDescriptorSet.pBufferInfo = &agentsBufferDescriptor;
 
-        VkDescriptorBufferInfo descriptorBufferInfoC = {};
-        descriptorBufferInfoC.buffer = bufferC;
-        descriptorBufferInfoC.offset = 0;
-        descriptorBufferInfoC.range = NUM_ELEMENTS * sizeof(glm::vec3);
+        VkDescriptorBufferInfo positionsBufferDescriptor = {};
+        positionsBufferDescriptor.buffer = positionsBuffer;
+        positionsBufferDescriptor.offset = 0;
+        positionsBufferDescriptor.range = NUM_ELEMENTS * sizeof(glm::vec3);
 
-        VkWriteDescriptorSet writeDescriptorSetC = {};
-        writeDescriptorSetC.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSetC.dstSet = descriptorSet;
-        writeDescriptorSetC.dstBinding = 1;
-        writeDescriptorSetC.descriptorCount = 1;
-        writeDescriptorSetC.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writeDescriptorSetC.pBufferInfo = &descriptorBufferInfoC;
+        VkWriteDescriptorSet positionsWriteDescriptorSet = {};
+        positionsWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        positionsWriteDescriptorSet.dstSet = descriptorSet;
+        positionsWriteDescriptorSet.dstBinding = 1;
+        positionsWriteDescriptorSet.descriptorCount = 1;
+        positionsWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        positionsWriteDescriptorSet.pBufferInfo = &positionsBufferDescriptor;
 
-        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = {writeDescriptorSetA, writeDescriptorSetC};
+        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = {agentsWriteDescriptorSet, positionsWriteDescriptorSet};
 
         vkUpdateDescriptorSets(logicalDevice, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 
@@ -265,9 +265,13 @@ namespace {
     }
 } // namespace anonymous
 
-Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
+Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, std::shared_ptr<Connector> connector) {
 
-    size_t computeQueueIndex = PhysicalDevice::findComputeQueueIndex(physicalDevice);
+    m_isActive = false;
+    m_connector = connector;
+
+    //size_t computeQueueIndex = PhysicalDevice::findComputeQueueIndex(physicalDevice);
+    size_t computeQueueIndex = 2;
     vkGetDeviceQueue(logicalDevice, computeQueueIndex, 0, &m_computeQueue);
 
     m_computeCommandPool = createComputeCommandPool(physicalDevice, logicalDevice, computeQueueIndex);
@@ -328,34 +332,50 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
     m_computeFence = createComputeFence(logicalDevice);
 }
 
-void Simulator::compute(VkDevice logicalDevice) {
-    Timer time("Vulkan Simulator");
-    for (int i = 0; i < 1; ++i) {
-        vkResetFences(logicalDevice, 1, &m_computeFence);
+void Simulator::simulateNextStep(VkDevice logicalDevice) {
+    vkResetFences(logicalDevice, 1, &m_computeFence);
 
-        size_t numCommands = 1;
-        std::vector<VkSubmitInfo> submitInfos(numCommands);
-        {
-            for (size_t  j = 0; j < numCommands; ++j) {
-                VkSubmitInfo submitInfo = {};
-                submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-                submitInfo.commandBufferCount = 1;
-                submitInfo.pCommandBuffers = &m_computeCommandBuffer;
+    size_t numCommands = 1;
+    std::vector<VkSubmitInfo> submitInfos(numCommands);
+    {
+        for (size_t  j = 0; j < numCommands; ++j) {
+            VkSubmitInfo submitInfo = {};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &m_computeCommandBuffer;
 
-                submitInfos[j] = submitInfo;
-            }
+            submitInfos[j] = submitInfo;
         }
-
-        if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit compute command buffer");
-        }
-
-        vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     }
+
+    if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit compute command buffer");
+    }
+
+    vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+}
+
+void Simulator::runSimulatorTask(VkDevice logicalDevice) {
+    Timer time("Vulkan Simulator");
+    uint64_t numFrames = 0;
+    while (m_isActive) {
+        simulateNextStep(logicalDevice);
+        numFrames++;
+    }
+    std::cout << "Number of frames simulated: " << numFrames << "\n";
     //extractComputeResult(logicalDevice, m_positionsBufferMemory);
 }
 
+void Simulator::simulate(VkDevice logicalDevice) {
+    m_isActive = true;
+    m_simulateTask = std::thread(&Simulator::runSimulatorTask, this, logicalDevice);
+}
+
 void Simulator::cleanUp(VkDevice logicalDevice) {
+
+    m_isActive = false;
+    m_simulateTask.join();
+
     vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_agentsBuffer, nullptr);
 
