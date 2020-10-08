@@ -5,26 +5,24 @@
 
 #include <stdexcept>
 
-namespace {
-    void copyBuffer(
-        VkDevice logicalDevice,
-        VkCommandPool commandPool,
-        VkQueue queue,
-        VkBuffer& srcBuffer,
-        VkBuffer& dstBuffer,
-        VkDeviceSize size) {
+void Buffer::copyBuffer(
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkQueue queue,
+    VkBuffer& srcBuffer,
+    VkBuffer& dstBuffer,
+    VkDeviceSize size) {
 
-        VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(logicalDevice, commandPool);
+    VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(logicalDevice, commandPool);
 
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        Command::endSingleTimeCommands(commandBuffer, queue, logicalDevice, commandPool);
-    }
-} // namespace anonymous
+    Command::endSingleTimeCommands(commandBuffer, queue, logicalDevice, commandPool);
+}
 
 void Buffer::createBuffer(
     VkPhysicalDevice physicalDevice,
@@ -98,7 +96,7 @@ void Buffer::createReadOnlyBuffer(
         buffer,
         bufferMemory);
 
-    copyBuffer(logicalDevice, commandPool, queue, stagingBuffer, buffer, bufferSize);
+    Buffer::copyBuffer(logicalDevice, commandPool, queue, stagingBuffer, buffer, bufferSize);
 
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
@@ -125,7 +123,7 @@ void Buffer::copyDeviceBufferToHost(
         stagingBuffer,
         stagingBufferMemory);
 
-    copyBuffer(logicalDevice, commandPool, queue, buffer, stagingBuffer, bufferSize);
+    Buffer::copyBuffer(logicalDevice, commandPool, queue, buffer, stagingBuffer, bufferSize);
 
     void* dataMap;
     vkMapMemory(logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &dataMap);

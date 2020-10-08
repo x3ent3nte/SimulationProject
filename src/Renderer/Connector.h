@@ -11,8 +11,8 @@ class Connector {
 
 public:
 
-    std::deque<VkBuffer> m_bufferQueue;
-    VkBuffer m_newestBuffer;
+    std::deque<size_t> m_bufferIndexQueue;
+    size_t m_newestBufferIndex;
 
     std::vector<VkBuffer> m_buffers;
     std::vector<VkDeviceMemory> m_bufferMemories;
@@ -24,11 +24,11 @@ public:
 
     void cleanUp(VkDevice logicalDevice);
 
-    VkBuffer takeNewest();
-    VkBuffer takeOld();
+    size_t takeNewestBufferIndex();
+    size_t takeOldBufferIndex();
 
-    void updateBuffer(VkBuffer buffer);
-    void restoreBuffer(VkBuffer buffer);
+    void updateBufferIndex(size_t index);
+    void restoreBufferIndex(size_t index);
 };
 
 #endif

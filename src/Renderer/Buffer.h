@@ -4,6 +4,15 @@
 #include <vulkan/vulkan.h>
 
 namespace Buffer {
+
+    void copyBuffer(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkQueue queue,
+        VkBuffer& srcBuffer,
+        VkBuffer& dstBuffer,
+        VkDeviceSize size);
+
     void createBuffer(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,

@@ -2,8 +2,7 @@
 
 #include <Renderer/Buffer.h>
 #include <Renderer/MyGLM.h>
-
-#define NUM_ELEMENTS 32 * 512
+#include <Renderer/Constants.h>
 
 Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue) {
 
@@ -12,16 +11,16 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     m_buffers.resize(numBuffers);
     m_bufferMemories.resize(numBuffers);
 
-    std::vector<glm::vec3> initialPositions(NUM_ELEMENTS);
+    std::vector<glm::vec3> initialPositions(Constants::kNumberOfAgents);
 
-    for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
+    for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
         initialPositions[i] = glm::vec3(0.0f, 0.0f, 0.0f);
     }
 
     for (size_t i = 0; i < numBuffers; ++i) {
         Buffer::createReadOnlyBuffer(
             initialPositions.data(),
-            NUM_ELEMENTS * sizeof(glm::vec3),
+            Constants::kNumberOfAgents * sizeof(glm::vec3),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             physicalDevice,
             logicalDevice,
@@ -30,10 +29,10 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
             m_buffers[i],
             m_bufferMemories[i]);
 
-        m_bufferQueue.push_back(m_buffers[i]);
+        m_bufferIndexQueue.push_back(i);
     }
 
-    m_newestBuffer = m_buffers[0];
+    m_newestBufferIndex = 0;
 }
 
 void Connector::cleanUp(VkDevice logicalDevice) {
@@ -44,31 +43,31 @@ void Connector::cleanUp(VkDevice logicalDevice) {
     }
 }
 
-VkBuffer Connector::takeNewest() {
+size_t Connector::takeNewestBufferIndex() {
     std::lock_guard<std::mutex> guard(m_mutex);
-    VkBuffer newest = m_bufferQueue.front();
-    m_bufferQueue.pop_front();
+    size_t newest = m_bufferIndexQueue.front();
+    m_bufferIndexQueue.pop_front();
     return newest;
 }
 
-VkBuffer Connector::takeOld() {
+size_t Connector::takeOldBufferIndex() {
     std::lock_guard<std::mutex> guard(m_mutex);
-    VkBuffer old = m_bufferQueue.back();
-    m_bufferQueue.pop_back();
+    size_t old = m_bufferIndexQueue.back();
+    m_bufferIndexQueue.pop_back();
     return old;
 }
 
-void Connector::updateBuffer(VkBuffer buffer) {
+void Connector::updateBufferIndex(size_t index) {
     std::lock_guard<std::mutex> guard(m_mutex);
-    m_newestBuffer = buffer;
-    m_bufferQueue.push_front(buffer);
+    m_newestBufferIndex = index;
+    m_bufferIndexQueue.push_front(index);
 }
 
-void Connector::restoreBuffer(VkBuffer buffer) {
+void Connector::restoreBufferIndex(size_t index) {
     std::lock_guard<std::mutex> guard(m_mutex);
-    if (buffer == m_newestBuffer) {
-        m_bufferQueue.push_front(buffer);
+    if (index == m_newestBufferIndex) {
+        m_bufferIndexQueue.push_front(index);
     } else {
-        m_bufferQueue.push_back(buffer);
+        m_bufferIndexQueue.push_back(index);
     }
 }

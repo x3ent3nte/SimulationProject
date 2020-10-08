@@ -34,10 +34,7 @@ private:
     VkBuffer m_agentsBuffer;
     VkDeviceMemory m_agentsBufferMemory;
 
-    std::vector<VkBuffer> m_positionsBuffers;
-    std::vector<VkDeviceMemory> m_positionsBufferMemories;
-
-    void simulateNextStep(VkDevice logicalDevice, size_t commandBufferIndex);
+    void simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer);
     void runSimulatorTask(VkDevice logicalDevice);
 
 public:

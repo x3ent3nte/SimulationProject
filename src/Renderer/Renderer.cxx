@@ -19,6 +19,8 @@
 #include <Renderer/MyGLM.h>
 #include <Renderer/Connector.h>
 
+#include <Timer.h>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -82,6 +84,9 @@ private:
     VkCommandPool m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
+    std::vector<VkCommandBuffer> m_copyCommandBuffers;
+    VkFence m_copyCompletedFence;
+
     VkDescriptorPool m_descriptorPool;
     std::vector<VkDescriptorSet> m_descriptorSets;
 
@@ -90,7 +95,6 @@ private:
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
 
-    const size_t m_numberOfInstances = 32 * 512;
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
 
@@ -256,6 +260,62 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+
+        createCopyBuffers();
+    }
+
+    size_t calculateCopyCommandBufferIndex(size_t connectorIndex, size_t imageIndex) {
+        size_t numConnectorBuffers = m_connector->m_buffers.size();
+        size_t numImages = m_commandBuffers.size();
+
+        return (numImages * connectorIndex) + imageIndex;
+    }
+
+    VkCommandBuffer createCopyCommandBuffer(size_t connectorIndex, size_t imageIndex) {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = Constants::kNumberOfAgents * sizeof(glm::vec3);
+        vkCmdCopyBuffer(commandBuffer, m_connector->m_buffers[connectorIndex], m_instanceBuffers[imageIndex], 1, &copyRegion);
+
+        vkEndCommandBuffer(commandBuffer);
+
+        return commandBuffer;
+    }
+
+    void createCopyBuffers() {
+        size_t numConnectorBuffers = m_connector->m_buffers.size();
+        size_t numImages = m_commandBuffers.size();
+
+        m_copyCommandBuffers.resize(numConnectorBuffers * numImages);
+
+        for (size_t connectorIndex = 0; connectorIndex < numConnectorBuffers; ++connectorIndex) {
+            for (size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
+                size_t index = calculateCopyCommandBufferIndex(connectorIndex, imageIndex);
+                m_copyCommandBuffers[index] = createCopyCommandBuffer(connectorIndex, imageIndex);
+            }
+        }
+
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        vkCreateFence(m_logicalDevice, &fenceInfo, nullptr, &m_copyCompletedFence);
     }
 
     void createInstanceBuffers() {
@@ -263,7 +323,7 @@ private:
         m_instanceBufferMemories.resize(m_swapChainImages.size());
 
         std::vector<glm::vec3> instancePositions;
-        instancePositions.resize(m_numberOfInstances);
+        instancePositions.resize(Constants::kNumberOfAgents);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
             instancePositions[i] = MyMath::randomVec3InSphere(512.0f);
@@ -272,7 +332,7 @@ private:
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
             Buffer::createReadOnlyBuffer(
                 instancePositions.data(),
-                m_numberOfInstances * sizeof(glm::vec3),
+                Constants::kNumberOfAgents * sizeof(glm::vec3),
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,
@@ -434,7 +494,7 @@ private:
             m_vertexBuffer,
             m_indexBuffer,
             static_cast<uint32_t>(m_indices.size()),
-            m_numberOfInstances,
+            Constants::kNumberOfAgents,
             m_descriptorSets,
             m_graphicsPipeline,
             m_pipelineLayout,
@@ -470,7 +530,7 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_prevTime).count();
 
         KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
-        float delta = 10.0f * time;
+        float delta = 100.0f * time;
 
         if (keyboardState.m_keyW) {
             m_cameraPosition += m_cameraForward * delta;
@@ -546,6 +606,23 @@ private:
         m_prevTime = currentTime;
     }
 
+    void updateAgentPositionsBuffer(size_t imageIndex) {
+        //Timer time("Update Agent Positions Buffer");
+        size_t connectorBufferIndex = m_connector->takeNewestBufferIndex();
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_copyCommandBuffers[calculateCopyCommandBufferIndex(connectorBufferIndex, imageIndex)];
+        vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
+
+        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
+
+        vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
+
+        m_connector->restoreBufferIndex(connectorBufferIndex);
+    }
+
     void drawFrame() {
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
@@ -577,6 +654,7 @@ private:
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
         updateUniformBuffer(imageIndex);
+        updateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -688,6 +766,7 @@ private:
             vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
         }
+        vkDestroyFence(m_logicalDevice, m_copyCompletedFence, nullptr);
 
         vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
 

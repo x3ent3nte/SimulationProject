@@ -8,6 +8,8 @@
 
 namespace Constants {
 
+    constexpr uint32_t kNumberOfAgents = 128 * 512;
+
     constexpr uint32_t kWidth = 800;
     constexpr uint32_t kHeight = 600;
 
