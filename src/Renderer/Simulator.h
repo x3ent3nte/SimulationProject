@@ -18,25 +18,26 @@ private:
     std::shared_ptr<Connector> m_connector;
 
     VkQueue m_computeQueue;
-    VkPipeline m_computePipeline;
-    VkPipelineLayout m_computePipelineLayout;
-    VkShaderModule m_computeShaderModule;
+    VkFence m_computeFence;
+
+    VkDescriptorSetLayout m_computeDescriptorSetLayout;
+
+    std::vector<VkDescriptorPool> m_computeDescriptorPools;
+    std::vector<VkDescriptorSet> m_computeDescriptorSets;
 
     VkCommandPool m_computeCommandPool;
-    VkCommandBuffer m_computeCommandBuffer;
-    VkFence m_computeFence;
+
+    std::vector<VkPipeline> m_computePipelines;
+    std::vector<VkPipelineLayout> m_computePipelineLayouts;
+    std::vector<VkCommandBuffer> m_computeCommandBuffers;
 
     VkBuffer m_agentsBuffer;
     VkDeviceMemory m_agentsBufferMemory;
 
-    VkBuffer m_positionsBuffer;
-    VkDeviceMemory m_positionsBufferMemory;
+    std::vector<VkBuffer> m_positionsBuffers;
+    std::vector<VkDeviceMemory> m_positionsBufferMemories;
 
-    VkDescriptorPool m_computeDescriptorPool;
-    VkDescriptorSet m_computeDescriptorSet;
-    VkDescriptorSetLayout m_computeDescriptorSetLayout;
-
-    void simulateNextStep(VkDevice logicalDevice);
+    void simulateNextStep(VkDevice logicalDevice, size_t commandBufferIndex);
     void runSimulatorTask(VkDevice logicalDevice);
 
 public:

@@ -71,23 +71,9 @@ namespace {
         glm::vec3 target;
     };
 
-    void initializeComputeBuffers(VkDevice logicalDevice, VkDeviceMemory memoryA) {
-        void* mappedMemoryA = NULL;
-        vkMapMemory(logicalDevice, memoryA, 0, NUM_ELEMENTS * sizeof(Agent), 0, & mappedMemoryA);
-        Agent* floatMappedMemoryA = (Agent*) mappedMemoryA;
-        for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
-            glm::vec3 position = MyMath::randomVec3InSphere(4096.0f);
-            glm::vec3 target = MyMath::randomVec3InSphere(2048.f) + position;
-            //glm::vec3 position = glm::vec3(i);
-            //glm::vec3 target = glm::vec3(i + 1);
-            floatMappedMemoryA[i] = {position, target};
-        }
-        vkUnmapMemory(logicalDevice, memoryA);
-    }
-
     VkDescriptorSet createComputeDescriptorSet(
         VkDevice logicalDevice,
-        VkDescriptorSetLayout& descriptorSetLayout ,
+        VkDescriptorSetLayout& descriptorSetLayout,
         VkDescriptorPool& descriptorPool,
         VkBuffer agentsBuffer,
         VkBuffer positionsBuffer) {
@@ -137,11 +123,8 @@ namespace {
         return descriptorSet;
     }
 
-    void createComputePipeline(
-        VkDevice logicalDevice,
-        VkDescriptorSetLayout descriptorSetLayout,
-        VkPipelineLayout& pipelineLayout,
-        VkPipeline& pipeline) {
+    VkPipelineLayout createComputePipelineLayout(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout) {
+        VkPipelineLayout pipelineLayout;
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -152,14 +135,21 @@ namespace {
             throw std::runtime_error("Failed to create pipeline layout");
         }
 
-        auto kernelShaderCode = Utils::readFile("src/GLSL/kernel.spv");
+        return pipelineLayout;
+    }
 
-        VkShaderModule kernelShaderModule = Utils::createShaderModule(logicalDevice, kernelShaderCode);
+    VkPipeline createComputePipeline(
+        VkDevice logicalDevice,
+        VkShaderModule shaderModule,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkPipelineLayout pipelineLayout) {
+
+        VkPipeline pipeline;
 
         VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
         shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        shaderStageCreateInfo.module = kernelShaderModule;
+        shaderStageCreateInfo.module = shaderModule;
         shaderStageCreateInfo.pName = "main";
 
         VkComputePipelineCreateInfo pipelineCreateInfo = {};
@@ -171,7 +161,7 @@ namespace {
             throw std::runtime_error("Failed to create compute pipeline");
         }
 
-        vkDestroyShaderModule(logicalDevice, kernelShaderModule, nullptr);
+        return pipeline;
     }
 
     VkCommandPool createComputeCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, size_t computeQueueIndex) {
@@ -245,6 +235,18 @@ namespace {
 
 Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, std::shared_ptr<Connector> connector) {
 
+    const size_t numBuffers = 3;
+
+    m_computeDescriptorPools.resize(numBuffers);
+    m_computeDescriptorSets.resize(numBuffers);
+
+    m_computePipelines.resize(numBuffers);
+    m_computePipelineLayouts.resize(numBuffers);
+    m_computeCommandBuffers.resize(numBuffers);
+
+    m_positionsBuffers.resize(numBuffers);
+    m_positionsBufferMemories.resize(numBuffers);
+
     m_isActive = false;
     m_connector = connector;
 
@@ -254,8 +256,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
 
     m_computeCommandPool = createComputeCommandPool(physicalDevice, logicalDevice, computeQueueIndex);
 
-    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(logicalDevice);
-    m_computeDescriptorPool = createComputeDescriptorPool(logicalDevice);
+    m_computeFence = createComputeFence(logicalDevice);
 
     std::vector<Agent> agents(NUM_ELEMENTS);
     for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
@@ -280,53 +281,57 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
         positions[i] = glm::vec3(0);
     }
 
-    Buffer::createReadOnlyBuffer(
-        positions.data(),
-        NUM_ELEMENTS * sizeof(glm::vec3),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        physicalDevice,
-        logicalDevice,
-        m_computeCommandPool,
-        m_computeQueue,
-        m_positionsBuffer,
-        m_positionsBufferMemory);
+    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(logicalDevice);
 
-    m_computeDescriptorSet = createComputeDescriptorSet(
-        logicalDevice,
-        m_computeDescriptorSetLayout,
-        m_computeDescriptorPool,
-        m_agentsBuffer,
-        m_positionsBuffer);
+    auto shaderCode = Utils::readFile("src/GLSL/kernel.spv");
+    VkShaderModule shaderModule = Utils::createShaderModule(logicalDevice, shaderCode);
 
-    createComputePipeline(logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayout, m_computePipeline);
+    for (size_t i = 0; i < numBuffers; ++i) {
+        Buffer::createReadOnlyBuffer(
+            positions.data(),
+            NUM_ELEMENTS * sizeof(glm::vec3),
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            physicalDevice,
+            logicalDevice,
+            m_computeCommandPool,
+            m_computeQueue,
+            m_positionsBuffers[i],
+            m_positionsBufferMemories[i]);
 
-    m_computeCommandBuffer = createComputeCommandBuffer(
-        logicalDevice,
-        m_computeCommandPool,
-        m_computePipeline,
-        m_computePipelineLayout,
-        m_computeDescriptorSet);
+        m_computeDescriptorPools[i] = createComputeDescriptorPool(logicalDevice);
 
-    m_computeFence = createComputeFence(logicalDevice);
-}
+        m_computeDescriptorSets[i] = createComputeDescriptorSet(
+            logicalDevice,
+            m_computeDescriptorSetLayout,
+            m_computeDescriptorPools[i],
+            m_agentsBuffer,
+            m_positionsBuffers[i]);
 
-void Simulator::simulateNextStep(VkDevice logicalDevice) {
-    vkResetFences(logicalDevice, 1, &m_computeFence);
+        m_computePipelineLayouts[i] = createComputePipelineLayout(logicalDevice, m_computeDescriptorSetLayout);
 
-    size_t numCommands = 1;
-    std::vector<VkSubmitInfo> submitInfos(numCommands);
-    {
-        for (size_t  j = 0; j < numCommands; ++j) {
-            VkSubmitInfo submitInfo = {};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &m_computeCommandBuffer;
+        m_computePipelines[i] = createComputePipeline(logicalDevice, shaderModule, m_computeDescriptorSetLayout, m_computePipelineLayouts[i]);
 
-            submitInfos[j] = submitInfo;
-        }
+        m_computeCommandBuffers[i] = createComputeCommandBuffer(
+            logicalDevice,
+            m_computeCommandPool,
+            m_computePipelines[i],
+            m_computePipelineLayouts[i],
+            m_computeDescriptorSets[i]);
     }
 
-    if (vkQueueSubmit(m_computeQueue, submitInfos.size(), submitInfos.data(), m_computeFence) != VK_SUCCESS) {
+    vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
+}
+
+void Simulator::simulateNextStep(VkDevice logicalDevice, size_t commandBufferIndex) {
+    vkResetFences(logicalDevice, 1, &m_computeFence);
+
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &m_computeCommandBuffers[commandBufferIndex];
+
+    if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit compute command buffer");
     }
 
@@ -336,8 +341,13 @@ void Simulator::simulateNextStep(VkDevice logicalDevice) {
 void Simulator::runSimulatorTask(VkDevice logicalDevice) {
     Timer time("Vulkan Simulator");
     uint64_t numFrames = 0;
+
+    size_t numComputeBuffers = m_computeCommandBuffers.size();
+    size_t currentComputeBufferIndex = 0;
     while (m_isActive) {
-        simulateNextStep(logicalDevice);
+        simulateNextStep(logicalDevice, currentComputeBufferIndex);
+        currentComputeBufferIndex = (currentComputeBufferIndex + 1) % numComputeBuffers;
+
         numFrames++;
     }
     std::cout << "Number of frames simulated: " << numFrames << "\n";
@@ -357,7 +367,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
     Buffer::copyDeviceBufferToHost(
         positions.data(),
         NUM_ELEMENTS * sizeof(glm::vec3),
-        m_positionsBuffer,
+        m_positionsBuffers[2],
         physicalDevice,
         logicalDevice,
         m_computeCommandPool,
@@ -365,7 +375,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
 
     for (size_t i = 0; i < NUM_ELEMENTS; ++i) {
         glm::vec3 position = positions[i];
-        //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
+        std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
     }
 }
 
@@ -374,15 +384,19 @@ void Simulator::cleanUp(VkDevice logicalDevice) {
     vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_agentsBuffer, nullptr);
 
-    vkFreeMemory(logicalDevice, m_positionsBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_positionsBuffer, nullptr);
-
-    vkDestroyFence(logicalDevice, m_computeFence, nullptr);
-    vkFreeCommandBuffers(logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffer);
-    vkDestroyCommandPool(logicalDevice, m_computeCommandPool, nullptr);
-
-    vkDestroyDescriptorPool(logicalDevice, m_computeDescriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(logicalDevice, m_computeDescriptorSetLayout, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, m_computePipelineLayout, nullptr);
-    vkDestroyPipeline(logicalDevice, m_computePipeline, nullptr);
+
+    for (size_t i = 0; i < m_computePipelines.size(); ++i) {
+        vkFreeMemory(logicalDevice, m_positionsBufferMemories[i], nullptr);
+        vkDestroyBuffer(logicalDevice, m_positionsBuffers[i], nullptr);
+
+        vkFreeCommandBuffers(logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffers[i]);
+
+        vkDestroyDescriptorPool(logicalDevice, m_computeDescriptorPools[i], nullptr);
+        vkDestroyPipelineLayout(logicalDevice, m_computePipelineLayouts[i], nullptr);
+        vkDestroyPipeline(logicalDevice, m_computePipelines[i], nullptr);
+    }
+
+    vkDestroyCommandPool(logicalDevice, m_computeCommandPool, nullptr);
+    vkDestroyFence(logicalDevice, m_computeFence, nullptr);
 }

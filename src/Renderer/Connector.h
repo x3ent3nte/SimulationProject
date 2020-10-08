@@ -9,7 +9,8 @@
 
 class Connector {
 
-private:
+public:
+
     std::deque<VkBuffer> m_bufferQueue;
     VkBuffer m_newestBuffer;
 
@@ -17,8 +18,6 @@ private:
     std::vector<VkDeviceMemory> m_bufferMemories;
 
     std::mutex m_mutex;
-
-public:
 
     Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue);
     virtual ~Connector() = default;
