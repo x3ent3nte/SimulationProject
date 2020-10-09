@@ -28,21 +28,20 @@ int hashInt(int a) {
     return a;
 }
 
-float hashFloat(int a) {
-    a = hashInt(a);
-    int bound = (1 << 30) - 1;
-    a &= bound;
-    float b = float(a) / float(bound);
-    return b;
+float hashFloat(float n) {
+   return (2.0f * fract(sin(n) * 43758.5453123)) - 1.0f;
 }
 
-vec3 hashVec3(float radius, int seed) {
-    const float z = (2.0f * hashFloat(seed)) - 1.0f;
-    const float xyMag = sqrt(1.0f - (z * z));
-    const float azimuth = hashFloat(seed + 1) * 6.28318530718;
-    const float y = sin(azimuth) * xyMag;
-    const float x = cos(azimuth) * xyMag;
-    return vec3(x, y, z) * radius * hashFloat(seed + 10);
+vec3 hashVec3(float radius, vec3 seed) {
+    float x = hashFloat(seed.z);
+    float y = hashFloat(seed.x);
+    float z = hashFloat(seed.y);
+
+    vec3 v = vec3(x, y, z);
+    float mag = length(v);
+
+    v = (mag == 0) ? vec3(1.0f) : (v / mag);
+    return v * radius;
 }
 
 void main() {
@@ -58,8 +57,7 @@ void main() {
     float distanceBetweenTargetAndPosition = length(delta);
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.position = agent.target;
-        //agent.target = hashVec3(200.0, int(agent.position.x) + int(index));
-        agent.target = agent.position + vec3(100.0, 0.0, 0.0);
+        agent.target = hashVec3(260.0, agent.position);
     } else {
         agent.position += normalize(delta) * maxDistance;
     }

@@ -1,5 +1,6 @@
 #include <Renderer/Simulator.h>
 
+#include <Renderer/Agent.h>
 #include <Renderer/Buffer.h>
 #include <Renderer/Utils.h>
 #include <Renderer/PhysicalDevice.h>
@@ -63,11 +64,6 @@ namespace {
 
         return descriptorPool;
     }
-
-    struct Agent {
-        glm::vec3 position;
-        glm::vec3 target;
-    };
 
     VkDescriptorSet createComputeDescriptorSet(
         VkDevice logicalDevice,
