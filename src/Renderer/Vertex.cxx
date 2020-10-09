@@ -1,5 +1,7 @@
 #include <Renderer/Vertex.h>
 
+#include <Renderer/Agent.h>
+
 bool Vertex::operator==(const Vertex& other) const {
     return (pos == other.pos) && (colour == other.colour) && (texCoord == other.texCoord);
 }
@@ -12,14 +14,14 @@ std::array<VkVertexInputBindingDescription, 2> Vertex::getBindingDescriptions() 
     bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     bindingDescriptions[1].binding = 1;
-    bindingDescriptions[1].stride = sizeof(glm::vec3);
+    bindingDescriptions[1].stride = sizeof(AgentPositionAndRotation);
     bindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
 
     return bindingDescriptions;
 }
 
-std::array<VkVertexInputAttributeDescription, 4> Vertex::getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
+std::array<VkVertexInputAttributeDescription, 5> Vertex::getAttributeDescriptions() {
+    std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions{};
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
@@ -39,7 +41,12 @@ std::array<VkVertexInputAttributeDescription, 4> Vertex::getAttributeDescription
     attributeDescriptions[3].binding = 1;
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[3].offset = 0;
+    attributeDescriptions[3].offset = offsetof(AgentPositionAndRotation, position);
+
+    attributeDescriptions[4].binding = 1;
+    attributeDescriptions[4].location = 4;
+    attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributeDescriptions[4].offset = offsetof(AgentPositionAndRotation, rotation);
 
     return attributeDescriptions;
 }

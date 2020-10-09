@@ -100,7 +100,7 @@ namespace {
         VkDescriptorBufferInfo positionsBufferDescriptor = {};
         positionsBufferDescriptor.buffer = positionsBuffer;
         positionsBufferDescriptor.offset = 0;
-        positionsBufferDescriptor.range = Constants::kNumberOfAgents * sizeof(glm::vec3);
+        positionsBufferDescriptor.range = Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation);
 
         VkWriteDescriptorSet positionsWriteDescriptorSet = {};
         positionsWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -253,7 +253,8 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
     for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
         glm::vec3 position = MyMath::randomVec3InSphere(512.0f);
         glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
-        agents[i] = Agent{position, target};
+        glm::vec4 rotation = MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f);
+        agents[i] = Agent{position, target, rotation};
     }
 
     Buffer::createReadOnlyBuffer(
@@ -338,11 +339,11 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
     m_isActive = false;
     m_simulateTask.join();
 
-    std::vector<glm::vec3> positions(Constants::kNumberOfAgents);
+    std::vector<AgentPositionAndRotation> positions(Constants::kNumberOfAgents);
 
     Buffer::copyDeviceBufferToHost(
         positions.data(),
-        Constants::kNumberOfAgents * sizeof(glm::vec3),
+        Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
         m_connector->m_buffers[2],
         physicalDevice,
         logicalDevice,
@@ -350,7 +351,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
         m_computeQueue);
 
     for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
-        glm::vec3 position = positions[i];
+        glm::vec3 position = positions[i].position;
         //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
     }
 }

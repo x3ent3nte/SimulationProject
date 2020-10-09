@@ -22,7 +22,7 @@ struct Vertex {
 
     static std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions();
 
-    static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
+    static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions();
 };
 
 namespace std {

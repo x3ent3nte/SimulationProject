@@ -1,5 +1,6 @@
 #include <Renderer/Renderer.h>
 
+#include <Renderer/Agent.h>
 #include <Renderer/Simulator.h>
 #include <Renderer/Utils.h>
 #include <Renderer/Vertex.h>
@@ -290,7 +291,7 @@ private:
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;
         copyRegion.dstOffset = 0;
-        copyRegion.size = Constants::kNumberOfAgents * sizeof(glm::vec3);
+        copyRegion.size = Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation);
         vkCmdCopyBuffer(commandBuffer, m_connector->m_buffers[connectorIndex], m_instanceBuffers[imageIndex], 1, &copyRegion);
 
         vkEndCommandBuffer(commandBuffer);
@@ -322,17 +323,19 @@ private:
         m_instanceBuffers.resize(m_swapChainImages.size());
         m_instanceBufferMemories.resize(m_swapChainImages.size());
 
-        std::vector<glm::vec3> instancePositions;
+        std::vector<AgentPositionAndRotation> instancePositions;
         instancePositions.resize(Constants::kNumberOfAgents);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
-            instancePositions[i] = MyMath::randomVec3InSphere(512.0f);
+            instancePositions[i] = AgentPositionAndRotation{
+                MyMath::randomVec3InSphere(512.0f),
+                MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f)};
         }
 
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
             Buffer::createReadOnlyBuffer(
                 instancePositions.data(),
-                Constants::kNumberOfAgents * sizeof(glm::vec3),
+                Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,

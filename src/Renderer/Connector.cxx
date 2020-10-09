@@ -3,6 +3,8 @@
 #include <Renderer/Buffer.h>
 #include <Renderer/MyGLM.h>
 #include <Renderer/Constants.h>
+#include <Renderer/Agent.h>
+#include <Renderer/MyMath.h>
 
 Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue) {
 
@@ -11,16 +13,16 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     m_buffers.resize(numBuffers);
     m_bufferMemories.resize(numBuffers);
 
-    std::vector<glm::vec3> initialPositions(Constants::kNumberOfAgents);
+    std::vector<AgentPositionAndRotation> initialPositions(Constants::kNumberOfAgents);
 
     for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
-        initialPositions[i] = glm::vec3(0.0f, 0.0f, 0.0f);
+        initialPositions[i] = AgentPositionAndRotation{glm::vec3(0.0f), glm::vec4(0.0f)};
     }
 
     for (size_t i = 0; i < numBuffers; ++i) {
         Buffer::createReadOnlyBuffer(
             initialPositions.data(),
-            Constants::kNumberOfAgents * sizeof(glm::vec3),
+            Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             physicalDevice,
             logicalDevice,

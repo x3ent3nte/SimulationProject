@@ -9,6 +9,12 @@ layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 struct Agent {
     vec3 position;
     vec3 target;
+    vec4 rotation;
+};
+
+struct AgentPositionAndRotation {
+    vec3 position;
+    vec4 rotation;
 };
 
 layout (std430, binding = 0) buffer bufAgents {
@@ -16,7 +22,7 @@ layout (std430, binding = 0) buffer bufAgents {
 };
 
 layout (std430, binding = 1) buffer bufPositions {
-    vec3 positions[];
+    AgentPositionAndRotation agentPositionAndRotation[];
 };
 
 int hashInt(int a) {
@@ -63,5 +69,5 @@ void main() {
     }
 
     agents[index] = agent;
-    positions[index] = agent.position;
+    agentPositionAndRotation[index] = AgentPositionAndRotation(agent.position, agent.rotation);
 }

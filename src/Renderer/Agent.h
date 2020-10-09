@@ -6,6 +6,12 @@
 struct Agent {
     glm::vec3 position;
     glm::vec3 target;
+    glm::vec4 rotation;
+};
+
+struct AgentPositionAndRotation {
+    glm::vec3 position;
+    glm::vec4 rotation;
 };
 
 #endif
