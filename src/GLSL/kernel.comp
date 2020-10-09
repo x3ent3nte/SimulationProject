@@ -50,21 +50,83 @@ vec3 hashVec3(float radius, vec3 seed) {
     return v * radius;
 }
 
+float cosineSimilarity(vec3 a, vec3 b) {
+    float magMult = length(a) * length(b);
+    if (magMult <= 0) {
+        return 0;
+    }
+
+    return dot(a, b) / magMult;
+}
+
+vec4 hamiltonProduct(vec4 a, vec4 b) {
+    float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+    float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+    float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
+    float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
+
+    return vec4(i, j, k, r);
+}
+
+vec4 inverseQuaternion(vec4 q) {
+    return vec4(-q.x, -q.y, -q.z, q.w);
+}
+
+vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
+    vec4 p4 = vec4(p, 0.0f);
+    vec4 qi = inverseQuaternion(q);
+
+    return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
+}
+
+vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
+    float thetaHalved = theta / 2;
+    return vec4(sin(thetaHalved) * axis, cos(thetaHalved));
+}
+
+vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
+    return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
+}
+
+void rotateAgent(inout Agent agent, inout vec3 forward) {
+    vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+
+    vec3 initialForward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+    vec3 targetDelta = normalize(agent.target - agent.position);
+
+    float cosSim = cosineSimilarity(initialForward, targetDelta);
+    float angleBetween = acos(cosSim);
+
+    if (angleBetween == 0.0f) {
+        forward = initialForward;
+    } else {
+        float theta = min(angleBetween, 0.005);
+        vec3 targetRight = cross(initialForward, targetDelta);
+        vec4 changeInRotation = createQuaternionFromAxisAndTheta(targetRight, theta);
+
+        agent.rotation = normalize(hamiltonProduct(changeInRotation, agent.rotation));
+        forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+    }
+}
+
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
     if (index > NUM_ELEMENTS) { return; }
 
-    float maxDistance = 0.09;
-
     Agent agent = agents[index];
+
+    float maxDistance = 0.09;
 
     vec3 delta = agent.target - agent.position;
     float distanceBetweenTargetAndPosition = length(delta);
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.position = agent.target;
-        agent.target = hashVec3(260.0, agent.position);
+        agent.target = hashVec3(256.0, agent.position);
     } else {
+        vec3 forward = vec3(0.0f, 0.0f, -1.0f);
+        rotateAgent(agent, forward);
+        //agent.position += normalize(forward) * maxDistance;
         agent.position += normalize(delta) * maxDistance;
     }
 
