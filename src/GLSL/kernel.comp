@@ -39,9 +39,13 @@ float hashFloat(float n) {
 }
 
 vec3 hashVec3(float radius, vec3 seed) {
-    float x = hashFloat(seed.z);
-    float y = hashFloat(seed.x);
-    float z = hashFloat(seed.y);
+    //float x = hashFloat(seed.z);
+    //float y = hashFloat(seed.x);
+    //float z = hashFloat(seed.y);
+
+    float x = seed.z;
+    float y = seed.x;
+    float z = seed.y;
 
     vec3 v = vec3(x, y, z);
     float mag = length(v);
@@ -100,7 +104,7 @@ void rotateAgent(inout Agent agent, inout vec3 forward) {
     if (angleBetween == 0.0f) {
         forward = initialForward;
     } else {
-        float theta = min(angleBetween, 0.005);
+        float theta = min(angleBetween, 0.05);
         vec3 targetRight = cross(initialForward, targetDelta);
         vec4 changeInRotation = createQuaternionFromAxisAndTheta(targetRight, theta);
 
@@ -122,12 +126,12 @@ void main() {
     float distanceBetweenTargetAndPosition = length(delta);
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.position = agent.target;
-        agent.target = hashVec3(256.0, agent.position);
+        agent.target = hashVec3(500.0, agent.position);
     } else {
         vec3 forward = vec3(0.0f, 0.0f, -1.0f);
         rotateAgent(agent, forward);
-        //agent.position += normalize(forward) * maxDistance;
-        agent.position += normalize(delta) * maxDistance;
+        agent.position += forward * maxDistance;
+        //agent.position += normalize(delta) * maxDistance;
     }
 
     agents[index] = agent;
