@@ -5,6 +5,7 @@
 
 struct Agent {
     glm::vec3 position;
+    glm::vec3 velocity;
     glm::vec3 target;
     glm::vec4 rotation;
 };

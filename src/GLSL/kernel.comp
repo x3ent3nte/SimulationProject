@@ -8,6 +8,7 @@ layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
     vec3 position;
+    vec3 velocity;
     vec3 target;
     vec4 rotation;
 };
@@ -92,7 +93,7 @@ vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
     return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
 }
 
-void rotateAgent(inout Agent agent, inout vec3 forward) {
+void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
     vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
 
     vec3 initialForward = rotatePointByQuaternion(canonicalForward, agent.rotation);
@@ -113,25 +114,41 @@ void rotateAgent(inout Agent agent, inout vec3 forward) {
     }
 }
 
+void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
+    //agent.position += forward * maxDistance;
+    //agent.position += normalize(delta) * maxDistance;
+
+    float velocityMag = length(agent.velocity);
+    vec3 velocityNorm = (velocityMag != 0.0) ? (agent.velocity / velocityMag) : vec3(0.0f);
+
+    float cosSim = cosineSimilarity(agent.velocity, diff);
+    agent.velocity += velocityNorm * (cosSim - 1.0) * timeDelta;
+
+    agent.velocity += forward * timeDelta;
+
+    agent.position += agent.velocity * timeDelta;
+}
+
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
     if (index > NUM_ELEMENTS) { return; }
 
+    float timeDelta = 0.09;
     Agent agent = agents[index];
 
-    float maxDistance = 0.09;
+    float maxDistance = 1;
+    vec3 forward = vec3(0.0f, 0.0f, -1.0f);
 
     vec3 delta = agent.target - agent.position;
+
     float distanceBetweenTargetAndPosition = length(delta);
+
+    rotateAgent(agent, forward, timeDelta);
+    moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta * 0.1);
+
     if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.position = agent.target;
         agent.target = hashVec3(500.0, agent.position);
-    } else {
-        vec3 forward = vec3(0.0f, 0.0f, -1.0f);
-        rotateAgent(agent, forward);
-        agent.position += forward * maxDistance;
-        //agent.position += normalize(delta) * maxDistance;
     }
 
     agents[index] = agent;
