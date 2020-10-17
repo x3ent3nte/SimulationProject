@@ -114,6 +114,51 @@ void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
     }
 }
 
+vec3 quadraticEquationFromVec2(const vec2 v) {
+    return vec3(v.x * v.x, 2 * v.x * v.y , v.y * v.y);
+}
+
+struct QuadraticSolution {
+    int exist;
+    float sol1;
+    float sol2;
+};
+
+QuadraticSolution solveQuadraticEquation(vec3 q) {
+    if (q.x == 0.0f) {
+        return QuadraticSolution(0, 0.0f, 0.0f);
+    }
+
+    float b2Minus4AC = (q.y * q.y) - (4 * q.x * q.z);
+
+    if (b2Minus4AC < 0.0f) {
+        return QuadraticSolution(0, 0.0f, 0.0f);
+    }
+
+    float sqrtB2Minus4AC = sqrt(b2Minus4AC);
+    float twoA = 2 * q.x;
+
+    float sol1 = (-q.y + sqrtB2Minus4AC) / twoA;
+    float sol2 = (-q.y - sqrtB2Minus4AC) / twoA;
+
+    return QuadraticSolution(1, sol1, sol2);
+}
+
+vec3 calculateQuadraticEquationOfTimeToTarget(inout Agent agent) {
+    vec3 dxt = quadraticEquationFromVec2(vec2(-agent.velocity.x, agent.target.x - agent.velocity.x));
+    vec3 dyt = quadraticEquationFromVec2(vec2(-agent.velocity.x, agent.target.x - agent.velocity.x));
+    vec3 dzt = quadraticEquationFromVec2(vec2(-agent.velocity.x, agent.target.x - agent.velocity.x));
+
+    vec3 dt = dxt + dyt + dzt;
+    dt.z -= 100.0;
+
+    return dt;
+}
+
+void flyByWire(inout Agent agent) {
+    QuadraticSolution sol = solveQuadraticEquation(calculateQuadraticEquationOfTimeToTarget(agent));
+}
+
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     //agent.position += forward * maxDistance;
     //agent.position += normalize(delta) * maxDistance;
@@ -125,6 +170,8 @@ void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     agent.velocity += velocityNorm * (cosSim - 1.0) * timeDelta;
 
     agent.velocity += forward * timeDelta;
+
+    flyByWire(agent);
 
     agent.position += agent.velocity * timeDelta;
 }
