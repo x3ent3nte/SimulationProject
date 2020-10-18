@@ -155,13 +155,21 @@ vec3 calculateQuadraticEquationOfTimeToTarget(inout Agent agent) {
     return dt;
 }
 
+/*
+void optimizeAcceleration(inout Agent agent) {
+    2 * (agent.target - agent.position) = (agent.velocity * t) + ((agent.velocity + (acc * t)) * t)
+    2 * (agent.target - agent.position) = t * ((2 * agent.velocity) + acc * t)
+    t = (agent.target - agent.position) / (agent.velocity + acc)
+}
+*/
+
 void flyByWire(inout Agent agent) {
     QuadraticSolution sol = solveQuadraticEquation(calculateQuadraticEquationOfTimeToTarget(agent));
 }
 
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
-    //agent.position += forward * maxDistance;
-    //agent.position += normalize(delta) * maxDistance;
+    // agent.position += forward * maxDistance;
+    // agent.position += normalize(delta) * maxDistance;
 
     float velocityMag = length(agent.velocity);
     vec3 velocityNorm = (velocityMag != 0.0) ? (agent.velocity / velocityMag) : vec3(0.0f);
