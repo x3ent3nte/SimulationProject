@@ -9,6 +9,7 @@ layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 struct Agent {
     vec3 position;
     vec3 velocity;
+    vec3 acceleration;
     vec3 target;
     vec4 rotation;
 };
@@ -53,6 +54,11 @@ vec3 hashVec3(float radius, vec3 seed) {
 
     v = (mag == 0) ? vec3(1.0f) : (v / mag);
     return v * radius;
+}
+
+vec3 safeNormalize(vec3 v) {
+    float mag = length(v);
+    return (mag != 0.0f) ? (v / mag) : vec3(0.0f);
 }
 
 float cosineSimilarity(vec3 a, vec3 b) {
@@ -155,31 +161,51 @@ vec3 calculateQuadraticEquationOfTimeToTarget(inout Agent agent) {
     return dt;
 }
 
-/*
-void optimizeAcceleration(inout Agent agent) {
-    2 * (agent.target - agent.position) = (agent.velocity * t) + ((agent.velocity + (acc * t)) * t)
-    2 * (agent.target - agent.position) = t * ((2 * agent.velocity) + acc * t)
-    t = (agent.target - agent.position) / (agent.velocity + acc)
-}
-*/
-
 void flyByWire(inout Agent agent) {
     QuadraticSolution sol = solveQuadraticEquation(calculateQuadraticEquationOfTimeToTarget(agent));
 }
 
-void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
-    // agent.position += forward * maxDistance;
-    // agent.position += normalize(delta) * maxDistance;
+void optimizeAcceleration(inout Agent agent, vec3 diff, float timeDelta) {
+    /*
+    2 * (agent.target - agent.position) = (agent.velocity * t) + ((agent.velocity + (acc * t)) * t)
+    2 * (agent.target - agent.position) = t * ((2 * agent.velocity) + acc * t)
+    t = (agent.target - agent.position) / (agent.velocity + acc)
+    */
 
     float velocityMag = length(agent.velocity);
     vec3 velocityNorm = (velocityMag != 0.0) ? (agent.velocity / velocityMag) : vec3(0.0f);
 
     float cosSim = cosineSimilarity(agent.velocity, diff);
-    agent.velocity += velocityNorm * (cosSim - 1.0) * timeDelta;
+    agent.acceleration += velocityNorm * (cosSim - 1.0) * timeDelta;
+    agent.acceleration += diff * timeDelta;
 
-    agent.velocity += forward * timeDelta;
+    float accelerationMag = length(agent.acceleration);
 
-    flyByWire(agent);
+    float mass = 80.0f;
+    float maxForce = 250.0f;
+    float maxAccleration = maxForce / mass;
+    if (accelerationMag > maxAccleration) {
+        agent.acceleration *= (maxAccleration / accelerationMag);
+    }
+}
+
+vec3 adjustDelta(vec3 desired, vec3 current, float timeDelta) {
+    vec3 currentNorm = safeNormalize(current);
+    vec3 desiredNorm = safeNormalize(desired);
+    float cosSim = cosineSimilarity(currentNorm, desiredNorm);
+
+    return ((currentNorm * (cosSim - 1.0)) + desiredNorm) * timeDelta;
+}
+
+void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
+    //flyByWire(agent);
+    //optimizeAcceleration(agent, diff, timeDelta);
+
+    //vec3 desiredVelocity = adjustDelta(diff, agent.velocity, timeDelta);
+    //agent.acceleration += adjustDelta(desiredVelocity, agent.acceleration, timeDelta);
+    //agent.velocity += agent.acceleration * timeDelta;
+
+    agent.velocity += adjustDelta(diff, agent.velocity, timeDelta);
 
     agent.position += agent.velocity * timeDelta;
 }
@@ -192,16 +218,14 @@ void main() {
     float timeDelta = 0.09;
     Agent agent = agents[index];
 
-    float maxDistance = 1;
     vec3 forward = vec3(0.0f, 0.0f, -1.0f);
-
     vec3 delta = agent.target - agent.position;
-
     float distanceBetweenTargetAndPosition = length(delta);
 
     rotateAgent(agent, forward, timeDelta);
     moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta * 0.1);
 
+    float maxDistance = 1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.target = hashVec3(500.0, agent.position);
     }
