@@ -167,9 +167,27 @@ void flyByWire(inout Agent agent) {
 
 void optimizeAcceleration(inout Agent agent, vec3 diff, float timeDelta) {
     /*
+
     2 * (agent.target - agent.position) = (agent.velocity * t) + ((agent.velocity + (acc * t)) * t)
     2 * (agent.target - agent.position) = t * ((2 * agent.velocity) + acc * t)
     t = (agent.target - agent.position) / (agent.velocity + acc)
+
+    s = (v + ((a + (r * t)) * t)) * t
+    s = vt + ((a + (r * t)) * tt)
+    s = vt + att + rttt
+    d = (q - p) - vt - att - rttt
+
+    1 = x^2 + y^2 + z^2
+    hx = (qx - px) - vxt - axtt - rxttt
+    hy = (qy - py) - vyt - aytt - ryttt
+    hz = (qz - pz) - vzt - aztt - rzttt
+
+    hx = c1 - rx
+    hy = c2 - ry
+    hz = c3 - rz
+
+    h^2 = hx^2 + hy^2 + hz^2
+
     */
 
     float velocityMag = length(agent.velocity);
