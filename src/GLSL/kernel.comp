@@ -207,7 +207,7 @@ void optimizeAcceleration(inout Agent agent, vec3 diff, float timeDelta) {
     }
 }
 
-vec3 adjustDelta(vec3 desired, vec3 current, float timeDelta) {
+vec3 adjustDeltaWithCosSim(vec3 desired, vec3 current, float timeDelta) {
     vec3 currentNorm = safeNormalize(current);
     vec3 desiredNorm = safeNormalize(desired);
     float cosSim = cosineSimilarity(currentNorm, desiredNorm);
@@ -215,27 +215,43 @@ vec3 adjustDelta(vec3 desired, vec3 current, float timeDelta) {
     return ((currentNorm * (cosSim - 1.0)) + desiredNorm) * timeDelta;
 }
 
+vec3 calculateDelta(vec3 desired, vec3 current, float timeDelta) {
+    vec3 diff = desired - current;
+
+    vec3 stabilize = diff * timeDelta * 1700.0f;
+    vec3 thrust = desired * timeDelta * 200.0f;
+
+    return stabilize + thrust;
+}
+
 vec3 calculateAcceleration(Agent agent, float timeDelta) {
-    vec3 diff = agent.target - agent.position;
-    vec3 diffNorm = safeNormalize(diff);
+    return calculateDelta(
+        safeNormalize(agent.target - agent.position),
+        safeNormalize(agent.velocity),
+        timeDelta);
+}
 
-    vec3 accelerationDir = diffNorm - safeNormalize(agent.velocity);
-
-    vec3 accelerationToStabilize = accelerationDir * timeDelta * 370.0f;
-    vec3 accelerationToTarget = diffNorm * timeDelta * 200.0f;
-
-    return accelerationToTarget + accelerationToStabilize;
+vec3 calculateChangeInAcceleration(Agent agent, float timeDelta) {
+    return calculateDelta(
+        safeNormalize(calculateAcceleration(agent, timeDelta)),
+        safeNormalize(agent.acceleration),
+        timeDelta) * 10.f;
 }
 
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     //flyByWire(agent);
     //optimizeAcceleration(agent, diff, timeDelta);
 
-    //vec3 desiredVelocity = adjustDelta(diff, agent.velocity, timeDelta);
-    //agent.acceleration += adjustDelta(desiredVelocity, agent.acceleration, timeDelta);
+    //vec3 desiredVelocity = adjustDeltaWithCosSim(diff, agent.velocity, timeDelta);
+    //agent.acceleration += adjustDeltaWithCosSim(desiredVelocity, agent.acceleration, timeDelta);
     //agent.velocity += agent.acceleration * timeDelta;
 
-    //agent.velocity += adjustDelta(diff, agent.velocity, timeDelta);
+    //agent.velocity += adjustDeltaWithCosSim(diff, agent.velocity, timeDelta);
+    //agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
+
+    // agent.acceleration += calculateChangeInAcceleration(agent, timeDelta) * timeDelta;
+
+    // agent.velocity += agent.acceleration * timeDelta;
     agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
 
     agent.position += agent.velocity * timeDelta;
