@@ -215,6 +215,18 @@ vec3 adjustDelta(vec3 desired, vec3 current, float timeDelta) {
     return ((currentNorm * (cosSim - 1.0)) + desiredNorm) * timeDelta;
 }
 
+vec3 calculateAcceleration(Agent agent, float timeDelta) {
+    vec3 diff = agent.target - agent.position;
+    vec3 diffNorm = safeNormalize(diff);
+
+    vec3 accelerationDir = diffNorm - safeNormalize(agent.velocity);
+
+    vec3 accelerationToStabilize = accelerationDir * timeDelta * 370.0f;
+    vec3 accelerationToTarget = diffNorm * timeDelta * 200.0f;
+
+    return accelerationToTarget + accelerationToStabilize;
+}
+
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     //flyByWire(agent);
     //optimizeAcceleration(agent, diff, timeDelta);
@@ -223,7 +235,8 @@ void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     //agent.acceleration += adjustDelta(desiredVelocity, agent.acceleration, timeDelta);
     //agent.velocity += agent.acceleration * timeDelta;
 
-    agent.velocity += adjustDelta(diff, agent.velocity, timeDelta);
+    //agent.velocity += adjustDelta(diff, agent.velocity, timeDelta);
+    agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
 
     agent.position += agent.velocity * timeDelta;
 }
