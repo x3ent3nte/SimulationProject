@@ -196,6 +196,26 @@ vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
     float yAcc = ((-2 * agent.velocity.y * timeToTarget) + (2 * relativeTarget.y)) / (timeToTarget * timeToTarget);
     float zAcc = ((-2 * agent.velocity.z * timeToTarget) + (2 * relativeTarget.z)) / (timeToTarget * timeToTarget);
 
+    /*
+    accelerationSquared = xAcc^2 + yAcc^2 + zAcc^2
+    xAcc = (-2 * agent.velocity.x * timeToTarget^-1) + (2 * relativeTarget.x * timeToTarget^-2)
+    xAcc^2 = (4 * agent.velocity.x^2 * timeToTarget^-2) +
+            (-8 * agent.velocity.x * relativeTarget.x * timeToTarget^-3) +
+            (4 * relativeTarget.x^2 * timeToTarget^-4)
+
+    (4 * 4 * 4 * agent.velocity.x^2 * agent.velocity.y^2 * agent.velocity.z^2) * timeToTarget^-2 +
+    (-8 * -8 * -8 * agent.velocity.x * relativeTarget.x * agent.velocity.y * relativeTarget.y * agent.velocity.z * relativeTarget.z) * timeToTarget^-3 +
+    (4 * 4 * 4 * relativeTarget.x^2 * relativeTarget.y^2 * relativeTarget.z^2) * timeToTarget^-4 +
+    - AccelerationSquared
+    = 0
+
+    float timePowerMinusTwoComponent = 64 * agent.velocity.x * agent.velocity.x * agent.velocity.y * agent.velocity.y * agent.velocity.z * agent.velocity.z;
+    float timePowerMinusThreeComponent = -512 * agent.velocity.x * relativeTarget.x * agent.velocity.y * relativeTarget.y * agent.velocity.z * relativeTarget.z;
+    float timePowerMinusFourComponent = 64 * relativeTarget.x * relativeTarget.x * relativeTarget.y * relativeTarget.y * relativeTarget.z * relativeTarget.z;
+    float timeConstantComponent = -ACCELERATION_MAG * ACCELERATION_MAG;
+
+    */
+
     vec3 acceleration = vec3(xAcc, yAcc, zAcc);
 
     float targetMag = length(relativeTarget);
