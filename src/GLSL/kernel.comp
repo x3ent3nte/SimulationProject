@@ -180,7 +180,7 @@ float calculateTimeToTarget(vec3 target, vec3 velocity) {
     float phantomTime = sqrt((phantomDistance * 2.0f) / ACCELERATION_MAG);
     float straightTime = phantomTime - timeToZeroVelocity;
 
-    return sqrt((phantomTime * phantomTime) + (tangentTime * tangentTime));
+    return sqrt((straightTime * straightTime) + (tangentTime * tangentTime));
 }
 
 vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
