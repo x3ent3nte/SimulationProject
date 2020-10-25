@@ -304,7 +304,14 @@ vec3 calculateAcceleration(Agent agent, float timeDelta) {
     float initialVelocityMag = velocityMag * cosSim;
     float timeToStop = initialVelocityMag / ACCELERATION_MAG;
 
-    return (timeToTarget > timeToStop) ? acceleration : -acceleration;
+    float timeUntilDeceleration = timeToTarget - timeToStop;
+
+    float timeAccelerating = max(0.0f, min(timeDelta, timeUntilDeceleration - timeDelta));
+
+    float proportionOfTimeAccelerating = timeAccelerating / timeDelta;
+    float proportionOfTimeDecelerating = 1.0f - proportionOfTimeAccelerating;
+
+    return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
 }
 
 vec3 calculateChangeInAcceleration(Agent agent, float timeDelta) {
@@ -348,7 +355,7 @@ void main() {
     rotateAgent(agent, forward, timeDelta);
     moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta * 0.1);
 
-    float maxDistance = 0.001;
+    float maxDistance = 0.1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.target = hashVec3(500.0, agent.target);
     }
