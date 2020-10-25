@@ -341,20 +341,22 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
     m_isActive = false;
     m_simulateTask.join();
 
-    std::vector<AgentPositionAndRotation> positions(Constants::kNumberOfAgents);
+    std::vector<Agent> agents(Constants::kNumberOfAgents);
 
     Buffer::copyDeviceBufferToHost(
-        positions.data(),
-        Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
-        m_connector->m_buffers[2],
+        agents.data(),
+        Constants::kNumberOfAgents * sizeof(Agent),
+        m_agentsBuffer,
         physicalDevice,
         logicalDevice,
         m_computeCommandPool,
         m_computeQueue);
 
     for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
-        glm::vec3 position = positions[i].position;
+        //glm::vec3 position = agents[i].position;
         //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
+        glm::vec3 acceleration = agents[i].acceleration;
+        std::cout << "Acceleration Mag: " << glm::length(acceleration) << "\n";
     }
 }
 

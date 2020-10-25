@@ -164,85 +164,6 @@ vec3 calculateQuadraticEquationOfTimeToTarget(inout Agent agent) {
     return qt;
 }
 
-void flyByWire(inout Agent agent) {
-    QuadraticSolution sol = solveQuadraticEquation(calculateQuadraticEquationOfTimeToTarget(agent));
-}
-
-void optimizeAcceleration(inout Agent agent, vec3 diff, float timeDelta) {
-    /*
-
-    2 * (agent.target - agent.position) = (agent.velocity * t) + ((agent.velocity + (acc * t)) * t)
-    2 * (agent.target - agent.position) = t * ((2 * agent.velocity) + acc * t)
-    t = (agent.target - agent.position) / (agent.velocity + acc)
-
-    s = (v + ((a + (r * t)) * t)) * t
-    s = vt + ((a + (r * t)) * tt)
-    s = vt + att + rttt
-    d = (q - p) - vt - att - rttt
-
-    1 = x^2 + y^2 + z^2
-    hx = (qx - px) - vxt - axtt - rxttt
-    hy = (qy - py) - vyt - aytt - ryttt
-    hz = (qz - pz) - vzt - aztt - rzttt
-
-    hx = c1 - rx
-    hy = c2 - ry
-    hz = c3 - rz
-
-    h^2 = hx^2 + hy^2 + hz^2
-
-    */
-
-    float velocityMag = length(agent.velocity);
-    vec3 velocityNorm = (velocityMag != 0.0) ? (agent.velocity / velocityMag) : vec3(0.0f);
-
-    float cosSim = cosineSimilarity(agent.velocity, diff);
-    agent.acceleration += velocityNorm * (cosSim - 1.0) * timeDelta;
-    agent.acceleration += diff * timeDelta;
-
-    float accelerationMag = length(agent.acceleration);
-
-    float mass = 80.0f;
-    float maxForce = 250.0f;
-    float maxAccleration = maxForce / mass;
-    if (accelerationMag > maxAccleration) {
-        agent.acceleration *= (maxAccleration / accelerationMag);
-    }
-}
-
-vec3 adjustDeltaWithCosSim(vec3 desired, vec3 current, float timeDelta) {
-    vec3 currentNorm = safeNormalize(current);
-    vec3 desiredNorm = safeNormalize(desired);
-    float cosSim = cosineSimilarity(currentNorm, desiredNorm);
-
-    return ((currentNorm * (cosSim - 1.0)) + desiredNorm) * timeDelta;
-}
-
-vec3 calculateDelta(vec3 desired, vec3 current, float timeDelta) {
-    vec3 diff = desired - current;
-
-    vec3 stabilize = diff * timeDelta * 800.0f;
-    vec3 thrust = desired * timeDelta * 200.0f;
-
-    return stabilize + thrust;
-}
-
-float calculateTimeToTargetOld(vec3 target, vec3 velocity) {
-    float targetMag = length(target);
-    float velocityMag = length(velocity);
-
-    float cosSim = cosineSimilarity(target, velocity);
-    float initialVelocityMag = velocityMag * cosSim;
-    float tangentMagSquared = (velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag);
-
-    float tangentMag = (tangentMagSquared <= 0) ? 0.0f : sqrt(tangentMagSquared);
-
-    float straightTime = ((2 * targetMag) - (2 * initialVelocityMag)) / ACCELERATION_MAG;
-    float tangentTime = tangentMag / ACCELERATION_MAG;
-
-    return straightTime + tangentTime;
-}
-
 float calculateTimeToTarget(vec3 target, vec3 velocity) {
     float targetMag = length(target);
     float velocityMag = length(velocity);
@@ -262,27 +183,7 @@ float calculateTimeToTarget(vec3 target, vec3 velocity) {
     return sqrt(straightTime * straightTime) + (tangentTime * tangentTime);
 }
 
-vec3 calculateAcceleration(Agent agent, float timeDelta) {
-    /*vec3 relativeTarget = agent.target - agent.position;
-
-    float xdiff = relativeTarget.x - (((agent.velocity.x + (agent.velocity.x + (ax * t))) * t) / 2);
-    0 = ((agent.velocity.x * t) + ((agent.velocity.x * t) + (ax * tt))) - (2 * relativeTarget.x)
-    0 = axtt + (2 * agent.velocity.x * t) - (2 * relativeTarget.x)
-
-    0 = ax + (2 * agent.velocity.x) - (2 * relativeTarget.x)
-    0 = ay + (2 * agent.velocity.y) - (2 * relativeTarget.y)
-    0 = az + (2 * agent.velocity.z) - (2 * relativeTarget.z)
-
-    float cosSim = cosineSimilarity(relativeTarget, agent.velocity);
-    vec3 initialVelocityMag = length(agent.velocity * cosSim);
-    relativeTargetMag = (initialVelocityMag + (initialVelocityMag + (accelerationMag * t))) / 2
-    t1 = ((2 * relativeTargetMag) - (initialVelocityMag + initialVelocityMag)) / accelerationMag
-
-    float velocityMag = length(agent.velocity);
-    float tangentMag = sqrt((velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag));
-
-    0 = tangentMag - (accelerationMag * t)
-    t2 = tangentMag / accelerationMag*/
+vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
 
     vec3 relativeTarget = agent.target - agent.position;
     float timeToTarget = calculateTimeToTarget(relativeTarget, agent.velocity);
@@ -311,30 +212,11 @@ vec3 calculateAcceleration(Agent agent, float timeDelta) {
     float proportionOfTimeAccelerating = timeAccelerating / timeDelta;
     float proportionOfTimeDecelerating = 1.0f - proportionOfTimeAccelerating;
 
+    agent.acceleration = acceleration;
     return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
 }
 
-vec3 calculateChangeInAcceleration(Agent agent, float timeDelta) {
-    return calculateDelta(
-        safeNormalize(calculateAcceleration(agent, timeDelta)),
-        safeNormalize(agent.acceleration),
-        timeDelta) * 10.f;
-}
-
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
-    //flyByWire(agent);
-    //optimizeAcceleration(agent, diff, timeDelta);
-
-    //vec3 desiredVelocity = adjustDeltaWithCosSim(diff, agent.velocity, timeDelta);
-    //agent.acceleration += adjustDeltaWithCosSim(desiredVelocity, agent.acceleration, timeDelta);
-    //agent.velocity += agent.acceleration * timeDelta;
-
-    //agent.velocity += adjustDeltaWithCosSim(diff, agent.velocity, timeDelta);
-    //agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
-
-    // agent.acceleration += calculateChangeInAcceleration(agent, timeDelta) * timeDelta;
-
-    // agent.velocity += agent.acceleration * timeDelta;
     agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
 
     agent.position += agent.velocity * timeDelta;
