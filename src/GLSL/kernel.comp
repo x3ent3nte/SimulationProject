@@ -4,7 +4,7 @@
 #define X_DIM 512
 #define NUM_ELEMENTS 128 * X_DIM
 
-#define ACCELERATION_MAG 20
+#define ACCELERATION_MAG 95
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -249,18 +249,17 @@ float calculateTimeToTarget(vec3 target, vec3 velocity) {
 
     float cosSim = cosineSimilarity(target, velocity);
     float initialVelocityMag = velocityMag * cosSim;
+
     float tangentMagSquared = (velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag);
-
-    float timeSaved = initialVelocityMag / ACCELERATION_MAG;
-    initialVelocityMag = abs(initialVelocityMag);
-
     float tangentMag = (tangentMagSquared <= 0) ? 0.0f : sqrt(tangentMagSquared);
-
-    float straightTime = sqrt((2 * targetMag) / ACCELERATION_MAG);
     float tangentTime = sqrt((2 * tangentMag) / ACCELERATION_MAG);
 
-    float totalStraightTime = straightTime - timeSaved;
-    return sqrt(totalStraightTime * totalStraightTime) + (tangentTime * tangentTime);
+    float timeToZeroVelocity = initialVelocityMag / ACCELERATION_MAG;
+    float phantomDistance = ((initialVelocityMag / 2) * timeToZeroVelocity) + targetMag;
+    float phantomTime = sqrt((phantomDistance * 2.0f) / ACCELERATION_MAG);
+    float straightTime = phantomTime - timeToZeroVelocity;
+
+    return sqrt(straightTime * straightTime) + (tangentTime * tangentTime);
 }
 
 vec3 calculateAcceleration(Agent agent, float timeDelta) {
@@ -306,12 +305,6 @@ vec3 calculateAcceleration(Agent agent, float timeDelta) {
     float timeToStop = initialVelocityMag / ACCELERATION_MAG;
 
     return (timeToTarget > timeToStop) ? acceleration : -acceleration;
-    /*
-    return calculateDelta(
-        safeNormalize(agent.target - agent.position),
-        safeNormalize(agent.velocity),
-        timeDelta);
-    */
 }
 
 vec3 calculateChangeInAcceleration(Agent agent, float timeDelta) {
@@ -355,7 +348,7 @@ void main() {
     rotateAgent(agent, forward, timeDelta);
     moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta * 0.1);
 
-    float maxDistance = 15;
+    float maxDistance = 0.001;
     if (distanceBetweenTargetAndPosition < maxDistance) {
         agent.target = hashVec3(500.0, agent.target);
     }
