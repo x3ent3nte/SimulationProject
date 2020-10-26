@@ -4,7 +4,7 @@
 #define X_DIM 512
 #define NUM_ELEMENTS 128 * X_DIM
 
-#define ACCELERATION_MAG 95
+#define ACCELERATION_MAG 27
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -65,7 +65,7 @@ vec3 safeNormalize(vec3 v) {
 
 float cosineSimilarity(vec3 a, vec3 b) {
     float magMult = length(a) * length(b);
-    if (magMult <= 0.0f) {
+    if (magMult == 0.0f) {
         return 0.0f;
     }
 
@@ -258,8 +258,8 @@ vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
     float proportionOfTimeDecelerating = 1.0f - proportionOfTimeAccelerating;
 
     agent.acceleration = acceleration;
-    return acceleration;
-    //return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
+    //return acceleration;
+    return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
 }
 
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
@@ -285,7 +285,7 @@ void main() {
 
     float maxDistance = 0.1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.target = hashVec3(500.0, agent.target);
+        agent.target = hashVec3(400.0, agent.target);
     }
 
     agents[index] = agent;
