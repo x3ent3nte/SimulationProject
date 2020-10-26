@@ -183,6 +183,32 @@ float calculateTimeToTarget(vec3 target, vec3 velocity) {
     return sqrt((straightTime * straightTime) + (tangentTime * tangentTime));
 }
 
+float calculateTimeToTargetNew(vec3 target, vec3 velocity) {
+    float targetMag = length(target);
+    float velocityMag = length(velocity);
+
+    float cosSim = cosineSimilarity(target, velocity);
+    float initialVelocityMag = velocityMag * cosSim;
+    float tangentMagSquared = (velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag);
+    float tangentMag = (tangentMagSquared <= 0) ? 0.0f : sqrt(tangentMagSquared);
+
+    float xDist = targetMag;
+    float yDist = 0.0f;
+
+    return 0.0f;
+
+    /*
+    xDist = (initialVelocityMag * t) + ((aX * t * t) / 2)
+    yDist = (tangentMag * t) + ((aY * t * t) / 2)
+
+    ACCELERATION_MAG * ACCELERATION_MAG = (aX * aX) + (aY * aY)
+    ay = sqrt(ACCELERATION_MAG * ACCELERATION_MAG) - (aX * aX)
+
+    xDist = (initialVelocityMag * t) + (((ACCMAG * Cos(theta)) * t * t) / 2)
+    yDist = (tangentMag * t) + (((ACCMAG * Sin(theta)) * t * t) / 2)
+    */
+}
+
 vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
 
     vec3 relativeTarget = agent.target - agent.position;
@@ -213,7 +239,6 @@ vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
     float timePowerMinusThreeComponent = -512 * agent.velocity.x * relativeTarget.x * agent.velocity.y * relativeTarget.y * agent.velocity.z * relativeTarget.z;
     float timePowerMinusFourComponent = 64 * relativeTarget.x * relativeTarget.x * relativeTarget.y * relativeTarget.y * relativeTarget.z * relativeTarget.z;
     float timeConstantComponent = -ACCELERATION_MAG * ACCELERATION_MAG;
-
     */
 
     vec3 acceleration = vec3(xAcc, yAcc, zAcc);
@@ -233,7 +258,8 @@ vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
     float proportionOfTimeDecelerating = 1.0f - proportionOfTimeAccelerating;
 
     agent.acceleration = acceleration;
-    return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
+    return acceleration;
+    //return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
 }
 
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
