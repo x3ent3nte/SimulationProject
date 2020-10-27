@@ -356,7 +356,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
         //glm::vec3 position = agents[i].position;
         //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
         glm::vec3 acceleration = agents[i].acceleration;
-        std::cout << "Acceleration Mag: " << glm::length(acceleration) << "\n";
+        //std::cout << "Acceleration Mag: " << glm::length(acceleration) << "\n";
     }
 }
 
