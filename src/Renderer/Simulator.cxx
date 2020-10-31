@@ -304,6 +304,7 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
     vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
 
     m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, logicalDevice, m_computeQueue, m_computeCommandPool);
+    m_insertionSort->run();
 }
 
 void Simulator::simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer) {

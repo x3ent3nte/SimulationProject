@@ -9,13 +9,18 @@ class InsertionSort {
 
 private:
 
+    VkDevice m_logicalDevice;
+    VkQueue m_queue;
+
     VkBuffer m_valueAndIndexBuffer;
     VkBuffer m_wasSwappedBuffer;
+    VkBuffer m_wasSwappedBufferHostVisible;
     VkBuffer m_infoOneBuffer;
     VkBuffer m_infoTwoBuffer;
 
     VkDeviceMemory m_valueAndIndexBufferMemory;
     VkDeviceMemory m_wasSwappedBufferMemory;
+    VkDeviceMemory m_wasSwappedBufferMemoryHostVisible;
     VkDeviceMemory m_infoOneBufferMemory;
     VkDeviceMemory m_infoTwoBufferMemory;
 
@@ -30,8 +35,17 @@ private:
     VkDescriptorSet m_descriptorSetTwo;
     VkCommandBuffer m_commandBufferTwo;
 
+    VkCommandBuffer m_copyWasSwappedFromHostToDevice;
+    VkCommandBuffer m_copyWasSwappedFromDeviceToHost;
+
     VkSemaphore m_semaphore;
     VkFence m_fence;
+
+    void runCopyCommand(VkCommandBuffer commandBuffer);
+    void runSortCommands();
+    void setWasSwappedToZero();
+    uint32_t needsSorting();
+
 
 public:
 

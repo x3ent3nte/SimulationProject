@@ -5,6 +5,13 @@
 
 namespace Buffer {
 
+    VkCommandBuffer recordCopyCommand(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkBuffer srcBuffer,
+        VkBuffer dstBuffer,
+        size_t size);
+
     void copyBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,

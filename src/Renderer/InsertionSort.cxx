@@ -6,17 +6,23 @@
 
 #include <vector>
 #include <stdexcept>
+#include <iostream>
 
 #define X_DIM 512
 
+#define NUMBER_OF_ELEMENTS X_DIM * 256
+
 InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool) {
 
-    uint32_t numberOfElements = X_DIM * 256;
+    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
 
     std::vector<InsertionSortUtil::ValueAndIndex> data(numberOfElements);
     for (uint32_t i = 0; i < numberOfElements; ++i) {
         data[i] = InsertionSortUtil::ValueAndIndex{MyMath::randomFloatBetweenZeroAndOne() * 100.0f, i};
     }
+
+    m_logicalDevice = logicalDevice;
+    m_queue = queue;
 
     Buffer::createReadOnlyBuffer(
         data.data(),
@@ -40,6 +46,15 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         queue,
         m_wasSwappedBuffer,
         m_wasSwappedBufferMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_wasSwappedBufferHostVisible,
+        m_wasSwappedBufferMemoryHostVisible);
 
     InsertionSortUtil::Info infoOne{0, numberOfElements};
     Buffer::createReadOnlyBuffer(
@@ -112,6 +127,20 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         m_descriptorSetTwo,
         numberOfElements);
 
+    m_copyWasSwappedFromHostToDevice = Buffer::recordCopyCommand(
+        logicalDevice,
+        commandPool,
+        m_wasSwappedBufferHostVisible,
+        m_wasSwappedBuffer,
+        sizeof(uint32_t));
+
+    m_copyWasSwappedFromDeviceToHost = Buffer::recordCopyCommand(
+        logicalDevice,
+        commandPool,
+        m_wasSwappedBuffer,
+        m_wasSwappedBufferHostVisible,
+        sizeof(uint32_t));
+
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -130,8 +159,85 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
     vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
 }
 
-void InsertionSort::run() {
+void InsertionSort::runCopyCommand(VkCommandBuffer commandBuffer) {
+    vkResetFences(m_logicalDevice, 1, &m_fence);
 
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfo, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit was swapped copy command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+}
+
+void InsertionSort::setWasSwappedToZero() {
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t zero = 0;
+    memcpy(dataMap, &zero, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
+
+    runCopyCommand(m_copyWasSwappedFromHostToDevice);
+}
+
+void InsertionSort::runSortCommands() {
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &m_commandBufferOne;
+    submitInfoOne.signalSemaphoreCount = 1;
+    submitInfoOne.pSignalSemaphores = &m_semaphore;
+
+    VkSubmitInfo submitInfoTwo{};
+    submitInfoTwo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoTwo.commandBufferCount = 1;
+    submitInfoTwo.pCommandBuffers = &m_commandBufferTwo;
+    submitInfoTwo.waitSemaphoreCount = 1;
+    submitInfoTwo.pWaitSemaphores = &m_semaphore;
+
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT};
+    submitInfoTwo.pWaitDstStageMask = waitStages;
+
+    std::array<VkSubmitInfo, 2> submits = {submitInfoOne, submitInfoTwo};
+
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, submits.size(), submits.data(), m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit insertion sort command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+}
+
+uint32_t InsertionSort::needsSorting() {
+    runCopyCommand(m_copyWasSwappedFromDeviceToHost);
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t wasSwappedValue = 0;
+    memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
+
+    return wasSwappedValue;
+}
+
+void InsertionSort::run() {
+    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
+
+    int numIterations = 0;
+
+    do {
+        setWasSwappedToZero();
+
+        runSortCommands();
+
+        numIterations += 1;
+        std::cout << "Insertion sort iteration number = " << numIterations << "\n";
+    } while (needsSorting());
+
+    std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
@@ -140,6 +246,9 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
 
     vkFreeMemory(logicalDevice, m_wasSwappedBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_wasSwappedBuffer, nullptr);
+
+    vkFreeMemory(logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(logicalDevice,m_wasSwappedBufferHostVisible, nullptr);
 
     vkFreeMemory(logicalDevice, m_infoOneBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_infoOneBuffer, nullptr);
@@ -151,6 +260,8 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBufferOne);
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBufferTwo);
+    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_copyWasSwappedFromHostToDevice);
+    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_copyWasSwappedFromDeviceToHost);
 
     vkDestroyDescriptorPool(logicalDevice, m_descriptorPool, nullptr);
     vkDestroyPipelineLayout(logicalDevice, m_pipelineLayout, nullptr);
