@@ -12,17 +12,23 @@ VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logi
     valueAndIndexDescriptor.descriptorCount = 1;
     valueAndIndexDescriptor.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
+    VkDescriptorSetLayoutBinding wasSwappedDescriptor = {};
+    wasSwappedDescriptor.binding = 1;
+    wasSwappedDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    wasSwappedDescriptor.descriptorCount = 1;
+    wasSwappedDescriptor.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
     VkDescriptorSetLayoutBinding infoDescriptor = {};
-    infoDescriptor.binding = 1;
+    infoDescriptor.binding = 2;
     infoDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     infoDescriptor.descriptorCount = 1;
     infoDescriptor.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings = {valueAndIndexDescriptor, infoDescriptor};
+    std::array<VkDescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings = {valueAndIndexDescriptor, wasSwappedDescriptor, infoDescriptor};
 
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.bindingCount = 2;
+    descriptorSetLayoutCreateInfo.bindingCount = descriptorSetLayoutBindings.size();
     descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
@@ -32,18 +38,22 @@ VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logi
     return descriptorSetLayout;
 }
 
-VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
+VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t size) {
     VkDescriptorPool descriptorPool;
 
-    VkDescriptorPoolSize descriptorPoolSize = {};
-    descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descriptorPoolSize.descriptorCount = 2;
+    std::array<VkDescriptorPoolSize, 3> poolSizes{};
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[0].descriptorCount = size;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[1].descriptorCount = size;
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[2].descriptorCount = size;
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.maxSets = maxSets;
-    descriptorPoolCreateInfo.poolSizeCount = 1;
-    descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
+    descriptorPoolCreateInfo.maxSets = size;
+    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
     if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute descriptor pool");
@@ -57,6 +67,7 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkDescriptorSetLayout& descriptorSetLayout,
     VkDescriptorPool& descriptorPool,
     VkBuffer valueAndIndexBuffer,
+    VkBuffer wasSwappedBuffer,
     VkBuffer infoBuffer,
     size_t numberOfElements) {
 
@@ -85,6 +96,19 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     valueAndIndexWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     valueAndIndexWriteDescriptorSet.pBufferInfo = &valueAndIndexBufferDescriptor;
 
+    VkDescriptorBufferInfo wasSwappedBufferDescriptor = {};
+    wasSwappedBufferDescriptor.buffer = wasSwappedBuffer;
+    wasSwappedBufferDescriptor.offset = 0;
+    wasSwappedBufferDescriptor.range = sizeof(uint32_t);
+
+    VkWriteDescriptorSet wasSwappedWriteDescriptorSet = {};
+    wasSwappedWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    wasSwappedWriteDescriptorSet.dstSet = descriptorSet;
+    wasSwappedWriteDescriptorSet.dstBinding = 1;
+    wasSwappedWriteDescriptorSet.descriptorCount = 1;
+    wasSwappedWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    wasSwappedWriteDescriptorSet.pBufferInfo = &wasSwappedBufferDescriptor;
+
     VkDescriptorBufferInfo infoBufferDescriptor = {};
     infoBufferDescriptor.buffer = infoBuffer;
     infoBufferDescriptor.offset = 0;
@@ -93,12 +117,12 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkWriteDescriptorSet infoWriteDescriptorSet = {};
     infoWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     infoWriteDescriptorSet.dstSet = descriptorSet;
-    infoWriteDescriptorSet.dstBinding = 1;
+    infoWriteDescriptorSet.dstBinding = 2;
     infoWriteDescriptorSet.descriptorCount = 1;
     infoWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     infoWriteDescriptorSet.pBufferInfo = &infoBufferDescriptor;
 
-    std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = {valueAndIndexWriteDescriptorSet, infoWriteDescriptorSet};
+    std::array<VkWriteDescriptorSet, 3> writeDescriptorSets = {valueAndIndexWriteDescriptorSet, wasSwappedWriteDescriptorSet, infoWriteDescriptorSet};
 
     vkUpdateDescriptorSets(logicalDevice, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 

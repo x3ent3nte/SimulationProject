@@ -11,20 +11,20 @@ namespace InsertionSortUtil {
     };
 
     struct Info {
-        uint32_t wasSwapped;
         uint32_t offset;
         uint32_t dataSize;
     };
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
 
-    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets);
+    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t size);
 
     VkDescriptorSet createDescriptorSet(
         VkDevice logicalDevice,
         VkDescriptorSetLayout& descriptorSetLayout,
         VkDescriptorPool& descriptorPool,
         VkBuffer valueAndIndexBuffer,
+        VkBuffer wasSwappedBuffer,
         VkBuffer infoBuffer,
         size_t numberOfElements);
 

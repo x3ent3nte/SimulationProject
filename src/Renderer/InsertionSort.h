@@ -10,19 +10,27 @@ class InsertionSort {
 private:
 
     VkBuffer m_valueAndIndexBuffer;
-    VkBuffer m_infoBuffer;
+    VkBuffer m_wasSwappedBuffer;
+    VkBuffer m_infoOneBuffer;
+    VkBuffer m_infoTwoBuffer;
 
     VkDeviceMemory m_valueAndIndexBufferMemory;
-    VkDeviceMemory m_infoBufferMemory;
+    VkDeviceMemory m_wasSwappedBufferMemory;
+    VkDeviceMemory m_infoOneBufferMemory;
+    VkDeviceMemory m_infoTwoBufferMemory;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
-    VkDescriptorSet m_descriptorSet;
-
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_pipeline;
 
-    VkCommandBuffer m_commandBuffer;
+    VkDescriptorSet m_descriptorSetOne;
+    VkCommandBuffer m_commandBufferOne;
+
+    VkDescriptorSet m_descriptorSetTwo;
+    VkCommandBuffer m_commandBufferTwo;
+
+    VkSemaphore m_semaphore;
     VkFence m_fence;
 
 public:

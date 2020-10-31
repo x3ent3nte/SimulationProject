@@ -49,15 +49,17 @@ namespace {
     VkDescriptorPool createComputeDescriptorPool(VkDevice logicalDevice) {
         VkDescriptorPool descriptorPool;
 
-        VkDescriptorPoolSize descriptorPoolSize = {};
-        descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorPoolSize.descriptorCount = 2;
+        std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes[0].descriptorCount = 1;
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        poolSizes[1].descriptorCount = 1;
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
         descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         descriptorPoolCreateInfo.maxSets = 1;
-        descriptorPoolCreateInfo.poolSizeCount = 1;
-        descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
+        descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());;
+        descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
         if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute descriptor pool");
