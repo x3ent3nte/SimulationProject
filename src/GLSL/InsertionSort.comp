@@ -37,6 +37,7 @@ void main() {
     sharedData[localLeftIndex] = data[globalLeftIndex];
 
     uint globalRightIndex = globalLeftIndex + 1;
+    uint globalRightIndexPlusOne = globalRightIndex + 1;
     uint localRightIndex = localLeftIndex + 1;
     uint localRightIndexPlusOne = localRightIndex + 1;
 
@@ -64,7 +65,7 @@ void main() {
         barrier();
         memoryBarrierShared();
 
-        if ((globalRightIndex + 1) < dataSize) {
+        if (globalRightIndexPlusOne < dataSize) {
             ValueAndIndex left = sharedData[localRightIndex];
             ValueAndIndex right = sharedData[localRightIndexPlusOne];
             if (left.value > right.value) {

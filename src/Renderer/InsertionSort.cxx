@@ -220,6 +220,7 @@ uint32_t InsertionSort::needsSorting() {
     memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
+    std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
     return wasSwappedValue;
 }
 
@@ -235,6 +236,10 @@ void InsertionSort::run() {
 
         numIterations += 1;
         std::cout << "Insertion sort iteration number = " << numIterations << "\n";
+
+        if (numIterations > 100) {
+            break;
+        }
     } while (needsSorting());
 
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
