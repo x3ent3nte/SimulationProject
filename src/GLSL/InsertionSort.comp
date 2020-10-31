@@ -14,8 +14,11 @@ layout (std430, binding = 0) buffer bufferData {
     ValueAndIndex data[];
 };
 
-layout (std430, binding = 1) buffer bufferInfo {
+layout (std430, binding = 1) buffer bufferWasSwapped {
     uint wasSwapped;
+};
+
+layout (std430, binding = 2) buffer bufferInfo {
     uint offset;
     uint dataSize;
 };

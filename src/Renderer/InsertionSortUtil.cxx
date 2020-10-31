@@ -32,7 +32,7 @@ VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logi
     return descriptorSetLayout;
 }
 
-VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
+VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
     VkDescriptorPool descriptorPool;
 
     VkDescriptorPoolSize descriptorPoolSize = {};

@@ -2,6 +2,7 @@
 #define SIMULATOR_H
 
 #include <Renderer/Connector.h>
+#include <Renderer/InsertionSort.h>
 
 #include <vulkan/vulkan.h>
 
@@ -33,6 +34,8 @@ private:
 
     VkBuffer m_agentsBuffer;
     VkDeviceMemory m_agentsBufferMemory;
+
+    std::shared_ptr<InsertionSort> m_insertionSort;
 
     void simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer);
     void runSimulatorTask(VkDevice logicalDevice);
