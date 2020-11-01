@@ -147,7 +147,6 @@ VkPipelineLayout InsertionSortUtil::createPipelineLayout(VkDevice logicalDevice,
 VkPipeline InsertionSortUtil::createPipeline(
     VkDevice logicalDevice,
     VkShaderModule shaderModule,
-    VkDescriptorSetLayout descriptorSetLayout,
     VkPipelineLayout pipelineLayout) {
 
     VkPipeline pipeline;

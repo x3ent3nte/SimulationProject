@@ -27,7 +27,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
 
     uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
 
-    std::vector<InsertionSortUtil::ValueAndIndex> data = getData();
+    m_serialData = getData();
 
     m_physicalDevice = physicalDevice;
     m_logicalDevice = logicalDevice;
@@ -35,7 +35,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
     m_commandPool = commandPool;
 
     Buffer::createReadOnlyBuffer(
-        data.data(),
+        m_serialData.data(),
         numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
@@ -100,7 +100,6 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
     m_pipeline = InsertionSortUtil::createPipeline(
         logicalDevice,
         shaderModule,
-        m_descriptorSetLayout,
         m_pipelineLayout);
 
     m_descriptorSetOne = InsertionSortUtil::createDescriptorSet(
@@ -253,9 +252,6 @@ void insertionSortSerial(std::vector<InsertionSortUtil::ValueAndIndex>& data) {
 
 void InsertionSort::printResults() {
 
-    auto serialData = getData();
-    insertionSortSerial(serialData);
-
     std::vector<InsertionSortUtil::ValueAndIndex> data(NUMBER_OF_ELEMENTS);
 
     Buffer::copyDeviceBufferToHost(
@@ -267,20 +263,24 @@ void InsertionSort::printResults() {
         m_commandPool,
         m_queue);
 
+    int numErrors = 0;
+
     for (size_t i = 0; i < NUMBER_OF_ELEMENTS; ++i) {
         auto valueAndIndex = data[i];
-        auto valueAndIndexSerial = serialData[i];
+        auto valueAndIndexSerial = m_serialData[i];
         //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
 
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
             std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
                 << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+            numErrors += 1;
         }
     }
+
+    std::cout << "Number of errors = " << numErrors << "\n";
 }
 
-void InsertionSort::run() {
-    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
+void InsertionSort::runHelper() {
 
     int numIterations = 0;
 
@@ -297,8 +297,19 @@ void InsertionSort::run() {
         } while (needsSorting());
     }
 
+    insertionSortSerial(m_serialData);
+
     InsertionSort::printResults();
+
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
+}
+
+void InsertionSort::run() {
+
+    runHelper();
+    runHelper();
+    runHelper();
+    runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {

@@ -35,7 +35,6 @@ namespace InsertionSortUtil {
     VkPipeline createPipeline(
         VkDevice logicalDevice,
         VkShaderModule shaderModule,
-        VkDescriptorSetLayout descriptorSetLayout,
         VkPipelineLayout pipelineLayout);
 
     VkCommandBuffer createCommandBuffer(

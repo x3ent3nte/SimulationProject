@@ -5,9 +5,13 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 class InsertionSort {
 
 private:
+
+    std::vector<InsertionSortUtil::ValueAndIndex> m_serialData;
 
     VkPhysicalDevice m_physicalDevice;
     VkDevice m_logicalDevice;
@@ -47,6 +51,8 @@ private:
     void runSortCommands();
     void setWasSwappedToZero();
     uint32_t needsSorting();
+
+    void runHelper();
 
     void printResults();
 
