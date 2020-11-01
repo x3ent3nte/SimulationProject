@@ -120,35 +120,16 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         m_infoTwoBuffer,
         numberOfElements);
 
-    m_commandBufferOne = InsertionSortUtil::createCommandBuffer(
+    m_commandBuffer = InsertionSortUtil::createCommandBuffer(
         logicalDevice,
         commandPool,
         m_pipeline,
         m_pipelineLayout,
         m_descriptorSetOne,
-        numberOfElements);
-
-    m_commandBufferTwo = InsertionSortUtil::createCommandBuffer(
-        logicalDevice,
-        commandPool,
-        m_pipeline,
-        m_pipelineLayout,
         m_descriptorSetTwo,
+        m_wasSwappedBuffer,
+        m_wasSwappedBufferHostVisible,
         numberOfElements);
-
-    m_copyWasSwappedFromHostToDevice = Buffer::recordCopyCommand(
-        logicalDevice,
-        commandPool,
-        m_wasSwappedBufferHostVisible,
-        m_wasSwappedBuffer,
-        sizeof(uint32_t));
-
-    m_copyWasSwappedFromDeviceToHost = Buffer::recordCopyCommand(
-        logicalDevice,
-        commandPool,
-        m_wasSwappedBuffer,
-        m_wasSwappedBufferHostVisible,
-        sizeof(uint32_t));
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -188,29 +169,15 @@ void InsertionSort::setWasSwappedToZero() {
     uint32_t zero = 0;
     memcpy(dataMap, &zero, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
-
-    runCopyCommand(m_copyWasSwappedFromHostToDevice);
 }
 
 void InsertionSort::runSortCommands() {
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBufferOne;
-    submitInfoOne.signalSemaphoreCount = 1;
-    submitInfoOne.pSignalSemaphores = &m_semaphore;
+    submitInfoOne.pCommandBuffers = &m_commandBuffer;
 
-    VkSubmitInfo submitInfoTwo{};
-    submitInfoTwo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoTwo.commandBufferCount = 1;
-    submitInfoTwo.pCommandBuffers = &m_commandBufferTwo;
-    submitInfoTwo.waitSemaphoreCount = 1;
-    submitInfoTwo.pWaitSemaphores = &m_semaphore;
-
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT};
-    submitInfoTwo.pWaitDstStageMask = waitStages;
-
-    std::array<VkSubmitInfo, 2> submits = {submitInfoOne, submitInfoTwo};
+    std::array<VkSubmitInfo, 1> submits = {submitInfoOne};
 
     vkResetFences(m_logicalDevice, 1, &m_fence);
 
@@ -221,15 +188,13 @@ void InsertionSort::runSortCommands() {
 }
 
 uint32_t InsertionSort::needsSorting() {
-    runCopyCommand(m_copyWasSwappedFromDeviceToHost);
-
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t wasSwappedValue = 0;
     memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
-    //std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
+    std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
     return wasSwappedValue;
 }
 
@@ -309,7 +274,6 @@ void InsertionSort::run() {
     runHelper();
     runHelper();
     runHelper();
-    runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
@@ -330,10 +294,7 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
 
     vkDestroyDescriptorSetLayout(logicalDevice, m_descriptorSetLayout, nullptr);
 
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBufferOne);
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBufferTwo);
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_copyWasSwappedFromHostToDevice);
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_copyWasSwappedFromDeviceToHost);
+    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBuffer);
 
     vkDestroyDescriptorPool(logicalDevice, m_descriptorPool, nullptr);
     vkDestroyPipelineLayout(logicalDevice, m_pipelineLayout, nullptr);

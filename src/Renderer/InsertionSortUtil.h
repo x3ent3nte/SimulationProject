@@ -42,7 +42,10 @@ namespace InsertionSortUtil {
         VkCommandPool commandPool,
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        VkDescriptorSet descriptorSetOne,
+        VkDescriptorSet descriptorSetTwo,
+        VkBuffer wasSwappedBuffer,
+        VkBuffer wasSwappedBufferHostVisible,
         size_t numberOfElements);
 }
 

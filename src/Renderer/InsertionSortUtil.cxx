@@ -174,7 +174,10 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     VkCommandPool commandPool,
     VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
-    VkDescriptorSet descriptorSet,
+    VkDescriptorSet descriptorSetOne,
+    VkDescriptorSet descriptorSetTwo,
+    VkBuffer wasSwappedBuffer,
+    VkBuffer wasSwappedBufferHostVisible,
     size_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -197,11 +200,59 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         throw std::runtime_error("Failed to begin compute command buffer");
     }
 
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = sizeof(uint32_t);
+    vkCmdCopyBuffer(commandBuffer, wasSwappedBufferHostVisible, wasSwappedBuffer, 1, &copyRegion);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
     size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    vkCmdCopyBuffer(commandBuffer, wasSwappedBuffer, wasSwappedBufferHostVisible, 1, &copyRegion);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");

@@ -36,13 +36,9 @@ private:
     VkPipeline m_pipeline;
 
     VkDescriptorSet m_descriptorSetOne;
-    VkCommandBuffer m_commandBufferOne;
-
     VkDescriptorSet m_descriptorSetTwo;
-    VkCommandBuffer m_commandBufferTwo;
 
-    VkCommandBuffer m_copyWasSwappedFromHostToDevice;
-    VkCommandBuffer m_copyWasSwappedFromDeviceToHost;
+    VkCommandBuffer m_commandBuffer;
 
     VkSemaphore m_semaphore;
     VkFence m_fence;
