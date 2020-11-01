@@ -200,6 +200,30 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         throw std::runtime_error("Failed to begin compute command buffer");
     }
 
+    VkAccessFlags all =
+        VK_ACCESS_UNIFORM_READ_BIT |
+        VK_ACCESS_SHADER_READ_BIT |
+        VK_ACCESS_SHADER_WRITE_BIT |
+        VK_ACCESS_MEMORY_READ_BIT |
+        VK_ACCESS_MEMORY_WRITE_BIT ;
+
+    VkMemoryBarrier globalBarrier{};
+    globalBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    globalBarrier.srcAccessMask = all;
+    globalBarrier.dstAccessMask = all;
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &globalBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
@@ -211,8 +235,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         0,
-        0,
-        nullptr,
+        1,
+        &globalBarrier,
         0,
         nullptr,
         0,
@@ -230,8 +254,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         0,
-        0,
-        nullptr,
+        1,
+        &globalBarrier,
         0,
         nullptr,
         0,
@@ -245,14 +269,26 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         0,
-        0,
-        nullptr,
+        1,
+        &globalBarrier,
         0,
         nullptr,
         0,
         nullptr);
 
     vkCmdCopyBuffer(commandBuffer, wasSwappedBuffer, wasSwappedBufferHostVisible, 1, &copyRegion);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &globalBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");

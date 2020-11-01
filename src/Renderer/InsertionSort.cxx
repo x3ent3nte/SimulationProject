@@ -274,6 +274,8 @@ void InsertionSort::run() {
     runHelper();
     runHelper();
     runHelper();
+    runHelper();
+    runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
