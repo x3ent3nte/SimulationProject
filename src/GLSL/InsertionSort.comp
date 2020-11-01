@@ -34,13 +34,13 @@ void main() {
 
     if (globalLeftIndex >= dataSize) { return; }
 
-    sharedData[localLeftIndex] = data[globalLeftIndex];
-
     uint globalRightIndex = globalLeftIndex + 1;
-    uint globalRightIndexPlusOne = globalRightIndex + 1;
     uint localRightIndex = localLeftIndex + 1;
     uint localRightIndexPlusOne = localRightIndex + 1;
 
+    uint localSize = min(2 * X_DIM, dataSize - globalOffset);
+
+    sharedData[localLeftIndex] = data[globalLeftIndex];
     if (globalRightIndex < dataSize) {
         sharedData[localRightIndex] = data[globalRightIndex];
     }
@@ -51,7 +51,7 @@ void main() {
         barrier();
         memoryBarrierShared();
 
-        if (globalRightIndex < dataSize) {
+        if (localRightIndex < localSize) {
             ValueAndIndex left = sharedData[localLeftIndex];
             ValueAndIndex right = sharedData[localRightIndex];
             if (left.value > right.value) {
@@ -65,7 +65,7 @@ void main() {
         barrier();
         memoryBarrierShared();
 
-        if (globalRightIndexPlusOne < dataSize) {
+        if (localRightIndexPlusOne < localSize) {
             ValueAndIndex left = sharedData[localRightIndex];
             ValueAndIndex right = sharedData[localRightIndexPlusOne];
             if (left.value > right.value) {
@@ -81,7 +81,7 @@ void main() {
 
     } while (localWasSwapped[0] != 0);
 
-    data[globalLeftIndex] = data[localLeftIndex];
+    data[globalLeftIndex] = sharedData[localLeftIndex];
     if (globalRightIndex < dataSize) {
         data[globalRightIndex] = sharedData[localRightIndex];
     }

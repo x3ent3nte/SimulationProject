@@ -9,8 +9,10 @@ class InsertionSort {
 
 private:
 
+    VkPhysicalDevice m_physicalDevice;
     VkDevice m_logicalDevice;
     VkQueue m_queue;
+    VkCommandPool m_commandPool;
 
     VkBuffer m_valueAndIndexBuffer;
     VkBuffer m_wasSwappedBuffer;
@@ -45,6 +47,8 @@ private:
     void runSortCommands();
     void setWasSwappedToZero();
     uint32_t needsSorting();
+
+    void printResults();
 
 
 public:

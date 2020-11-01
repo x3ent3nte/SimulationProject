@@ -201,7 +201,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-    size_t xGroups = ceil(((float) numberOfElements) / 512.0f);
+    size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {

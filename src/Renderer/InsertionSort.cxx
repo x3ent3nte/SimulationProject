@@ -3,26 +3,36 @@
 #include <Renderer/Buffer.h>
 #include <Renderer/Utils.h>
 #include <Renderer/MyMath.h>
+#include <Timer.h>
 
 #include <vector>
 #include <stdexcept>
 #include <iostream>
 
-#define X_DIM 512
+#define NUMBER_OF_ELEMENTS X_DIM * 32
 
-#define NUMBER_OF_ELEMENTS X_DIM * 256
+std::vector<InsertionSortUtil::ValueAndIndex> getData() {
+
+    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
+    std::vector<InsertionSortUtil::ValueAndIndex> data(numberOfElements);
+    for (uint32_t i = 0; i < numberOfElements; ++i) {
+        //data[i] = InsertionSortUtil::ValueAndIndex{MyMath::randomFloatBetweenZeroAndOne() * 100.0f, i};
+        data[i] = InsertionSortUtil::ValueAndIndex{(NUMBER_OF_ELEMENTS * 2.0f) - i, i};
+    }
+
+    return data;
+}
 
 InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool) {
 
     uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
 
-    std::vector<InsertionSortUtil::ValueAndIndex> data(numberOfElements);
-    for (uint32_t i = 0; i < numberOfElements; ++i) {
-        data[i] = InsertionSortUtil::ValueAndIndex{MyMath::randomFloatBetweenZeroAndOne() * 100.0f, i};
-    }
+    std::vector<InsertionSortUtil::ValueAndIndex> data = getData();
 
+    m_physicalDevice = physicalDevice;
     m_logicalDevice = logicalDevice;
     m_queue = queue;
+    m_commandPool = commandPool;
 
     Buffer::createReadOnlyBuffer(
         data.data(),
@@ -220,8 +230,53 @@ uint32_t InsertionSort::needsSorting() {
     memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
-    std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
+    //std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
     return wasSwappedValue;
+}
+
+void insertionSortSerial(std::vector<InsertionSortUtil::ValueAndIndex>& data) {
+    Timer time("Insertion Sort Serial");
+    for (int i = 1; i < data.size(); ++i) {
+        for (int j = i; j >= 1; --j) {
+            InsertionSortUtil::ValueAndIndex left = data[j - 1];
+            InsertionSortUtil::ValueAndIndex right = data[j];
+
+            if (left.value > right.value) {
+                data[j - 1] = right;
+                data[j] = left;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+void InsertionSort::printResults() {
+
+    auto serialData = getData();
+    insertionSortSerial(serialData);
+
+    std::vector<InsertionSortUtil::ValueAndIndex> data(NUMBER_OF_ELEMENTS);
+
+    Buffer::copyDeviceBufferToHost(
+        data.data(),
+        NUMBER_OF_ELEMENTS * sizeof(InsertionSortUtil::ValueAndIndex),
+        m_valueAndIndexBuffer,
+        m_physicalDevice,
+        m_logicalDevice,
+        m_commandPool,
+        m_queue);
+
+    for (size_t i = 0; i < NUMBER_OF_ELEMENTS; ++i) {
+        auto valueAndIndex = data[i];
+        auto valueAndIndexSerial = serialData[i];
+        //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
+
+        if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
+            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
+                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+        }
+    }
 }
 
 void InsertionSort::run() {
@@ -229,19 +284,20 @@ void InsertionSort::run() {
 
     int numIterations = 0;
 
-    do {
-        setWasSwappedToZero();
+    {
+        Timer time("Insertion Sort GPU");
+        do {
+            setWasSwappedToZero();
 
-        runSortCommands();
+            runSortCommands();
 
-        numIterations += 1;
-        std::cout << "Insertion sort iteration number = " << numIterations << "\n";
+            numIterations += 1;
+            //std::cout << "Insertion sort iteration number = " << numIterations << "\n";
 
-        if (numIterations > 100) {
-            break;
-        }
-    } while (needsSorting());
+        } while (needsSorting());
+    }
 
+    InsertionSort::printResults();
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
 }
 

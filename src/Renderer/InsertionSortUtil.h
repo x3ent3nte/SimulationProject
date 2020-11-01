@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.h>
 
+#define X_DIM 512
+
 namespace InsertionSortUtil {
 
     struct ValueAndIndex {
