@@ -44,6 +44,7 @@ namespace InsertionSortUtil {
         VkPipelineLayout pipelineLayout,
         VkDescriptorSet descriptorSetOne,
         VkDescriptorSet descriptorSetTwo,
+        VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
         VkBuffer wasSwappedBufferHostVisible,
         size_t numberOfElements);

@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 32
+#define NUMBER_OF_ELEMENTS X_DIM * 64
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -78,7 +78,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         m_infoOneBuffer,
         m_infoOneBufferMemory);
 
-    InsertionSortUtil::Info infoTwo{X_DIM / 2, numberOfElements};
+    InsertionSortUtil::Info infoTwo{X_DIM, numberOfElements};
     Buffer::createReadOnlyBuffer(
         &infoTwo,
         sizeof(InsertionSortUtil::Info),
@@ -127,6 +127,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         m_pipelineLayout,
         m_descriptorSetOne,
         m_descriptorSetTwo,
+        m_valueAndIndexBuffer,
         m_wasSwappedBuffer,
         m_wasSwappedBufferHostVisible,
         numberOfElements);
@@ -228,21 +229,30 @@ void InsertionSort::printResults() {
         m_commandPool,
         m_queue);
 
-    int numErrors = 0;
+    int numMismatch = 0;
+    int numOrderError = 0;
 
-    for (size_t i = 0; i < NUMBER_OF_ELEMENTS; ++i) {
+    for (size_t i = 1; i < NUMBER_OF_ELEMENTS; ++i) {
         auto valueAndIndex = data[i];
         auto valueAndIndexSerial = m_serialData[i];
         //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
 
+
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
-            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
-                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
-            numErrors += 1;
+            //std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
+                //<< " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+            numMismatch += 1;
+        }
+
+
+        auto left = data[i - 1];
+        if (left.value > valueAndIndex.value) {
+            std::cout << "Order error at index = " << i << " left = " << left.value << " right = " << valueAndIndex.value << "\n";
+            numOrderError += 1;
         }
     }
 
-    std::cout << "Number of errors = " << numErrors << "\n";
+    std::cout << "Number of mismatches = " <<numMismatch << " order error = " << numOrderError << "\n";
 }
 
 void InsertionSort::runHelper() {
@@ -272,10 +282,10 @@ void InsertionSort::runHelper() {
 void InsertionSort::run() {
 
     runHelper();
-    runHelper();
-    runHelper();
-    runHelper();
-    runHelper();
+    //runHelper();
+    //runHelper();
+    //runHelper();
+    //runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {

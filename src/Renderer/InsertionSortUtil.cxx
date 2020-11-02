@@ -2,6 +2,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <iostream>
 
 VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     VkDescriptorSetLayout descriptorSetLayout;
@@ -176,6 +177,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSetOne,
     VkDescriptorSet descriptorSetTwo,
+    VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
     VkBuffer wasSwappedBufferHostVisible,
     size_t numberOfElements) {
@@ -212,6 +214,16 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     globalBarrier.srcAccessMask = all;
     globalBarrier.dstAccessMask = all;
 
+    VkBufferMemoryBarrier bufferBarrier = {};
+    bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    bufferBarrier.srcAccessMask = all;
+    bufferBarrier.dstAccessMask = all;
+    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bufferBarrier.buffer = valueAndIndexBuffer;
+    bufferBarrier.offset = 0;
+    bufferBarrier.size = VK_WHOLE_SIZE;
+
     vkCmdPipelineBarrier(
         commandBuffer,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -219,8 +231,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         0,
         1,
         &globalBarrier,
-        0,
-        nullptr,
+        1,
+        &bufferBarrier,
         0,
         nullptr);
 
@@ -237,14 +249,15 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         0,
         1,
         &globalBarrier,
-        0,
-        nullptr,
+        1,
+        &bufferBarrier,
         0,
         nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
     size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
+    std::cout << "Number of X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
@@ -256,8 +269,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         0,
         1,
         &globalBarrier,
-        0,
-        nullptr,
+        1,
+        &bufferBarrier,
         0,
         nullptr);
 
@@ -271,8 +284,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         0,
         1,
         &globalBarrier,
-        0,
-        nullptr,
+        1,
+        &bufferBarrier,
         0,
         nullptr);
 
@@ -285,8 +298,8 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
         0,
         1,
         &globalBarrier,
-        0,
-        nullptr,
+        1,
+        &bufferBarrier,
         0,
         nullptr);
 
