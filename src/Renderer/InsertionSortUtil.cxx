@@ -296,6 +296,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
             0,
             nullptr);
 
+        /*
         VkBufferCopy stepRegion{};
         stepRegion.srcOffset = 0;
         stepRegion.dstOffset = 0;
@@ -307,6 +308,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
             steps[i],
             1,
             &stepRegion);
+        */
     }
 
     vkCmdPipelineBarrier(

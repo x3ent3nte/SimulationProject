@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 512
+#define NUMBER_OF_ELEMENTS X_DIM * 160
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -70,6 +70,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
     m_steps.resize(numGroups);
     m_stepMemories.resize(numGroups);
     for (int i = 0; i < numGroups; ++i) {
+        /*
         Buffer::createBuffer(
             physicalDevice,
             logicalDevice,
@@ -78,6 +79,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             m_steps[i],
             m_stepMemories[i]);
+        */
     }
 
     InsertionSortUtil::Info infoOne{0, numberOfElements};
@@ -373,10 +375,10 @@ void InsertionSort::runHelper() {
 void InsertionSort::run() {
 
     runHelper();
-    //runHelper();
-    //runHelper();
-    //runHelper();
-    //runHelper();
+    runHelper();
+    runHelper();
+    runHelper();
+    runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
@@ -396,8 +398,8 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
     vkDestroyBuffer(logicalDevice, m_infoTwoBuffer, nullptr);
 
     for (int i = 0; i < m_steps.size(); ++i) {
-        vkFreeMemory(logicalDevice, m_stepMemories[i], nullptr);
-        vkDestroyBuffer(logicalDevice, m_steps[i], nullptr);
+        //vkFreeMemory(logicalDevice, m_stepMemories[i], nullptr);
+        //vkDestroyBuffer(logicalDevice, m_steps[i], nullptr);
     }
 
     vkDestroyDescriptorSetLayout(logicalDevice, m_descriptorSetLayout, nullptr);
