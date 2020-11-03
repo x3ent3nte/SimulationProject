@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 64
+#define NUMBER_OF_ELEMENTS X_DIM * 256
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -336,7 +336,7 @@ void InsertionSort::compareResults() {
 
         std::cout << "Finished step " << i << "\n";
         std::string response;
-        std::cin >> response;
+        //std::cin >> response;
         std::cout << "User input: " << response << "\n";
     }
 }
