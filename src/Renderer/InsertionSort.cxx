@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 256
+#define NUMBER_OF_ELEMENTS X_DIM * 512
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -257,6 +257,12 @@ void InsertionSort::printResults() {
         m_commandPool,
         m_queue);
 
+    //insertionSortSerial(m_serialData);
+    {
+        Timer time("C++ sort");
+        std::sort(m_serialData.begin(), m_serialData.end());
+    }
+
     int numMismatch = 0;
     int numOrderError = 0;
 
@@ -266,8 +272,8 @@ void InsertionSort::printResults() {
         //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
 
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
-            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
-                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+            //std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
+            //    << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
             numMismatch += 1;
         }
 
@@ -279,7 +285,7 @@ void InsertionSort::printResults() {
         }
     }
 
-    std::cout << "Number of mismatches = " <<numMismatch << " order error = " << numOrderError << "\n";
+    std::cout << "Number of mismatches = " << numMismatch << " order error = " << numOrderError << "\n";
 }
 
 void runSerialGroup(std::vector<InsertionSortUtil::ValueAndIndex>& data, int groupId, int offset) {
@@ -358,10 +364,8 @@ void InsertionSort::runHelper() {
         } while (needsSorting());
     }
 
-    //insertionSortSerial(m_serialData);
-
-    //InsertionSort::printResults();
-    InsertionSort::compareResults();
+    InsertionSort::printResults();
+    //InsertionSort::compareResults();
 
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
 }

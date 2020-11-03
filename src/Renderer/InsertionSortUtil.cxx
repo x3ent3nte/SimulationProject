@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <iostream>
 
+bool InsertionSortUtil::ValueAndIndex::operator<(const ValueAndIndex& other) const {
+    return value < other.value;
+}
+
 VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     VkDescriptorSetLayout descriptorSetLayout;
 

@@ -12,6 +12,8 @@ namespace InsertionSortUtil {
     struct ValueAndIndex {
         float value;
         uint32_t index;
+
+        bool operator<(const ValueAndIndex& other) const;
     };
 
     struct Info {
