@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 #define X_DIM 64
 
 namespace InsertionSortUtil {
@@ -47,6 +49,7 @@ namespace InsertionSortUtil {
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
         VkBuffer wasSwappedBufferHostVisible,
+        const std::vector<VkBuffer>& steps,
         size_t numberOfElements);
 }
 

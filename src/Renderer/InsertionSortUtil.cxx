@@ -180,6 +180,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
     VkBuffer wasSwappedBufferHostVisible,
+    const std::vector<VkBuffer>& steps,
     size_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -278,6 +279,30 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
         vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &globalBarrier,
+            1,
+            &bufferBarrier,
+            0,
+            nullptr);
+
+        VkBufferCopy stepRegion{};
+        stepRegion.srcOffset = 0;
+        stepRegion.dstOffset = 0;
+        stepRegion.size = numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex);
+
+        vkCmdCopyBuffer(
+            commandBuffer,
+            valueAndIndexBuffer,
+            steps[i],
+            1,
+            &stepRegion);
     }
 
     vkCmdPipelineBarrier(

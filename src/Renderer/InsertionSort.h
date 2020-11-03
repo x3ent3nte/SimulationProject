@@ -30,6 +30,9 @@ private:
     VkDeviceMemory m_infoOneBufferMemory;
     VkDeviceMemory m_infoTwoBufferMemory;
 
+    std::vector<VkBuffer> m_steps;
+    std::vector<VkDeviceMemory> m_stepMemories;
+
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
     VkPipelineLayout m_pipelineLayout;
@@ -51,7 +54,9 @@ private:
     void runHelper();
 
     void printResults();
-
+    void runSerial();
+    void compareResults();
+    std::vector<InsertionSortUtil::ValueAndIndex> extractStep(int num);
 
 public:
 

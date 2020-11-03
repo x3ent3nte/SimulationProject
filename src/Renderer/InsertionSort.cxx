@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 128
+#define NUMBER_OF_ELEMENTS X_DIM * 64
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -65,6 +65,20 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_wasSwappedBufferHostVisible,
         m_wasSwappedBufferMemoryHostVisible);
+
+    size_t numGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
+    m_steps.resize(numGroups);
+    m_stepMemories.resize(numGroups);
+    for (int i = 0; i < numGroups; ++i) {
+        Buffer::createBuffer(
+            physicalDevice,
+            logicalDevice,
+            numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex),
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            m_steps[i],
+            m_stepMemories[i]);
+    }
 
     InsertionSortUtil::Info infoOne{0, numberOfElements};
     Buffer::createReadOnlyBuffer(
@@ -130,6 +144,7 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         m_valueAndIndexBuffer,
         m_wasSwappedBuffer,
         m_wasSwappedBufferHostVisible,
+        m_steps,
         numberOfElements);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -200,6 +215,18 @@ uint32_t InsertionSort::needsSorting() {
     return 0;
 }
 
+std::vector<InsertionSortUtil::ValueAndIndex> InsertionSort::extractStep(int num) {
+    std::vector<InsertionSortUtil::ValueAndIndex> data(NUMBER_OF_ELEMENTS);
+
+    size_t size = NUMBER_OF_ELEMENTS * sizeof(InsertionSortUtil::ValueAndIndex);
+    void*dataMap;
+    vkMapMemory(m_logicalDevice, m_stepMemories[num], 0, size, 0, &dataMap);
+    memcpy(data.data(), dataMap, size);
+    vkUnmapMemory(m_logicalDevice, m_stepMemories[num]);
+
+    return data;
+}
+
 void insertionSortSerial(std::vector<InsertionSortUtil::ValueAndIndex>& data) {
     Timer time("Insertion Sort Serial");
     for (int i = 1; i < data.size(); ++i) {
@@ -238,7 +265,6 @@ void InsertionSort::printResults() {
         auto valueAndIndexSerial = m_serialData[i];
         //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
 
-
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
             std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
                 << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
@@ -254,6 +280,65 @@ void InsertionSort::printResults() {
     }
 
     std::cout << "Number of mismatches = " <<numMismatch << " order error = " << numOrderError << "\n";
+}
+
+void runSerialGroup(std::vector<InsertionSortUtil::ValueAndIndex>& data, int groupId, int offset) {
+    int begin = (groupId * 2 * X_DIM) + offset;
+    int end = begin + (2 * X_DIM);
+    if (end > data.size()) {
+        end = data.size();
+    }
+
+    for (int i = (begin + 1); i < end; ++i) {
+        for (int j = i; j >= (begin + 1); --j) {
+            InsertionSortUtil::ValueAndIndex left = data[j - 1];
+            InsertionSortUtil::ValueAndIndex right = data[j];
+
+            if (left.value > right.value) {
+                data[j - 1] = right;
+                data[j] = left;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+void InsertionSort::runSerial() {
+    size_t numGroups = ceil(((float) NUMBER_OF_ELEMENTS) / ((float) 2 * X_DIM));
+
+    for (int i = 0; i < numGroups; ++i) {
+        runSerialGroup(m_serialData, i, 0);
+    }
+
+    for (int i = 0; i < numGroups; ++i) {
+        runSerialGroup(m_serialData, i, X_DIM);
+    }
+}
+
+void InsertionSort::compareResults() {
+    size_t numGroups = ceil(((float) NUMBER_OF_ELEMENTS) / ((float) 2 * X_DIM));
+
+    for (int i = 0; i < numGroups; ++i) {
+        runSerial();
+        std::vector<InsertionSortUtil::ValueAndIndex> gpuStep = extractStep(i);
+
+        for (int j = 0; j < NUMBER_OF_ELEMENTS; ++j) {
+            auto gpuValue = gpuStep[j];
+            auto serialValue = m_serialData[j];
+
+            if ((gpuValue.value != serialValue.value) || (gpuValue.index != serialValue.index)) {
+                std::cout << "Mismatch step = " << i << " index = " << j
+                    << " GPU = " << gpuValue.value << ", " << gpuValue.index
+                    << " SERIAL = " << serialValue.value << ", " << serialValue.index << "\n";
+            }
+        }
+
+        std::cout << "Finished step " << i << "\n";
+        std::string response;
+        std::cin >> response;
+        std::cout << "User input: " << response << "\n";
+    }
 }
 
 void InsertionSort::runHelper() {
@@ -273,9 +358,10 @@ void InsertionSort::runHelper() {
         } while (needsSorting());
     }
 
-    insertionSortSerial(m_serialData);
+    //insertionSortSerial(m_serialData);
 
-    InsertionSort::printResults();
+    //InsertionSort::printResults();
+    InsertionSort::compareResults();
 
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
 }
@@ -297,13 +383,18 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
     vkDestroyBuffer(logicalDevice, m_wasSwappedBuffer, nullptr);
 
     vkFreeMemory(logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
-    vkDestroyBuffer(logicalDevice,m_wasSwappedBufferHostVisible, nullptr);
+    vkDestroyBuffer(logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
 
     vkFreeMemory(logicalDevice, m_infoOneBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_infoOneBuffer, nullptr);
 
     vkFreeMemory(logicalDevice, m_infoTwoBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_infoTwoBuffer, nullptr);
+
+    for (int i = 0; i < m_steps.size(); ++i) {
+        vkFreeMemory(logicalDevice, m_stepMemories[i], nullptr);
+        vkDestroyBuffer(logicalDevice, m_steps[i], nullptr);
+    }
 
     vkDestroyDescriptorSetLayout(logicalDevice, m_descriptorSetLayout, nullptr);
 
