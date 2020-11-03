@@ -1,6 +1,6 @@
-main.exe
-main.exp
-main.lib
+game.exe
+game.exp
+game.lib
 glfw3.dll
 *.spv
 textures

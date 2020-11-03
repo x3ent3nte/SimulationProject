@@ -1,7 +1,7 @@
-#version 450
+#version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-#define X_DIM 512
+#define X_DIM 64
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -45,11 +45,12 @@ void main() {
         sharedData[localRightIndex] = data[globalRightIndex];
     }
 
+    barrier();
+
     do {
         localWasSwapped[0] = 0;
 
         barrier();
-        memoryBarrierShared();
 
         if (localRightIndex < localSize) {
             ValueAndIndex left = sharedData[localLeftIndex];
@@ -63,7 +64,6 @@ void main() {
         }
 
         barrier();
-        memoryBarrierShared();
 
         if (localRightIndexPlusOne < localSize) {
             ValueAndIndex left = sharedData[localRightIndex];
@@ -77,12 +77,18 @@ void main() {
         }
 
         barrier();
-        memoryBarrierShared();
-
     } while (localWasSwapped[0] != 0);
+
 
     data[globalLeftIndex] = sharedData[localLeftIndex];
     if (globalRightIndex < dataSize) {
         data[globalRightIndex] = sharedData[localRightIndex];
     }
+
+    /*
+    data[globalLeftIndex] = ValueAndIndex(globalLeftIndex + data[globalLeftIndex].value, globalLeftIndex);
+    if (globalRightIndex < dataSize) {
+        data[globalRightIndex] = ValueAndIndex(globalRightIndex + data[globalRightIndex].value, globalRightIndex);
+    }*/
+
 }

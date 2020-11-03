@@ -242,40 +242,43 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     copyRegion.size = sizeof(uint32_t);
     vkCmdCopyBuffer(commandBuffer, wasSwappedBufferHostVisible, wasSwappedBuffer, 1, &copyRegion);
 
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        1,
-        &globalBarrier,
-        1,
-        &bufferBarrier,
-        0,
-        nullptr);
-
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
     size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
     std::cout << "Number of X groups = " << xGroups << "\n";
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
-    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+    for (int i = 0; i < (xGroups); ++i) {
 
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        1,
-        &globalBarrier,
-        1,
-        &bufferBarrier,
-        0,
-        nullptr);
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &globalBarrier,
+            1,
+            &bufferBarrier,
+            0,
+            nullptr);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
-    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &globalBarrier,
+            1,
+            &bufferBarrier,
+            0,
+            nullptr);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+    }
 
     vkCmdPipelineBarrier(
         commandBuffer,

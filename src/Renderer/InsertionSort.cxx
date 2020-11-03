@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 64
+#define NUMBER_OF_ELEMENTS X_DIM * 128
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -17,7 +17,7 @@ std::vector<InsertionSortUtil::ValueAndIndex> getData() {
     std::vector<InsertionSortUtil::ValueAndIndex> data(numberOfElements);
     for (uint32_t i = 0; i < numberOfElements; ++i) {
         //data[i] = InsertionSortUtil::ValueAndIndex{MyMath::randomFloatBetweenZeroAndOne() * 100.0f, i};
-        data[i] = InsertionSortUtil::ValueAndIndex{(NUMBER_OF_ELEMENTS * 2.0f) - i, i};
+        data[i] = InsertionSortUtil::ValueAndIndex{(NUMBER_OF_ELEMENTS - 1.0f) - i, i};
     }
 
     return data;
@@ -196,7 +196,8 @@ uint32_t InsertionSort::needsSorting() {
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
     std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
-    return wasSwappedValue;
+    //return wasSwappedValue;
+    return 0;
 }
 
 void insertionSortSerial(std::vector<InsertionSortUtil::ValueAndIndex>& data) {
@@ -239,8 +240,8 @@ void InsertionSort::printResults() {
 
 
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
-            //std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
-                //<< " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
+                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
             numMismatch += 1;
         }
 

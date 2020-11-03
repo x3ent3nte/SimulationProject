@@ -1,4 +1,4 @@
-nvcc -o main \
+nvcc -o game \
  \
 src/*.cxx \
 src/Renderer/*.cxx \

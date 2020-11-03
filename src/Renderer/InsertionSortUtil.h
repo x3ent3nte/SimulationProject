@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.h>
 
-#define X_DIM 512
+#define X_DIM 64
 
 namespace InsertionSortUtil {
 
