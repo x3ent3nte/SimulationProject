@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 160
+#define NUMBER_OF_ELEMENTS X_DIM * 1024
 
 std::vector<InsertionSortUtil::ValueAndIndex> getData() {
 
@@ -213,8 +213,7 @@ uint32_t InsertionSort::needsSorting() {
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
     std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
-    //return wasSwappedValue;
-    return 0;
+    return wasSwappedValue;
 }
 
 std::vector<InsertionSortUtil::ValueAndIndex> InsertionSort::extractStep(int num) {
@@ -259,10 +258,10 @@ void InsertionSort::printResults() {
         m_commandPool,
         m_queue);
 
-    //insertionSortSerial(m_serialData);
     {
         Timer time("C++ sort");
         std::sort(m_serialData.begin(), m_serialData.end());
+        //insertionSortSerial(m_serialData);
     }
 
     int numMismatch = 0;
@@ -274,8 +273,8 @@ void InsertionSort::printResults() {
         //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
 
         if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
-            //std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
-            //    << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
+            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
+                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
             numMismatch += 1;
         }
 
@@ -376,9 +375,9 @@ void InsertionSort::run() {
 
     runHelper();
     runHelper();
-    runHelper();
-    runHelper();
-    runHelper();
+    //runHelper();
+    //runHelper();
+    //runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {

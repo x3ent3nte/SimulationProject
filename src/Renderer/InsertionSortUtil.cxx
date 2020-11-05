@@ -252,64 +252,61 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
     std::cout << "Number of X groups = " << xGroups << "\n";
 
-    for (int i = 0; i < (xGroups); ++i) {
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &globalBarrier,
+        1,
+        &bufferBarrier,
+        0,
+        nullptr);
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            0,
-            1,
-            &globalBarrier,
-            1,
-            &bufferBarrier,
-            0,
-            nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &globalBarrier,
+        1,
+        &bufferBarrier,
+        0,
+        nullptr);
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            0,
-            1,
-            &globalBarrier,
-            1,
-            &bufferBarrier,
-            0,
-            nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetTwo, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &globalBarrier,
+        1,
+        &bufferBarrier,
+        0,
+        nullptr);
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            0,
-            1,
-            &globalBarrier,
-            1,
-            &bufferBarrier,
-            0,
-            nullptr);
+    /*
+    VkBufferCopy stepRegion{};
+    stepRegion.srcOffset = 0;
+    stepRegion.dstOffset = 0;
+    stepRegion.size = numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex);
 
-        /*
-        VkBufferCopy stepRegion{};
-        stepRegion.srcOffset = 0;
-        stepRegion.dstOffset = 0;
-        stepRegion.size = numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex);
-
-        vkCmdCopyBuffer(
-            commandBuffer,
-            valueAndIndexBuffer,
-            steps[i],
-            1,
-            &stepRegion);
-        */
-    }
+    vkCmdCopyBuffer(
+        commandBuffer,
+        valueAndIndexBuffer,
+        steps[i],
+        1,
+        &stepRegion);
+    */
 
     vkCmdPipelineBarrier(
         commandBuffer,
