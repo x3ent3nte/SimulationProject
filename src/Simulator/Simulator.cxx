@@ -1,13 +1,13 @@
-#include <Renderer/Simulator.h>
+#include <Simulator/Simulator.h>
 
-#include <Renderer/Agent.h>
+#include <Simulator/Agent.h>
 #include <Renderer/Buffer.h>
-#include <Renderer/Utils.h>
+#include <Utils/Utils.h>
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/MyGLM.h>
-#include <Renderer/MyMath.h>
+#include <Utils/MyMath.h>
 #include <Renderer/Constants.h>
-#include <Renderer/InsertionSort.h>
+#include <Simulator/InsertionSort.h>
 
 #include <Timer.h>
 

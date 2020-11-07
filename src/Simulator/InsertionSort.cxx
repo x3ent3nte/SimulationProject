@@ -1,8 +1,8 @@
-#include <Renderer/InsertionSort.h>
+#include <Simulator/InsertionSort.h>
 
 #include <Renderer/Buffer.h>
-#include <Renderer/Utils.h>
-#include <Renderer/MyMath.h>
+#include <Utils/Utils.h>
+#include <Utils/MyMath.h>
 #include <Timer.h>
 
 #include <vector>

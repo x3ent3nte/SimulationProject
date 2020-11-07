@@ -1,4 +1,4 @@
-#include <Renderer/MyMath.h>
+#include <Utils/MyMath.h>
 
 float MyMath::cosineSimilarity(glm::vec3 a, glm::vec3 b) {
     float magMult = glm::length(a) * glm::length(b);

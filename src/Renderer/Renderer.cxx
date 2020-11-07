@@ -1,8 +1,8 @@
 #include <Renderer/Renderer.h>
 
-#include <Renderer/Agent.h>
-#include <Renderer/Simulator.h>
-#include <Renderer/Utils.h>
+#include <Simulator/Agent.h>
+#include <Simulator/Simulator.h>
+#include <Utils/Utils.h>
 #include <Renderer/Vertex.h>
 #include <Renderer/Instance.h>
 #include <Renderer/Surface.h>
@@ -16,7 +16,7 @@
 #include <Renderer/Descriptors.h>
 #include <Renderer/Image.h>
 #include <Renderer/KeyboardControl.h>
-#include <Renderer/MyMath.h>
+#include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
 #include <Renderer/Connector.h>
 

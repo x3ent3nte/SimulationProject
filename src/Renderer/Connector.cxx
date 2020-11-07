@@ -3,8 +3,8 @@
 #include <Renderer/Buffer.h>
 #include <Renderer/MyGLM.h>
 #include <Renderer/Constants.h>
-#include <Renderer/Agent.h>
-#include <Renderer/MyMath.h>
+#include <Simulator/Agent.h>
+#include <Utils/MyMath.h>
 
 Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue) {
 

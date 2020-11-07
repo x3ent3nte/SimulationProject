@@ -1,6 +1,6 @@
 #include <Renderer/Vertex.h>
 
-#include <Renderer/Agent.h>
+#include <Simulator/Agent.h>
 
 bool Vertex::operator==(const Vertex& other) const {
     return (pos == other.pos) && (colour == other.colour) && (texCoord == other.texCoord);

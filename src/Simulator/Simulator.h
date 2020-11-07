@@ -2,7 +2,7 @@
 #define SIMULATOR_H
 
 #include <Renderer/Connector.h>
-#include <Renderer/InsertionSort.h>
+#include <Simulator/InsertionSort.h>
 
 #include <vulkan/vulkan.h>
 
