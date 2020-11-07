@@ -45,7 +45,6 @@ void main() {
         sharedData[localRightIndex] = data[globalRightIndex];
     }
 
-
     do {
 
         barrier();
@@ -85,18 +84,4 @@ void main() {
     if (globalRightIndex < dataSize) {
         data[globalRightIndex] = sharedData[localRightIndex];
     }
-
-    /*
-    data[globalLeftIndex] = ValueAndIndex(localLeftIndex, offset);
-    if (globalRightIndex < dataSize) {
-        data[globalRightIndex] = ValueAndIndex(localRightIndex, globalOffset);
-    }
-    */
-
-    /*
-    data[globalLeftIndex] = ValueAndIndex(globalLeftIndex + data[globalLeftIndex].value, globalLeftIndex);
-    if (globalRightIndex < dataSize) {
-        data[globalRightIndex] = ValueAndIndex(globalRightIndex + data[globalRightIndex].value, globalRightIndex);
-    }*/
-
 }

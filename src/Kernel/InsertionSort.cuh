@@ -34,6 +34,8 @@ void insertionSortHelper(T* elements, int* wasSwappedFlag, int leftIndex, int si
     __shared__ int needsSortingFlag[1];
 
     do {
+        __syncthreads();
+
         needsSortingFlag[0] = 0;
 
         __syncthreads();
@@ -61,7 +63,7 @@ void insertionSortKernel(T* elements, int* wasSwappedFlag, int size) {
     int globalOffset = blockDim.x * blockIdx.x * 2;
     int leftIndex = threadIdx.x * 2;
     int globalLeftIndex = globalOffset + leftIndex;
-    
+
     int localSize = size - globalOffset;
 
     if (globalLeftIndex >= size) { return; }
@@ -94,7 +96,7 @@ template<typename T, int (*FN)(T, T)>
 void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
 
     constexpr int threadsPerBlock = 256;
-    int offset = threadsPerBlock / 2; 
+    int offset = threadsPerBlock / 2;
 
     int numBlocks = ceil(size / (float) (threadsPerBlock * 2));
 
@@ -102,7 +104,7 @@ void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
 
     do {
         cudaMemset(needsSortingFlag, 0, sizeof(int));
-        
+
         numIterations += 1;
 
         insertionSortKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(elements, needsSortingFlag, size);

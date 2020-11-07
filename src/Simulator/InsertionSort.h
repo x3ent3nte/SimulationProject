@@ -18,7 +18,6 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_valueAndIndexBuffer;
     VkBuffer m_wasSwappedBuffer;
     VkBuffer m_wasSwappedBufferHostVisible;
     VkBuffer m_infoOneBuffer;
@@ -29,9 +28,6 @@ private:
     VkDeviceMemory m_wasSwappedBufferMemoryHostVisible;
     VkDeviceMemory m_infoOneBufferMemory;
     VkDeviceMemory m_infoTwoBufferMemory;
-
-    std::vector<VkBuffer> m_steps;
-    std::vector<VkDeviceMemory> m_stepMemories;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
@@ -46,19 +42,17 @@ private:
     VkSemaphore m_semaphore;
     VkFence m_fence;
 
-    void runCopyCommand(VkCommandBuffer commandBuffer);
-    void runSortCommands();
     void setWasSwappedToZero();
+    void runSortCommands();
     uint32_t needsSorting();
 
     void runHelper();
 
     void printResults();
-    void runSerial();
-    void compareResults();
-    std::vector<InsertionSortUtil::ValueAndIndex> extractStep(int num);
 
 public:
+
+    VkBuffer m_valueAndIndexBuffer;
 
     InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool);
 

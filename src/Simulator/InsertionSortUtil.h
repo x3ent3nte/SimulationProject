@@ -23,7 +23,7 @@ namespace InsertionSortUtil {
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
 
-    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t size);
+    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSet);
 
     VkDescriptorSet createDescriptorSet(
         VkDevice logicalDevice,
@@ -34,11 +34,8 @@ namespace InsertionSortUtil {
         VkBuffer infoBuffer,
         size_t numberOfElements);
 
-    VkPipelineLayout createPipelineLayout(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout);
-
     VkPipeline createPipeline(
         VkDevice logicalDevice,
-        VkShaderModule shaderModule,
         VkPipelineLayout pipelineLayout);
 
     VkCommandBuffer createCommandBuffer(
@@ -51,7 +48,6 @@ namespace InsertionSortUtil {
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
         VkBuffer wasSwappedBufferHostVisible,
-        const std::vector<VkBuffer>& steps,
         size_t numberOfElements);
 }
 
