@@ -1,6 +1,6 @@
 #include <Test/InsertionSortVulkanTest.h>
 
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 
 InsertionSortVulkanTest::InsertionSortVulkanTest(
     VkPhysicalDevice physicalDevice,

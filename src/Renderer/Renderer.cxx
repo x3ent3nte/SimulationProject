@@ -12,7 +12,7 @@
 #include <Renderer/Pipeline.h>
 #include <Renderer/SwapChain.h>
 #include <Renderer/Command.h>
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 #include <Renderer/Descriptors.h>
 #include <Renderer/Image.h>
 #include <Renderer/KeyboardControl.h>

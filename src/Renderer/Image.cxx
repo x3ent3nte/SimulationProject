@@ -5,7 +5,7 @@
 
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/Command.h>
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 #include <Renderer/Constants.h>
 
 #include <stdexcept>

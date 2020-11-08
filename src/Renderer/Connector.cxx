@@ -1,6 +1,6 @@
 #include <Renderer/Connector.h>
 
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 #include <Renderer/MyGLM.h>
 #include <Renderer/Constants.h>
 #include <Simulator/Agent.h>

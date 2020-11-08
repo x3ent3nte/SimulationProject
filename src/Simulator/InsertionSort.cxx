@@ -1,6 +1,6 @@
 #include <Simulator/InsertionSort.h>
 
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 #include <Utils/Utils.h>
 #include <Utils/MyMath.h>
 #include <Utils/Compute.h>

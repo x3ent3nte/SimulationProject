@@ -1,7 +1,7 @@
 #include <Simulator/Simulator.h>
 
 #include <Simulator/Agent.h>
-#include <Renderer/Buffer.h>
+#include <Utils/Buffer.h>
 #include <Utils/Utils.h>
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/MyGLM.h>
