@@ -17,9 +17,6 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_hostBuffer;
-    VkDeviceMemory m_hostBufferMemory;
-
     std::shared_ptr<InsertionSort> m_insertionSort;
 
 public:
