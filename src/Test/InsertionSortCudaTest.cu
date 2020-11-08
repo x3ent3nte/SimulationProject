@@ -21,18 +21,18 @@ std::vector<float> InsertionSortCudaTest::run(const std::vector<float>& data) {
 
     std::vector<float> dataCopy(data);
 
-    size_t size = dataCopy.size() * sizeof(float);
+    size_t bufferSize = dataCopy.size() * sizeof(float);
 
     float* d_data;
     int* d_needsSorting;
-    cudaMalloc(&d_data, size);
+    cudaMalloc(&d_data, bufferSize);
     cudaMalloc(&d_needsSorting, sizeof(int));
 
-    cudaMemcpy(d_data, dataCopy.data(), size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_data, dataCopy.data(), bufferSize, cudaMemcpyHostToDevice);
 
-    InsertionSort::sort<float, floatGreater>(d_data, d_needsSorting, size);
+    InsertionSort::sort<float, floatGreater>(d_data, d_needsSorting, data.size());
 
-    cudaMemcpy(dataCopy.data(), d_data, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(dataCopy.data(), d_data, bufferSize, cudaMemcpyDeviceToHost);
 
     cudaFree(d_data);
     cudaFree(d_needsSorting);
