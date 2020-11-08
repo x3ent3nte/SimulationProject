@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 
-#include <Timer.h>
+#include <Utils/Timer.h>
 #include <Renderer/Renderer.h>
 #include <Kernel/Reduce.cuh>
 #include <Kernel/Scan.cuh>

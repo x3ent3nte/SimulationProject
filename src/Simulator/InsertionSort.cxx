@@ -4,7 +4,7 @@
 #include <Utils/Utils.h>
 #include <Utils/MyMath.h>
 #include <Utils/Compute.h>
-#include <Timer.h>
+#include <Utils/Timer.h>
 
 #include <vector>
 #include <stdexcept>
@@ -163,19 +163,17 @@ void InsertionSort::run() {
     int numIterations = 0;
 
     {
-        Timer time("Insertion Sort GPU");
+        Timer time("Insertion Sort Vulkan");
         do {
             setWasSwappedToZero();
 
             runSortCommands();
 
             numIterations += 1;
-            //std::cout << "Insertion sort iteration number = " << numIterations << "\n";
-
         } while (needsSorting());
     }
 
-    std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
+    std::cout << "Insertion Sort Vulkan total number of iterations = " << numIterations << "\n";
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {

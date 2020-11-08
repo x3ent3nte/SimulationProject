@@ -9,7 +9,7 @@
 #include <Renderer/Constants.h>
 #include <Simulator/InsertionSort.h>
 
-#include <Timer.h>
+#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>

@@ -10,7 +10,6 @@ class InsertionSortTest {
 
 private:
 
-    //std::shared_ptr<InsertionSortCudaTest> m_cudaTest;
     std::shared_ptr<InsertionSortVulkanTest> m_vulkanTest;
 
 public:

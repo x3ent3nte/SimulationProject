@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <functional>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 1024
+#define NUMBER_OF_ELEMENTS X_DIM * 32
 
 namespace {
 
@@ -38,15 +38,17 @@ namespace {
     void testHelper(const std::vector<float>& data, std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
         auto expected = serialSort(data);
 
-        // When
-        auto actual = vulkanTest->run(data);
-        // Then
-        expectEqual(expected, actual);
+        auto actualVulkan = vulkanTest->run(data);
+        expectEqual(expected, actualVulkan);
 
-        // When
-        auto actualTwo = vulkanTest->run(actual);
-        // Then
-        expectEqual(expected, actualTwo);
+        auto actualVulkanTwo = vulkanTest->run(actualVulkan);
+        expectEqual(expected, actualVulkanTwo);
+
+        auto actualCuda = InsertionSortCudaTest::run(data);
+        expectEqual(expected, actualCuda);
+
+        auto actualCudaTwo = InsertionSortCudaTest::run(actualCuda);
+        expectEqual(expected, actualCudaTwo);
     }
 
     void testReverseOrder(std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {

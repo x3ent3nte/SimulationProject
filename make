@@ -1,6 +1,5 @@
 nvcc -o game \
  \
-src/*.cxx \
 src/Renderer/*.cxx \
 src/Simulator/*.cxx \
 src/Utils/*.cxx \
