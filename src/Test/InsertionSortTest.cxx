@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <functional>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 1024
+#define NUMBER_OF_ELEMENTS 64 * 1024
 
 namespace {
 
