@@ -44,11 +44,17 @@ namespace {
         auto actualVulkanTwo = vulkanTest->run(actualVulkan);
         expectEqual(expected, actualVulkanTwo);
 
+        auto actualVulkanThree = vulkanTest->run(actualVulkanTwo);
+        expectEqual(expected, actualVulkanThree);
+
         auto actualCuda = InsertionSortCudaTest::run(data);
         expectEqual(expected, actualCuda);
 
         auto actualCudaTwo = InsertionSortCudaTest::run(actualCuda);
         expectEqual(expected, actualCudaTwo);
+
+        auto actualCudaThree = InsertionSortCudaTest::run(actualCudaTwo);
+        expectEqual(expected, actualCudaThree);
     }
 
     void testReverseOrder(std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {

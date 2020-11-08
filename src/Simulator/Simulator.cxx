@@ -370,7 +370,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
 
 void Simulator::cleanUp(VkDevice logicalDevice) {
 
-    m_insertionSort->cleanUp(logicalDevice, m_computeCommandPool);
+    m_insertionSort->cleanUp();
     m_insertionSortTest = nullptr;
 
     vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);

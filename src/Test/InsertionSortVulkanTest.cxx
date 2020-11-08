@@ -18,7 +18,7 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
 }
 
 InsertionSortVulkanTest::~InsertionSortVulkanTest() {
-    m_insertionSort->cleanUp(m_logicalDevice, m_commandPool);
+    m_insertionSort->cleanUp();
 }
 
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {

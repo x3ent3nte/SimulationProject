@@ -176,29 +176,29 @@ void InsertionSort::run() {
     std::cout << "Insertion Sort Vulkan total number of iterations = " << numIterations << "\n";
 }
 
-void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
-    vkFreeMemory(logicalDevice, m_valueAndIndexBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_valueAndIndexBuffer, nullptr);
+void InsertionSort::cleanUp() {
+    vkFreeMemory(m_logicalDevice, m_valueAndIndexBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_valueAndIndexBuffer, nullptr);
 
-    vkFreeMemory(logicalDevice, m_wasSwappedBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_wasSwappedBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBuffer, nullptr);
 
-    vkFreeMemory(logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
-    vkDestroyBuffer(logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
+    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
 
-    vkFreeMemory(logicalDevice, m_infoOneBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_infoOneBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_infoOneBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_infoOneBuffer, nullptr);
 
-    vkFreeMemory(logicalDevice, m_infoTwoBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_infoTwoBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_infoTwoBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_infoTwoBuffer, nullptr);
 
-    vkDestroyDescriptorSetLayout(logicalDevice, m_descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
 
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &m_commandBuffer);
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
 
-    vkDestroyDescriptorPool(logicalDevice, m_descriptorPool, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, m_pipelineLayout, nullptr);
-    vkDestroyPipeline(logicalDevice, m_pipeline, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
 
-    vkDestroyFence(logicalDevice, m_fence, nullptr);
+    vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }

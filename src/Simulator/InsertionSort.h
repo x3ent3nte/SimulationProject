@@ -59,7 +59,7 @@ public:
 
     void run();
 
-    void cleanUp(VkDevice logicalDevice, VkCommandPool commandPool);
+    void cleanUp();
 };
 
 #endif
