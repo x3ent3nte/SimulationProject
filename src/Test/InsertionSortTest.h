@@ -1,0 +1,25 @@
+#ifndef INSERTION_SORT_TEST_H
+#define INSERTION_SORT_TEST_H
+
+#include <Test/InsertionSortCudaTest.cuh>
+#include <Test/InsertionSortVulkanTest.h>
+
+#include <memory>
+
+class InsertionSortTest {
+
+private:
+
+    //std::shared_ptr<InsertionSortCudaTest> m_cudaTest;
+    std::shared_ptr<InsertionSortVulkanTest> m_vulkanTest;
+
+public:
+
+    InsertionSortTest(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool);
+
+    virtual ~InsertionSortTest() = default;
+
+    void run();
+};
+
+#endif

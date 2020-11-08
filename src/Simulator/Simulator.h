@@ -3,6 +3,7 @@
 
 #include <Renderer/Connector.h>
 #include <Simulator/InsertionSort.h>
+#include <Test/InsertionSortTest.h>
 
 #include <vulkan/vulkan.h>
 
@@ -36,6 +37,7 @@ private:
     VkDeviceMemory m_agentsBufferMemory;
 
     std::shared_ptr<InsertionSort> m_insertionSort;
+    std::shared_ptr<InsertionSortTest> m_insertionSortTest;
 
     void simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer);
     void runSimulatorTask(VkDevice logicalDevice);

@@ -9,7 +9,7 @@
 #include <Kernel/Agent.cuh>
 #include <Kernel/ContinuousCollision.cuh>
 #include <Kernel/CudaSimulator.cuh>
-#include <Test/InsertionSortTest.cuh>
+#include <Test/InsertionSortCudaTest.cuh>
 
 #define checkCudaErrors(call)                                   \
 do {                                                            \

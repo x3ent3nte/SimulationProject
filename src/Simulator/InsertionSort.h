@@ -11,8 +11,6 @@ class InsertionSort {
 
 private:
 
-    std::vector<InsertionSortUtil::ValueAndIndex> m_serialData;
-
     VkPhysicalDevice m_physicalDevice;
     VkDevice m_logicalDevice;
     VkQueue m_queue;
@@ -46,15 +44,16 @@ private:
     void runSortCommands();
     uint32_t needsSorting();
 
-    void runHelper();
-
-    void printResults();
-
 public:
 
     VkBuffer m_valueAndIndexBuffer;
 
-    InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool);
+    InsertionSort(
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkQueue queue,
+        VkCommandPool commandPool,
+        uint32_t numberOfElements);
 
     virtual ~InsertionSort() = default;
 

@@ -5,17 +5,21 @@
 #include <iostream>
 #include <sstream>
 
-namespace Test {
+#include <stdexcept>
+
+namespace TestUtils {
     template<typename T>
-    void assertEquals(T a, T b);
+    void assertEqual(T a, T b);
+
+    void assertTrue(bool b);
 }
 
 template <typename T>
-void Test::assertEquals(T a, T b) {
+void TestUtils::assertEqual(T a, T b) {
     if (a != b) {
         std::stringstream ss;
-        ss << "assertEqualsError: " << a << " does not equal " << b >> "\n";
-        throw ss.str();
+        ss << "assertEqualsError: " << a << " does not equal " << b << "\n";
+        throw std::runtime_error(ss.str());
     }
 }
 

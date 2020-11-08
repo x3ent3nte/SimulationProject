@@ -1,4 +1,4 @@
-#include <Test/InsertionSortTest.cuh>
+#include <Test/InsertionSortCudaTest.cuh>
 
 #include <Kernel/InsertionSort.cuh>
 #include <Timer.h>
@@ -61,8 +61,8 @@ void runTest(T* nums, int size) {
 
 } // namespace anonymous
 
-void InsertionSortTest::run() {
-    printf("Begin InsertionSortTest\n");
+void InsertionSortCudaTest::run() {
+    printf("Begin InsertionSort Cuda Test\n");
 
     int size = 1024 * 17;
     int * nums = (int*) malloc(size * sizeof(int));
@@ -78,5 +78,5 @@ void InsertionSortTest::run() {
     }
     free(nums);
 
-    printf("End InsertionSortTest\n");
+    printf("End InsertionSort Cuda Test\n");
 }

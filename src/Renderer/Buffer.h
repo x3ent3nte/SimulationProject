@@ -49,6 +49,15 @@ namespace Buffer {
         VkCommandPool commandPool,
         VkQueue queue);
 
+    void copyHostToDeviceBuffer(
+        void* data,
+        VkDeviceSize bufferSize,
+        VkBuffer buffer,
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkQueue queue);
+
     void copyBufferToImage(
         VkDevice logicalDevice,
         VkCommandPool commandPool,

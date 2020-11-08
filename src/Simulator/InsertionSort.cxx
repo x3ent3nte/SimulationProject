@@ -10,39 +10,24 @@
 #include <stdexcept>
 #include <iostream>
 
-#define NUMBER_OF_ELEMENTS X_DIM * 1024
-
-std::vector<InsertionSortUtil::ValueAndIndex> getData() {
-
-    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
-    std::vector<InsertionSortUtil::ValueAndIndex> data(numberOfElements);
-    for (uint32_t i = 0; i < numberOfElements; ++i) {
-        //data[i] = InsertionSortUtil::ValueAndIndex{MyMath::randomFloatBetweenZeroAndOne() * 100.0f, i};
-        data[i] = InsertionSortUtil::ValueAndIndex{(NUMBER_OF_ELEMENTS - 1.0f) - i, i};
-    }
-
-    return data;
-}
-
-InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool) {
-
-    uint32_t numberOfElements = NUMBER_OF_ELEMENTS;
-
-    m_serialData = getData();
+InsertionSort::InsertionSort(
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkQueue queue,
+    VkCommandPool commandPool,
+    uint32_t numberOfElements) {
 
     m_physicalDevice = physicalDevice;
     m_logicalDevice = logicalDevice;
     m_queue = queue;
     m_commandPool = commandPool;
 
-    Buffer::createReadOnlyBuffer(
-        m_serialData.data(),
-        numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        commandPool,
-        queue,
+        numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_valueAndIndexBuffer,
         m_valueAndIndexBufferMemory);
 
@@ -66,8 +51,6 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_wasSwappedBufferHostVisible,
         m_wasSwappedBufferMemoryHostVisible);
-
-    size_t numGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
 
     InsertionSortUtil::Info infoOne{0, numberOfElements};
     Buffer::createReadOnlyBuffer(
@@ -134,10 +117,6 @@ InsertionSort::InsertionSort(VkPhysicalDevice physicalDevice, VkDevice logicalDe
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &m_semaphore) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create semaphore");
-    }
-
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -176,55 +155,10 @@ uint32_t InsertionSort::needsSorting() {
     memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 
-    std::cout << "wasSwappedValue = " << wasSwappedValue << "\n";
     return wasSwappedValue;
 }
 
-
-void InsertionSort::printResults() {
-
-    std::vector<InsertionSortUtil::ValueAndIndex> data(NUMBER_OF_ELEMENTS);
-
-    Buffer::copyDeviceBufferToHost(
-        data.data(),
-        NUMBER_OF_ELEMENTS * sizeof(InsertionSortUtil::ValueAndIndex),
-        m_valueAndIndexBuffer,
-        m_physicalDevice,
-        m_logicalDevice,
-        m_commandPool,
-        m_queue);
-
-    {
-        Timer time("C++ sort");
-        std::sort(m_serialData.begin(), m_serialData.end());
-    }
-
-    int numMismatch = 0;
-    int numOrderError = 0;
-
-    for (size_t i = 1; i < NUMBER_OF_ELEMENTS; ++i) {
-        auto valueAndIndex = data[i];
-        auto valueAndIndexSerial = m_serialData[i];
-        //std::cout << "Value = " << valueAndIndex.value << " Index = " << valueAndIndex.index << "\n";
-
-        if ((valueAndIndex.value != valueAndIndexSerial.value) || (valueAndIndex.index != valueAndIndexSerial.index)) {
-            std::cout << "Mismatch at index = " << i << " GPU  = " << valueAndIndex.value << ", " << valueAndIndex.index
-                << " SERIAL = " << valueAndIndexSerial.value << ", " << valueAndIndexSerial.index << "\n";
-            numMismatch += 1;
-        }
-
-
-        auto left = data[i - 1];
-        if (left.value > valueAndIndex.value) {
-            std::cout << "Order error at index = " << i << " left = " << left.value << " right = " << valueAndIndex.value << "\n";
-            numOrderError += 1;
-        }
-    }
-
-    std::cout << "Number of mismatches = " << numMismatch << " order error = " << numOrderError << "\n";
-}
-
-void InsertionSort::runHelper() {
+void InsertionSort::run() {
 
     int numIterations = 0;
 
@@ -241,18 +175,7 @@ void InsertionSort::runHelper() {
         } while (needsSorting());
     }
 
-    InsertionSort::printResults();
-
     std::cout << "Insertion sort total number of iterations = " << numIterations << "\n";
-}
-
-void InsertionSort::run() {
-
-    runHelper();
-    runHelper();
-    //runHelper();
-    //runHelper();
-    //runHelper();
 }
 
 void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
@@ -279,6 +202,5 @@ void InsertionSort::cleanUp(VkDevice logicalDevice, VkCommandPool commandPool) {
     vkDestroyPipelineLayout(logicalDevice, m_pipelineLayout, nullptr);
     vkDestroyPipeline(logicalDevice, m_pipeline, nullptr);
 
-    vkDestroySemaphore(logicalDevice, m_semaphore, nullptr);
     vkDestroyFence(logicalDevice, m_fence, nullptr);
 }
