@@ -245,7 +245,7 @@ int addx(int a, int b) {
 
 void ContinuousCollision::collide(Agent* agents, int size, float seconds) {
 
-    constexpr int kThreadsPerBlock = 512;
+    constexpr int kThreadsPerBlock = 256;
 
     int numBlocks = ceil(size / (float) kThreadsPerBlock);
 
