@@ -1,4 +1,4 @@
-#include <Kernel/CudaSimulator.cuh>
+#include <Cuda/CudaSimulator.cuh>
 
 __device__
 float magx(float3 v) {

@@ -1,6 +1,6 @@
 #include <Test/InsertionSortCudaTest.cuh>
 
-#include <Kernel/InsertionSort.cuh>
+#include <Cuda/InsertionSort.cuh>
 #include <Utils/Timer.h>
 
 #include <stdio.h>

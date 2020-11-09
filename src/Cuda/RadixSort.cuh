@@ -1,7 +1,7 @@
 #ifndef RADIX_SORT_CUH
 #define RADIX_SORT_CUH
 
-#include <Kernel/Scan.cuh>
+#include <Cuda/Scan.cuh>
 #include <set>
 
 namespace RadixSort {
@@ -27,10 +27,10 @@ void mark(const T* elements, uint4* flags, int pos, int size) {
     if (gid >= size) { return; }
 
     T index = (elements[gid] >> pos) & 3;
-    
+
     uint4 flag = {0, 0, 0, 0};
     *((&flag.x) + index) = 1;
-    
+
     flags[gid] = flag;
 }
 
@@ -46,7 +46,7 @@ void scatter(const T* in, T* out, const uint4* addresses, uint4 totalOffset, int
     T value = in[gid];
 
     T index = (value >> pos) & 3;
-    
+
     uint4 addressVector;
     if (gid == 0) {
         addressVector = {0, 0, 0, 0};
@@ -93,7 +93,7 @@ void printAddress(unsigned int* addresses, int size) {
 
 template<typename T>
 T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
-    
+
     constexpr int numBits = sizeof(T) * 8;
     constexpr int threadsPerBlock = 1024;
     const int numBlocks = ceil(size / (float) threadsPerBlock);
@@ -101,12 +101,12 @@ T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
     for (int pos = 0; pos < numBits; pos += 2) {
         printf("Radix Sort at bit position %d\n", pos);
         mark<T><<<numBlocks, threadsPerBlock>>>(a, flags_a, pos, size);
-        
+
         //printf("Printing flags after marking\n");
         //printFlags(flags_a, size);
 
         Scan::scan<uint4, uint4Add>(flags_a, flags_a, flags_b, size);
-        
+
         //printf("Printing flags after scanning\n");
         //printFlags(flags_a, size);
 
@@ -119,7 +119,7 @@ T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
         totalOffset.x = 0;
 
         //printf("Total Offset %d %d %d %d\n", totalOffset.x, totalOffset.y, totalOffset.z, totalOffset.w);
-        
+
         scatter<T><<<numBlocks, threadsPerBlock>>>(a, b, flags_a, totalOffset, pos, size);
         //printAddress(b, size);
 

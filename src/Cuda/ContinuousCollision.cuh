@@ -1,7 +1,7 @@
 #ifndef CONTINUOUS_COLLISION_CUH
 #define CONTINUOUS_COLLISION_CUH
 
-#include <Kernel/Agent.cuh>
+#include <Cuda/Agent.cuh>
 
 typedef struct {
     float maxX;
@@ -19,17 +19,17 @@ class ContinuousCollision {
 public:
     ContinuousCollision(int maxAgents);
     ~ContinuousCollision();
-   
+
     void collide(Agent* agents, int size, float seconds);
 
 private:
     MaxXAndIndex* m_maxXAndIndexes;
     int* m_needsSortingFlag;
     Agent* m_agentsBuffer;
-    
+
     CollisionAndTime* m_collisions;
     CollisionAndTime* m_collisionsBuffer;
-    
+
     int* m_collisionFlags;
     int* m_collisionFlagsOffsets;
 };

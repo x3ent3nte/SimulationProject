@@ -1,8 +1,8 @@
-#include <Kernel/ContinuousCollision.cuh>
+#include <Cuda/ContinuousCollision.cuh>
 
-#include <Kernel/InsertionSort.cuh>
-#include <Kernel/Scan.cuh>
-#include <Kernel/Reduce.cuh>
+#include <Cuda/InsertionSort.cuh>
+#include <Cuda/Scan.cuh>
+#include <Cuda/Reduce.cuh>
 
 namespace {
 

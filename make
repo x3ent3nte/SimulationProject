@@ -4,7 +4,7 @@ src/Renderer/*.cxx \
 src/Simulator/*.cxx \
 src/Utils/*.cxx \
 src/*.cu \
-src/Kernel/*.cu \
+src/Cuda/*.cu \
 src/Test/*.cxx \
 src/Test/*.cu \
  \

@@ -3,12 +3,12 @@
 
 #include <Utils/Timer.h>
 #include <Renderer/Renderer.h>
-#include <Kernel/Reduce.cuh>
-#include <Kernel/Scan.cuh>
-#include <Kernel/RadixSort.cuh>
-#include <Kernel/Agent.cuh>
-#include <Kernel/ContinuousCollision.cuh>
-#include <Kernel/CudaSimulator.cuh>
+#include <Cuda/Reduce.cuh>
+#include <Cuda/Scan.cuh>
+#include <Cuda/RadixSort.cuh>
+#include <Cuda/Agent.cuh>
+#include <Cuda/ContinuousCollision.cuh>
+#include <Cuda/CudaSimulator.cuh>
 #include <Test/InsertionSortCudaTest.cuh>
 
 #define checkCudaErrors(call)                                   \
