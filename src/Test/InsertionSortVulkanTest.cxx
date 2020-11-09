@@ -49,10 +49,9 @@ std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) 
         m_commandPool,
         m_queue);
 
-    std::vector<float> sorted;
-
+    std::vector<float> sorted(valueAndIndexes.size());
     for (int i = 0; i < valueAndIndexes.size(); ++i) {
-        sorted.push_back(valueAndIndexes[i].value);
+        sorted[i] = valueAndIndexes[i].value;
     }
 
     return sorted;

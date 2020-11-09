@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#define X_DIM 256
+#define X_DIM 512
 
 namespace InsertionSortUtil {
 

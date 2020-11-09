@@ -1,7 +1,7 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-#define X_DIM 256
+#define X_DIM 512
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 

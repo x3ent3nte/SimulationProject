@@ -10,32 +10,45 @@
 
 namespace {
 
+struct ValueAndIndex {
+    float value;
+    uint32_t index;
+};
+
 __device__
-int floatGreater(float a, float b) {
-    return a > b;
+int valueAndIndexShouldSwap(ValueAndIndex a, ValueAndIndex b) {
+    return a.value > b.value;
 }
 
 } // namespace anonymous
 
 std::vector<float> InsertionSortCudaTest::run(const std::vector<float>& data) {
 
-    std::vector<float> dataCopy(data);
+    std::vector<ValueAndIndex> valueAndIndexes(data.size());
+    for (uint32_t i = 0; i < data.size(); ++i) {
+        valueAndIndexes[i] = {data[i], i};
+    }
 
-    size_t bufferSize = dataCopy.size() * sizeof(float);
+    size_t bufferSize = valueAndIndexes.size() * sizeof(ValueAndIndex);
 
-    float* d_data;
+    ValueAndIndex* d_valueAndIndexes;
     int* d_needsSorting;
-    cudaMalloc(&d_data, bufferSize);
+    cudaMalloc(&d_valueAndIndexes, bufferSize);
     cudaMalloc(&d_needsSorting, sizeof(int));
 
-    cudaMemcpy(d_data, dataCopy.data(), bufferSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_valueAndIndexes, valueAndIndexes.data(), bufferSize, cudaMemcpyHostToDevice);
 
-    InsertionSort::sort<float, floatGreater>(d_data, d_needsSorting, data.size());
+    InsertionSort::sort<ValueAndIndex, valueAndIndexShouldSwap>(d_valueAndIndexes, d_needsSorting, valueAndIndexes.size());
 
-    cudaMemcpy(dataCopy.data(), d_data, bufferSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(valueAndIndexes.data(), d_valueAndIndexes, bufferSize, cudaMemcpyDeviceToHost);
 
-    cudaFree(d_data);
+    cudaFree(d_valueAndIndexes);
     cudaFree(d_needsSorting);
 
-    return dataCopy;
+    std::vector<float> sorted(valueAndIndexes.size());
+    for (int i = 0; i < valueAndIndexes.size(); ++i) {
+        sorted[i] = (valueAndIndexes[i].value);
+    }
+
+    return sorted;
 }

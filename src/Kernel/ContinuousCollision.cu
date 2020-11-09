@@ -39,7 +39,7 @@ float agentMinX(Agent& agent, float seconds) {
 
 __global__
 void mapAgentsToMaxXAndIndex(Agent* agents, MaxXAndIndex* maxXAndIndexes, int size, float seconds) {
-  
+
     int tid = threadIdx.x;
     int globalOffset = blockDim.x * blockIdx.x;
     int gid = globalOffset + tid;
@@ -47,7 +47,7 @@ void mapAgentsToMaxXAndIndex(Agent* agents, MaxXAndIndex* maxXAndIndexes, int si
     if (gid >= size) { return; }
 
     Agent agent = agents[gid];
-    
+
     maxXAndIndexes[gid] = {agentMaxX(agent, seconds), gid};
 }
 
@@ -59,7 +59,7 @@ void mapAgentsToSortedIndex(Agent* in, Agent* out, MaxXAndIndex* maxXAndIndexes,
     int gid = globalOffset + tid;
 
     if (gid >= size) { return; }
-    
+
     out[maxXAndIndexes[gid].index] = in[gid];
 }
 
@@ -89,7 +89,7 @@ float3 calculateQuadraticEquationOfCollision(Agent& one, Agent& two) {
 
     float3 dt = float3Add(float3Add(dxt, dyt), dzt);
     dt.z -= radiusSumSquared;
-    
+
     return dt;
 }
 
@@ -125,7 +125,7 @@ __device__
 float calculateTimeOfCollision(Agent& one, Agent& two) {
     float3 q = calculateQuadraticEquationOfCollision(one, two);
     QuadraticSolution qSol = solveQuadraticEquation(q);
-    
+
     if (qSol.exists) {
         if (qSol.sol1 < 0) {
             return qSol.sol2;
@@ -159,7 +159,7 @@ void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* 
     if (gid >= size) { return; }
 
     Agent agent = agents[gid];
-    
+
     float myMinX = agentMinX(agent, seconds);
 
     int collisionFlag = 0;
@@ -179,9 +179,9 @@ void detectCollisions(Agent* agents, int size, float seconds, CollisionAndTime* 
 
         // only collide if they are not already intersecting
         if (distanceSquaredBetween(agent.position, other.position) > radiusSumSquared) {
-            
+
             float secondsOfCollision = calculateTimeOfCollision(agent, other);
-            
+
             if (secondsOfCollision >= 0 && secondsOfCollision < seconds) {
                 if (secondsOfCollision < collision.seconds) {
                     collisionFlag = 1;
@@ -213,10 +213,10 @@ ContinuousCollision::ContinuousCollision(int maxAgents) {
     cudaMalloc(&m_maxXAndIndexes, maxAgents * sizeof(MaxXAndIndex));
     cudaMalloc(&m_needsSortingFlag, sizeof(int));
     cudaMalloc(&m_agentsBuffer, maxAgents * sizeof(Agent));
-    
+
     cudaMalloc(&m_collisions, maxAgents * sizeof(CollisionAndTime));
     cudaMalloc(&m_collisionsBuffer, maxAgents * sizeof(CollisionAndTime));
-    
+
     cudaMalloc(&m_collisionFlags, maxAgents * sizeof(int));
     cudaMalloc(&m_collisionFlagsOffsets, maxAgents * sizeof(int));
 }
@@ -225,10 +225,10 @@ ContinuousCollision::~ContinuousCollision() {
     cudaFree(m_maxXAndIndexes);
     cudaFree(m_needsSortingFlag);
     cudaFree(m_agentsBuffer);
-    
+
     cudaFree(m_collisions);
     cudaFree(m_collisionsBuffer);
-    
+
     cudaFree(m_collisionFlags);
     cudaFree(m_collisionFlagsOffsets);
 }
@@ -245,7 +245,7 @@ int addx(int a, int b) {
 
 void ContinuousCollision::collide(Agent* agents, int size, float seconds) {
 
-    constexpr int kThreadsPerBlock = 256;
+    constexpr int kThreadsPerBlock = 512;
 
     int numBlocks = ceil(size / (float) kThreadsPerBlock);
 
@@ -254,20 +254,20 @@ void ContinuousCollision::collide(Agent* agents, int size, float seconds) {
     do {
 
         mapAgentsToMaxXAndIndex<<<numBlocks, kThreadsPerBlock>>>(agents, m_maxXAndIndexes, size, seconds);
-        
+
         InsertionSort::sort<MaxXAndIndex, compareMaxXAndIndex>(m_maxXAndIndexes, m_needsSortingFlag, size);
-        
+
         mapAgentsToSortedIndex<<<numBlocks, kThreadsPerBlock>>>(agents, m_agentsBuffer, m_maxXAndIndexes, size);
 
         detectCollisions<<<numBlocks, kThreadsPerBlock>>>(m_agentsBuffer, size, seconds, m_collisions, m_collisionFlags);
 
         CollisionAndTime earliestCollision = Reduce::reduce<CollisionAndTime, minCollisionAndTime>(m_collisions, m_collisionsBuffer, size);
-        
+
         if (earliestCollision.one != -1) {
             advanceTime<<<numBlocks, kThreadsPerBlock>>>(m_agentsBuffer, size, earliestCollision.seconds);
-            
+
             // TODO Resolve collision
-            
+
             seconds -= earliestCollision.seconds;
             hadCollisions = 1;
         } else {
