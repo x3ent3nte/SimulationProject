@@ -38,14 +38,9 @@ Application::Application() {
 
     m_commandPool = Command::createCommandPool(m_logicalDevice, indices.m_graphicsFamily);
     m_computeCommandPool = Command::createCommandPool(m_logicalDevice, indices.m_computeFamily);
-
-    m_connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
-    m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, m_connector);
 }
 
 Application::~Application() {
-    m_simulator->cleanUp(m_logicalDevice);
-    m_connector->cleanUp(m_logicalDevice);
 
     vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
     vkDestroyCommandPool(m_logicalDevice, m_computeCommandPool, nullptr);
@@ -68,7 +63,9 @@ int Application::run() {
 
     std::make_shared<InsertionSortTest>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool)->run();
 
-    m_simulator->simulate(m_logicalDevice);
+    auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
+    auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector);
+    simulator->simulate();
 
     std::shared_ptr<Renderer> renderer = Renderer::create(
         m_instance,
@@ -80,7 +77,7 @@ int Application::run() {
         m_graphicsQueue,
         m_presentQueue,
         m_commandPool,
-        m_connector);
+        connector);
 
     m_prevTime = std::chrono::high_resolution_clock::now();
 
@@ -99,7 +96,7 @@ int Application::run() {
         return EXIT_FAILURE;
     }
 
-    m_simulator->stopSimulation(m_physicalDevice, m_logicalDevice);
+    simulator->stopSimulation(m_physicalDevice);
 
     vkDeviceWaitIdle(m_logicalDevice);
 

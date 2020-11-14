@@ -11,6 +11,8 @@ class Connector {
 
 public:
 
+    VkDevice m_logicalDevice;
+
     std::deque<size_t> m_bufferIndexQueue;
     size_t m_newestBufferIndex;
 
@@ -20,9 +22,7 @@ public:
     std::mutex m_mutex;
 
     Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue);
-    virtual ~Connector() = default;
-
-    void cleanUp(VkDevice logicalDevice);
+    virtual ~Connector();
 
     size_t takeNewestBufferIndex();
     size_t takeOldBufferIndex();

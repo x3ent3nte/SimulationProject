@@ -31,9 +31,6 @@ private:
     VkCommandPool m_commandPool;
     VkCommandPool m_computeCommandPool;
 
-    std::shared_ptr<Connector> m_connector;
-    std::shared_ptr<Simulator> m_simulator;
-
     std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;
 
 public:

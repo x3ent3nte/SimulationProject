@@ -155,6 +155,40 @@ InsertionSort::InsertionSort(
     }
 }
 
+InsertionSort::~InsertionSort() {
+    vkFreeMemory(m_logicalDevice, m_valueAndIndexBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_valueAndIndexBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_dataSizeBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_dataSizeBufferHostVisible, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_offsetOneBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_offsetOneBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_offsetTwoBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_offsetTwoBuffer, nullptr);
+
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
+
+    std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setDataSizeCommandBuffer};
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
+
+    vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
+
+    vkDestroyFence(m_logicalDevice, m_fence, nullptr);
+}
+
 void InsertionSort::setDataSize(uint32_t dataSize) {
 
     if (m_currentDataSize == dataSize) {
@@ -233,38 +267,4 @@ void InsertionSort::run(uint32_t dataSize) {
     }
 
     std::cout << "Insertion Sort Vulkan total number of iterations = " << numIterations << "\n";
-}
-
-void InsertionSort::cleanUp() {
-    vkFreeMemory(m_logicalDevice, m_valueAndIndexBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_valueAndIndexBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_dataSizeBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_dataSizeBufferHostVisible, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_offsetOneBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_offsetOneBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_offsetTwoBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_offsetTwoBuffer, nullptr);
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
-
-    std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setDataSizeCommandBuffer};
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
-
-    vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
-
-    vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }

@@ -221,6 +221,7 @@ Simulator::Simulator(
     VkCommandPool computeCommandPool,
     std::shared_ptr<Connector> connector) {
 
+    m_logicalDevice = logicalDevice;
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
@@ -236,7 +237,7 @@ Simulator::Simulator(
     m_computePipelineLayouts.resize(numBuffers);
     m_computeCommandBuffers.resize(numBuffers);
 
-    m_computeFence = createComputeFence(logicalDevice);
+    m_computeFence = createComputeFence(m_logicalDevice);
 
     std::vector<Agent> agents(Constants::kNumberOfAgents);
     for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
@@ -253,47 +254,64 @@ Simulator::Simulator(
         Constants::kNumberOfAgents * sizeof(Agent),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
-        logicalDevice,
+        m_logicalDevice,
         m_computeCommandPool,
         m_computeQueue,
         m_agentsBuffer,
         m_agentsBufferMemory);
 
-    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(logicalDevice);
+    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
 
     auto shaderCode = Utils::readFile("src/GLSL/kernel.spv");
-    VkShaderModule shaderModule = Utils::createShaderModule(logicalDevice, shaderCode);
+    VkShaderModule shaderModule = Utils::createShaderModule(m_logicalDevice, shaderCode);
 
     for (size_t i = 0; i < numBuffers; ++i) {
 
-        m_computeDescriptorPools[i] = createComputeDescriptorPool(logicalDevice);
+        m_computeDescriptorPools[i] = createComputeDescriptorPool(m_logicalDevice);
 
         m_computeDescriptorSets[i] = createComputeDescriptorSet(
-            logicalDevice,
+            m_logicalDevice,
             m_computeDescriptorSetLayout,
             m_computeDescriptorPools[i],
             m_agentsBuffer,
             m_connector->m_buffers[i]);
 
-        m_computePipelineLayouts[i] = createComputePipelineLayout(logicalDevice, m_computeDescriptorSetLayout);
+        m_computePipelineLayouts[i] = createComputePipelineLayout(m_logicalDevice, m_computeDescriptorSetLayout);
 
-        m_computePipelines[i] = createComputePipeline(logicalDevice, shaderModule, m_computeDescriptorSetLayout, m_computePipelineLayouts[i]);
+        m_computePipelines[i] = createComputePipeline(m_logicalDevice, shaderModule, m_computeDescriptorSetLayout, m_computePipelineLayouts[i]);
 
         m_computeCommandBuffers[i] = createComputeCommandBuffer(
-            logicalDevice,
+            m_logicalDevice,
             m_computeCommandPool,
             m_computePipelines[i],
             m_computePipelineLayouts[i],
             m_computeDescriptorSets[i]);
     }
 
-    vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
+    vkDestroyShaderModule(m_logicalDevice, shaderModule, nullptr);
 
-    m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
+    m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
 }
 
-void Simulator::simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer) {
-    vkResetFences(logicalDevice, 1, &m_computeFence);
+Simulator::~Simulator() {
+    vkFreeMemory(m_logicalDevice, m_agentsBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_agentsBuffer, nullptr);
+
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_computeDescriptorSetLayout, nullptr);
+
+    for (size_t i = 0; i < m_computePipelines.size(); ++i) {
+        vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffers[i]);
+
+        vkDestroyDescriptorPool(m_logicalDevice, m_computeDescriptorPools[i], nullptr);
+        vkDestroyPipelineLayout(m_logicalDevice, m_computePipelineLayouts[i], nullptr);
+        vkDestroyPipeline(m_logicalDevice, m_computePipelines[i], nullptr);
+    }
+
+    vkDestroyFence(m_logicalDevice, m_computeFence, nullptr);
+}
+
+void Simulator::simulateNextStep(VkCommandBuffer commandBuffer) {
+    vkResetFences(m_logicalDevice, 1, &m_computeFence);
 
 
     VkSubmitInfo submitInfo = {};
@@ -305,17 +323,17 @@ void Simulator::simulateNextStep(VkDevice logicalDevice, VkCommandBuffer command
         throw std::runtime_error("Failed to submit compute command buffer");
     }
 
-    vkWaitForFences(logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
 }
 
-void Simulator::runSimulatorTask(VkDevice logicalDevice) {
+void Simulator::runSimulatorTask() {
     Timer time("Vulkan Simulator");
     uint64_t numFrames = 0;
 
     while (m_isActive) {
         size_t bufferIndex = m_connector->takeOldBufferIndex();
         //std::cout << "Updating buffer index " << bufferIndex << "\n";
-        simulateNextStep(logicalDevice, m_computeCommandBuffers[bufferIndex]);
+        simulateNextStep(m_computeCommandBuffers[bufferIndex]);
         m_connector->updateBufferIndex(bufferIndex);
 
         numFrames++;
@@ -323,12 +341,12 @@ void Simulator::runSimulatorTask(VkDevice logicalDevice) {
     std::cout << "Number of frames simulated: " << numFrames << "\n";
 }
 
-void Simulator::simulate(VkDevice logicalDevice) {
+void Simulator::simulate() {
     m_isActive = true;
-    m_simulateTask = std::thread(&Simulator::runSimulatorTask, this, logicalDevice);
+    m_simulateTask = std::thread(&Simulator::runSimulatorTask, this);
 }
 
-void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logicalDevice) {
+void Simulator::stopSimulation(VkPhysicalDevice physicalDevice) {
     m_isActive = false;
     m_simulateTask.join();
 
@@ -339,7 +357,7 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
         Constants::kNumberOfAgents * sizeof(Agent),
         m_agentsBuffer,
         physicalDevice,
-        logicalDevice,
+        m_logicalDevice,
         m_computeCommandPool,
         m_computeQueue);
 
@@ -349,24 +367,4 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
         glm::vec3 acceleration = agents[i].acceleration;
         //std::cout << "Acceleration Mag: " << glm::length(acceleration) << "\n";
     }
-}
-
-void Simulator::cleanUp(VkDevice logicalDevice) {
-
-    m_insertionSort->cleanUp();
-
-    vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);
-    vkDestroyBuffer(logicalDevice, m_agentsBuffer, nullptr);
-
-    vkDestroyDescriptorSetLayout(logicalDevice, m_computeDescriptorSetLayout, nullptr);
-
-    for (size_t i = 0; i < m_computePipelines.size(); ++i) {
-        vkFreeCommandBuffers(logicalDevice, m_computeCommandPool, 1, &m_computeCommandBuffers[i]);
-
-        vkDestroyDescriptorPool(logicalDevice, m_computeDescriptorPools[i], nullptr);
-        vkDestroyPipelineLayout(logicalDevice, m_computePipelineLayouts[i], nullptr);
-        vkDestroyPipeline(logicalDevice, m_computePipelines[i], nullptr);
-    }
-
-    vkDestroyFence(logicalDevice, m_computeFence, nullptr);
 }

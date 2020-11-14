@@ -10,6 +10,8 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
 
     size_t numBuffers = 3;
 
+    m_logicalDevice = logicalDevice;
+
     m_buffers.resize(numBuffers);
     m_bufferMemories.resize(numBuffers);
 
@@ -37,11 +39,10 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     m_newestBufferIndex = 0;
 }
 
-void Connector::cleanUp(VkDevice logicalDevice) {
-    std::lock_guard<std::mutex> guard(m_mutex);
+Connector::~Connector() {
     for (size_t i = 0; i < m_buffers.size(); ++i) {
-        vkFreeMemory(logicalDevice, m_bufferMemories[i], nullptr);
-        vkDestroyBuffer(logicalDevice, m_buffers[i], nullptr);
+        vkFreeMemory(m_logicalDevice, m_bufferMemories[i], nullptr);
+        vkDestroyBuffer(m_logicalDevice, m_buffers[i], nullptr);
     }
 }
 

@@ -18,6 +18,8 @@ private:
     std::atomic<bool> m_isActive;
     std::shared_ptr<Connector> m_connector;
 
+    VkDevice m_logicalDevice;
+
     VkQueue m_computeQueue;
     VkFence m_computeFence;
 
@@ -37,8 +39,8 @@ private:
 
     std::shared_ptr<InsertionSort> m_insertionSort;
 
-    void simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer);
-    void runSimulatorTask(VkDevice logicalDevice);
+    void simulateNextStep(VkCommandBuffer commandBuffer);
+    void runSimulatorTask();
 
 public:
 
@@ -49,13 +51,11 @@ public:
         VkCommandPool computeCommandPool,
         std::shared_ptr<Connector> connector);
 
-    virtual ~Simulator() = default;
+    virtual ~Simulator();
 
-    void simulate(VkDevice logicalDevice);
+    void simulate();
 
-    void stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
-
-    void cleanUp(VkDevice logicalDevice);
+    void stopSimulation(VkPhysicalDevice physicalDevice);
 };
 
 #endif

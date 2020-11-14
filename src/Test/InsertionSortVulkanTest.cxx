@@ -17,10 +17,6 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
     m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, logicalDevice, queue, commandPool, numberOfElements);
 }
 
-InsertionSortVulkanTest::~InsertionSortVulkanTest() {
-    m_insertionSort->cleanUp();
-}
-
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {
     std::vector<InsertionSortUtil::ValueAndIndex> valueAndIndexes(data.size());
     for (uint32_t i = 0; i < valueAndIndexes.size(); ++i) {

@@ -63,11 +63,9 @@ public:
         VkCommandPool commandPool,
         uint32_t numberOfElements);
 
-    virtual ~InsertionSort() = default;
+    virtual ~InsertionSort();
 
     void run(uint32_t dataSize);
-
-    void cleanUp();
 };
 
 #endif
