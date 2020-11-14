@@ -6,15 +6,12 @@
 #include <stdexcept>
 
 VkCommandPool Command::createCommandPool(
-    VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
-    VkSurfaceKHR surface) {
-
-    PhysicalDevice::QueueFamilyIndices queueFamilyIndices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
+    uint32_t queueIndex) {
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.m_graphicsFamily;
+    poolInfo.queueFamilyIndex = queueIndex;
     poolInfo.flags = 0;
 
     VkCommandPool commandPool;

@@ -7,7 +7,6 @@
 #include <Renderer/MyGLM.h>
 #include <Utils/MyMath.h>
 #include <Renderer/Constants.h>
-#include <Simulator/InsertionSort.h>
 
 #include <Utils/Timer.h>
 
@@ -161,21 +160,6 @@ namespace {
         return pipeline;
     }
 
-    VkCommandPool createComputeCommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, size_t computeQueueIndex) {
-        VkCommandPool commandPool;
-
-        VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.flags = 0;
-        commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
-
-        if (vkCreateCommandPool(logicalDevice, &commandPoolCreateInfo, nullptr, &commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute command pool");
-        }
-
-        return commandPool;
-    }
-
     VkCommandBuffer createComputeCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
@@ -230,7 +214,15 @@ namespace {
     }
 } // namespace anonymous
 
-Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, std::shared_ptr<Connector> connector) {
+Simulator::Simulator(
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkQueue computeQueue,
+    VkCommandPool computeCommandPool,
+    std::shared_ptr<Connector> connector) {
+
+    m_computeQueue = computeQueue;
+    m_computeCommandPool = computeCommandPool;
 
     m_isActive = false;
     m_connector = connector;
@@ -243,12 +235,6 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
     m_computePipelines.resize(numBuffers);
     m_computePipelineLayouts.resize(numBuffers);
     m_computeCommandBuffers.resize(numBuffers);
-
-    //size_t computeQueueIndex = PhysicalDevice::findComputeQueueIndex(physicalDevice);
-    size_t computeQueueIndex = 2;
-    vkGetDeviceQueue(logicalDevice, computeQueueIndex, 0, &m_computeQueue);
-
-    m_computeCommandPool = createComputeCommandPool(physicalDevice, logicalDevice, computeQueueIndex);
 
     m_computeFence = createComputeFence(logicalDevice);
 
@@ -304,9 +290,6 @@ Simulator::Simulator(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, st
     vkDestroyShaderModule(logicalDevice, shaderModule, nullptr);
 
     m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
-
-    m_insertionSortTest = std::make_shared<InsertionSortTest>(physicalDevice, logicalDevice, m_computeQueue, m_computeCommandPool);
-    m_insertionSortTest->run();
 }
 
 void Simulator::simulateNextStep(VkDevice logicalDevice, VkCommandBuffer commandBuffer) {
@@ -371,7 +354,6 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice, VkDevice logical
 void Simulator::cleanUp(VkDevice logicalDevice) {
 
     m_insertionSort->cleanUp();
-    m_insertionSortTest = nullptr;
 
     vkFreeMemory(logicalDevice, m_agentsBufferMemory, nullptr);
     vkDestroyBuffer(logicalDevice, m_agentsBuffer, nullptr);
@@ -386,6 +368,5 @@ void Simulator::cleanUp(VkDevice logicalDevice) {
         vkDestroyPipeline(logicalDevice, m_computePipelines[i], nullptr);
     }
 
-    vkDestroyCommandPool(logicalDevice, m_computeCommandPool, nullptr);
     vkDestroyFence(logicalDevice, m_computeFence, nullptr);
 }

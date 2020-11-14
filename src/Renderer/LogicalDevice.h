@@ -9,7 +9,6 @@ namespace LogicalDevice {
 
     VkDevice createLogicalDevice(
         VkPhysicalDevice physicalDevice,
-        VkSurfaceKHR surface,
         const std::set<uint32_t>& uniqueQueueFamilies);
 }
 

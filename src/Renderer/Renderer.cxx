@@ -1,7 +1,6 @@
 #include <Renderer/Renderer.h>
 
 #include <Simulator/Agent.h>
-#include <Simulator/Simulator.h>
 #include <Utils/Utils.h>
 #include <Renderer/Vertex.h>
 #include <Renderer/Instance.h>
@@ -18,12 +17,8 @@
 #include <Renderer/KeyboardControl.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
-#include <Renderer/Connector.h>
 
 #include <Utils/Timer.h>
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan.h>
 
@@ -43,7 +38,9 @@ public:
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue graphicsQueue,
-        VkQueue presentQueue) {
+        VkQueue presentQueue,
+        VkCommandPool commandPool,
+        std::shared_ptr<Connector> connector) {
 
         m_keyboardControl = keyboardControl;
         m_window = window;
@@ -55,6 +52,9 @@ public:
         m_logicalDevice = logicalDevice;
         m_graphicsQueue = graphicsQueue;
         m_presentQueue = presentQueue;
+        m_commandPool = commandPool;
+
+        m_connector = connector;
 
         initVulkan();
     }
@@ -83,7 +83,6 @@ private:
     VkQueue m_presentQueue;
 
     std::shared_ptr<Connector> m_connector;
-    std::shared_ptr<Simulator> m_simulator;
 
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -217,16 +216,9 @@ private:
             m_pipelineLayout,
             m_graphicsPipeline);
 
-        m_commandPool = Command::createCommandPool(m_physicalDevice, m_logicalDevice, m_surface);
         createColourResources();
         createDepthResources();
         createFrameBuffers();
-
-        m_connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
-
-        m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_connector);
-        m_simulator->simulate(m_logicalDevice);
-        //std::this_thread::sleep_for(std::chrono::seconds(20));
 
         m_mipLevels = Image::createTextureImage(
             m_physicalDevice,
@@ -739,9 +731,6 @@ private:
     }
 
     void cleanUp() {
-        m_simulator->stopSimulation(m_physicalDevice, m_logicalDevice);
-        m_simulator->cleanUp(m_logicalDevice);
-        m_connector->cleanUp(m_logicalDevice);
 
         cleanUpSwapChain();
 
@@ -771,8 +760,6 @@ private:
             vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
         }
         vkDestroyFence(m_logicalDevice, m_copyCompletedFence, nullptr);
-
-        vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
     }
 };
 
@@ -784,7 +771,9 @@ std::shared_ptr<Renderer> Renderer::create(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue graphicsQueue,
-    VkQueue presentQueue) {
+    VkQueue presentQueue,
+    VkCommandPool commandPool,
+    std::shared_ptr<Connector> connector) {
 
     return std::make_shared<DefaultRenderer>(
         instance,
@@ -794,5 +783,7 @@ std::shared_ptr<Renderer> Renderer::create(
         physicalDevice,
         logicalDevice,
         graphicsQueue,
-        presentQueue);
+        presentQueue,
+        commandPool,
+        connector);
 }

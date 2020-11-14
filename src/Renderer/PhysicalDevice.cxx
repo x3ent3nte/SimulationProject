@@ -105,7 +105,7 @@ VkPhysicalDevice PhysicalDevice::pickPhysicalDevice(VkInstance instance, VkSurfa
 }
 
 PhysicalDevice::QueueFamilyIndices PhysicalDevice::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    QueueFamilyIndices indices{0, false, 0, false};
+    QueueFamilyIndices indices{0, false, 0, false, 2, true};
 
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);

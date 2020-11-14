@@ -3,6 +3,7 @@
 
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Surface.h>
+#include <Renderer/Connector.h>
 
 #include <vulkan/vulkan.h>
 
@@ -23,7 +24,9 @@ public:
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue graphicsQueue,
-        VkQueue presentQueue);
+        VkQueue presentQueue,
+        VkCommandPool commandPool,
+        std::shared_ptr<Connector> connector);
 };
 
 #endif

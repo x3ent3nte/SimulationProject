@@ -6,6 +6,11 @@
 #include <Renderer/LogicalDevice.h>
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
+#include <Renderer/Command.h>
+#include <Test/InsertionSortTest.h>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include <set>
 #include <iostream>
@@ -24,16 +29,26 @@ Application::Application() {
     m_physicalDevice = PhysicalDevice::pickPhysicalDevice(m_instance, m_surface);
     PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(m_physicalDevice, m_surface);
 
-    uint32_t computeQueueIndex = 2;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily, computeQueueIndex};
-    m_logicalDevice = LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, uniqueQueueFamilies);
+    std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily, indices.m_computeFamily};
+    m_logicalDevice = LogicalDevice::createLogicalDevice(m_physicalDevice, uniqueQueueFamilies);
 
     vkGetDeviceQueue(m_logicalDevice, indices.m_graphicsFamily, 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_logicalDevice, indices.m_presentFamily, 0, &m_presentQueue);
-    vkGetDeviceQueue(m_logicalDevice, computeQueueIndex, 0, &m_computeQueue);
+    vkGetDeviceQueue(m_logicalDevice, indices.m_computeFamily, 0, &m_computeQueue);
+
+    m_commandPool = Command::createCommandPool(m_logicalDevice, indices.m_graphicsFamily);
+    m_computeCommandPool = Command::createCommandPool(m_logicalDevice, indices.m_computeFamily);
+
+    m_connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
+    m_simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, m_connector);
 }
 
 Application::~Application() {
+    m_simulator->cleanUp(m_logicalDevice);
+    m_connector->cleanUp(m_logicalDevice);
+
+    vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
+    vkDestroyCommandPool(m_logicalDevice, m_computeCommandPool, nullptr);
 
     if(Constants::kEnableValidationLayers) {
         Instance::DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
@@ -51,6 +66,10 @@ Application::~Application() {
 
 int Application::run() {
 
+    std::make_shared<InsertionSortTest>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool)->run();
+
+    m_simulator->simulate(m_logicalDevice);
+
     std::shared_ptr<Renderer> renderer = Renderer::create(
         m_instance,
         m_window,
@@ -59,7 +78,9 @@ int Application::run() {
         m_physicalDevice,
         m_logicalDevice,
         m_graphicsQueue,
-        m_presentQueue);
+        m_presentQueue,
+        m_commandPool,
+        m_connector);
 
     m_prevTime = std::chrono::high_resolution_clock::now();
 
@@ -77,6 +98,8 @@ int Application::run() {
         std::cerr << e.what() << "\n";
         return EXIT_FAILURE;
     }
+
+    m_simulator->stopSimulation(m_physicalDevice, m_logicalDevice);
 
     vkDeviceWaitIdle(m_logicalDevice);
 

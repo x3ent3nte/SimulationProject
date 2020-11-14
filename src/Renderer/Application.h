@@ -2,6 +2,7 @@
 #define APPLICATION_H
 
 #include <Renderer/Renderer.h>
+#include <Simulator/Simulator.h>
 
 #include <vulkan/vulkan.h>
 
@@ -26,6 +27,12 @@ private:
     VkQueue m_graphicsQueue;
     VkQueue m_presentQueue;
     VkQueue m_computeQueue;
+
+    VkCommandPool m_commandPool;
+    VkCommandPool m_computeCommandPool;
+
+    std::shared_ptr<Connector> m_connector;
+    std::shared_ptr<Simulator> m_simulator;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;
 

@@ -8,9 +8,8 @@
 namespace Command {
 
     VkCommandPool createCommandPool(
-        VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
-        VkSurfaceKHR surface);
+        uint32_t queueIndex);
 
     VkCommandBuffer beginSingleTimeCommands(
         VkDevice logicalDevice,
