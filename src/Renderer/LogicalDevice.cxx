@@ -7,17 +7,14 @@
 #include <set>
 #include <stdexcept>
 
-void LogicalDevice::createLogicalDevice(
+VkDevice LogicalDevice::createLogicalDevice(
         VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface,
-        VkDevice& logicalDevice,
-        VkQueue& graphicsQueue,
-        VkQueue& presentQueue) {
+        const std::set<uint32_t>& uniqueQueueFamilies) {
 
         PhysicalDevice::QueueFamilyIndices indices = PhysicalDevice::findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {indices.m_graphicsFamily, indices.m_presentFamily, 2};
 
         float queuePriority = 1.0f;
 
@@ -54,10 +51,9 @@ void LogicalDevice::createLogicalDevice(
             createInfo.enabledLayerCount = 0;
         }
 
+        VkDevice logicalDevice;
         if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create logical device");
         }
-
-        vkGetDeviceQueue(logicalDevice, indices.m_graphicsFamily, 0, &graphicsQueue);
-        vkGetDeviceQueue(logicalDevice, indices.m_presentFamily, 0, &presentQueue);
+        return logicalDevice;
     }

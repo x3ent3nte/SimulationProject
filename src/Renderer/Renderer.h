@@ -10,11 +10,20 @@
 
 class Renderer {
 public:
-    int render(
+
+    virtual ~Renderer() = default;
+
+    virtual void render(float time) = 0;
+
+    static std::shared_ptr<Renderer> create(
         VkInstance instance,
         std::shared_ptr<Surface::Window> window,
         VkSurfaceKHR surface,
-        std::shared_ptr<KeyboardControl> keyboardControl);
+        std::shared_ptr<KeyboardControl> keyboardControl,
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkQueue graphicsQueue,
+        VkQueue presentQueue);
 };
 
 #endif

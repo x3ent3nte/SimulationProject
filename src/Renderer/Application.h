@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #include <memory>
+#include <chrono>
 
 class Application {
 
@@ -19,7 +20,14 @@ private:
 
     VkSurfaceKHR m_surface;
 
-    std::shared_ptr<Renderer> m_renderer;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_logicalDevice;
+
+    VkQueue m_graphicsQueue;
+    VkQueue m_presentQueue;
+    VkQueue m_computeQueue;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;
 
 public:
 
@@ -27,7 +35,7 @@ public:
 
     virtual ~Application();
 
-    void run();
+    int run();
 };
 
 #endif

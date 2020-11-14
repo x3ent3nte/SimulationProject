@@ -3,13 +3,14 @@
 
 #include <vulkan/vulkan.h>
 
+#include <set>
+
 namespace LogicalDevice {
-    void createLogicalDevice(
+
+    VkDevice createLogicalDevice(
         VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface,
-        VkDevice& logicalDevice,
-        VkQueue& graphicsQueue,
-        VkQueue& presentQueue);
+        const std::set<uint32_t>& uniqueQueueFamilies);
 }
 
 #endif

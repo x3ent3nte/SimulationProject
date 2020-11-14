@@ -33,13 +33,17 @@
 #include <vector>
 #include <thread>
 
-class DefaultRenderer {
+class DefaultRenderer : public Renderer {
 public:
-    void run(
+    DefaultRenderer(
         VkInstance instance,
         std::shared_ptr<Surface::Window> window,
         VkSurfaceKHR surface,
-        std::shared_ptr<KeyboardControl> keyboardControl) {
+        std::shared_ptr<KeyboardControl> keyboardControl,
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkQueue graphicsQueue,
+        VkQueue presentQueue) {
 
         m_keyboardControl = keyboardControl;
         m_window = window;
@@ -47,14 +51,19 @@ public:
         m_instance = instance;
         m_surface = surface;
 
+        m_physicalDevice = physicalDevice;
+        m_logicalDevice = logicalDevice;
+        m_graphicsQueue = graphicsQueue;
+        m_presentQueue = presentQueue;
+
         initVulkan();
-        mainLoop();
+    }
+
+    virtual ~DefaultRenderer() {
         cleanUp();
     }
 
 private:
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;
 
     glm::vec3 m_cameraPosition;
     glm::vec3 m_cameraForward;
@@ -187,9 +196,7 @@ private:
         m_cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
         m_cameraRight = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        m_physicalDevice = PhysicalDevice::pickPhysicalDevice(m_instance, m_surface);
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
-        LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
 
         createSwapChain();
 
@@ -522,20 +529,7 @@ private:
             m_swapChainImageViews);
     }
 
-    void mainLoop() {
-        m_prevTime = std::chrono::high_resolution_clock::now();
-        while (!glfwWindowShouldClose(m_window->m_window)) {
-            glfwPollEvents();
-            drawFrame();
-        }
-
-        vkDeviceWaitIdle(m_logicalDevice);
-    }
-
-    void updateUniformBuffer(uint32_t currentImage) {
-
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_prevTime).count();
+    void updateUniformBuffer(uint32_t currentImage, float time) {
 
         KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
         float delta = 100.0f * time;
@@ -610,8 +604,6 @@ private:
         vkMapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
-
-        m_prevTime = currentTime;
     }
 
     void updateAgentPositionsBuffer(size_t imageIndex) {
@@ -631,7 +623,9 @@ private:
         m_connector->restoreBufferIndex(connectorBufferIndex);
     }
 
-    void drawFrame() {
+public:
+
+    void render(float time) override {
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -661,7 +655,7 @@ private:
 
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
-        updateUniformBuffer(imageIndex);
+        updateUniformBuffer(imageIndex, time);
         updateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
@@ -708,6 +702,8 @@ private:
 
         m_currentFrame = (m_currentFrame + 1) % Constants::kMaxFramesInFlight;
     }
+
+private:
 
     void cleanUpSwapChain() {
         vkDestroyImageView(m_logicalDevice, m_colourImageView, nullptr);
@@ -777,29 +773,26 @@ private:
         vkDestroyFence(m_logicalDevice, m_copyCompletedFence, nullptr);
 
         vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
-
-        vkDestroyDevice(m_logicalDevice, nullptr);
-
-        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-
-        glfwDestroyWindow(m_window->m_window);
-        glfwTerminate();
     }
 };
 
-int Renderer::render(
+std::shared_ptr<Renderer> Renderer::create(
     VkInstance instance,
     std::shared_ptr<Surface::Window> window,
     VkSurfaceKHR surface,
-    std::shared_ptr<KeyboardControl> keyboardControl) {
-    DefaultRenderer renderer;
+    std::shared_ptr<KeyboardControl> keyboardControl,
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkQueue graphicsQueue,
+    VkQueue presentQueue) {
 
-    try {
-        renderer.run(instance, window, surface, keyboardControl);
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << "\n";
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    return std::make_shared<DefaultRenderer>(
+        instance,
+        window,
+        surface,
+        keyboardControl,
+        physicalDevice,
+        logicalDevice,
+        graphicsQueue,
+        presentQueue);
 }

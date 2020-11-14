@@ -246,7 +246,7 @@ void cudaSimulator() {
 int main() {
     srand(time(NULL));
 
-    Application().run();
+    return Application().run();
 
     //cudaSimulator();
     //reducePlayground();
