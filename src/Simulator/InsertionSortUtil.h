@@ -16,11 +16,6 @@ namespace InsertionSortUtil {
         bool operator<(const ValueAndIndex& other) const;
     };
 
-    struct Info {
-        uint32_t offset;
-        uint32_t dataSize;
-    };
-
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
 
     VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSet);
@@ -31,7 +26,8 @@ namespace InsertionSortUtil {
         VkDescriptorPool& descriptorPool,
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
-        VkBuffer infoBuffer,
+        VkBuffer dataSizeBuffer,
+        VkBuffer offsetBuffer,
         size_t numberOfElements);
 
     VkPipeline createPipeline(

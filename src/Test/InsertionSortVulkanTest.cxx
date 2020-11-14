@@ -38,7 +38,7 @@ std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) 
         m_commandPool,
         m_queue);
 
-    m_insertionSort->run();
+    m_insertionSort->run(data.size());
 
     Buffer::copyDeviceBufferToHost(
         valueAndIndexes.data(),

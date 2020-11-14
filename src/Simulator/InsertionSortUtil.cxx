@@ -11,11 +11,11 @@ bool InsertionSortUtil::ValueAndIndex::operator<(const ValueAndIndex& other) con
 }
 
 VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
-    return Compute::createDescriptorSetLayout(logicalDevice, 3);
+    return Compute::createDescriptorSetLayout(logicalDevice, 4);
 }
 
 VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
-    return Compute::createDescriptorPool(logicalDevice, 3, maxSets);
+    return Compute::createDescriptorPool(logicalDevice, 4, maxSets);
 }
 
 VkDescriptorSet InsertionSortUtil::createDescriptorSet(
@@ -24,13 +24,16 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkDescriptorPool& descriptorPool,
     VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
-    VkBuffer infoBuffer,
+    VkBuffer dataSizeBuffer,
+    VkBuffer offsetBuffer,
     size_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex)},
         {wasSwappedBuffer, sizeof(uint32_t)},
-        {infoBuffer, sizeof(InsertionSortUtil::Info)}};
+        {dataSizeBuffer, sizeof(uint32_t)},
+        {offsetBuffer, sizeof(uint32_t)}
+    };
 
     return Compute::createDescriptorSet(
         logicalDevice,

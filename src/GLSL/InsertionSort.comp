@@ -18,9 +18,12 @@ layout (std430, binding = 1) buffer bufferWasSwapped {
     uint wasSwapped;
 };
 
-layout (std430, binding = 2) buffer bufferInfo {
-    uint offset;
+layout (std430, binding = 2) buffer bufferDataSize {
     uint dataSize;
+};
+
+layout (std430, binding = 3) buffer bufferOffset {
+    uint offset;
 };
 
 shared ValueAndIndex sharedData[2 * X_DIM];

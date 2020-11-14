@@ -5,10 +5,8 @@
 
 #include <algorithm>
 #include <iostream>
-#include <stdexcept>
-#include <functional>
 
-#define NUMBER_OF_ELEMENTS 64 * 1024
+#define MAX_NUMBER_OF_ELEMENTS 64 * 1024
 
 namespace {
 
@@ -36,6 +34,8 @@ namespace {
     }
 
     void testHelper(const std::vector<float>& data, std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
+        std::cout << "Number of elements = " << data.size() << "\n";
+
         auto expected = serialSort(data);
 
         auto actualVulkan = vulkanTest->run(data);
@@ -57,55 +57,67 @@ namespace {
         expectEqual(expected, actualCudaThree);
     }
 
-    void testReverseOrder(std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
-
-        size_t numberOfElements = NUMBER_OF_ELEMENTS;
-        std::vector<float> data(numberOfElements);
-        for (uint32_t i = 0; i < numberOfElements; ++i) {
-            data[i] = (numberOfElements - 1.0f) - i;
+    std::vector<float> generateDataWithReverseOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            data[i] = (size - 1.0f) - i;
         }
-
-        testHelper(data, vulkanTest);
+        return data;
     }
 
-    void testRepeatedOrder(std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
+    void testReverseOrder(
+        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
+        const std::vector<uint32_t>& sizes) {
 
-        size_t numberOfElements = NUMBER_OF_ELEMENTS;
-        std::vector<float> data(numberOfElements);
-        for (uint32_t i = 0; i < numberOfElements; ++i) {
+        for (int i = 0; i < sizes.size(); ++i) {
+            testHelper(generateDataWithReverseOrder(sizes[i]), vulkanTest);
+        }
+    }
+
+    std::vector<float> generateDataWithRepeatedOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
             data[i] = -1.23;
         }
-
-        testHelper(data, vulkanTest);
+        return data;
     }
 
-    void testRandomOrder(std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
-        size_t numberOfElements = NUMBER_OF_ELEMENTS;
-        std::vector<float> data(numberOfElements);
-        for (uint32_t i = 0; i < numberOfElements; ++i) {
+    void testRepeatedOrder(
+        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
+        const std::vector<uint32_t>& sizes) {
+
+        for (int i = 0; i < sizes.size(); ++i) {
+            testHelper(generateDataWithRepeatedOrder(sizes[i]), vulkanTest);
+        }
+    }
+
+    std::vector<float> generateDataWithRandomOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
             data[i] = MyMath::randomFloatBetweenZeroAndOne() * 100.0f;
         }
-
-        testHelper(data, vulkanTest);
+        return data;
     }
 
-    void testRunner(const std::string& name, std::function<void()> fn) {
-        try {
-            fn();
-            std::cout << "\n[PASSED " << name << "]\n\n";
-        } catch (const std::runtime_error& ex) {
-            std::cout << "\n[FAILED " << name << "] " << ex.what() << "\n\n";
+    void testRandomOrder(
+        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
+        const std::vector<uint32_t>& sizes) {
+
+        for (int i = 0; i < sizes.size(); ++i) {
+            testHelper(generateDataWithRandomOrder(sizes[i]), vulkanTest);
         }
     }
 } // end namespace anonymous
 
 InsertionSortTest::InsertionSortTest(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool) {
-    m_vulkanTest = std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, NUMBER_OF_ELEMENTS);
+    m_vulkanTest = std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, MAX_NUMBER_OF_ELEMENTS);
 }
 
 void InsertionSortTest::run() {
 
-    testRunner("testReverseOrder", [this]() { testReverseOrder(m_vulkanTest); });
-    testRunner("testRepeatedOrder", [this]() { testRepeatedOrder(m_vulkanTest); });
-    //testRunner("testRandomOrder", [this]() { testRandomOrder(m_vulkanTest); });
+    std::vector<uint32_t> sizes = {MAX_NUMBER_OF_ELEMENTS, 1, 100, 99};
+
+    TestUtils::testRunner("testReverseOrder", [this, sizes]() { testReverseOrder(m_vulkanTest, sizes); });
+    TestUtils::testRunner("testRepeatedOrder", [this, sizes]() { testRepeatedOrder(m_vulkanTest, sizes); });
+    //TestUtils::testRunner("testRandomOrder", [this, sizes]() { testRandomOrder(m_vulkanTest, sizes); });
 }

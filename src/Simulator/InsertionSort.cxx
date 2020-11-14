@@ -52,29 +52,49 @@ InsertionSort::InsertionSort(
         m_wasSwappedBufferHostVisible,
         m_wasSwappedBufferMemoryHostVisible);
 
-    InsertionSortUtil::Info infoOne{0, numberOfElements};
+    m_currentDataSize = numberOfElements;
     Buffer::createReadOnlyBuffer(
-        &infoOne,
-        sizeof(InsertionSortUtil::Info),
+        &m_currentDataSize,
+        sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
         logicalDevice,
         commandPool,
         queue,
-        m_infoOneBuffer,
-        m_infoOneBufferMemory);
+        m_dataSizeBuffer,
+        m_dataSizeBufferMemory);
 
-    InsertionSortUtil::Info infoTwo{X_DIM, numberOfElements};
+    Buffer::createBuffer(
+        physicalDevice,
+        logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_dataSizeBufferHostVisible,
+        m_dataSizeBufferMemoryHostVisible);
+
     Buffer::createReadOnlyBuffer(
-        &infoTwo,
-        sizeof(InsertionSortUtil::Info),
+        &zero,
+        sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
         logicalDevice,
         commandPool,
         queue,
-        m_infoTwoBuffer,
-        m_infoTwoBufferMemory);
+        m_offsetOneBuffer,
+        m_offsetOneBufferMemory);
+
+    uint32_t offset = X_DIM;
+    Buffer::createReadOnlyBuffer(
+        &offset,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        physicalDevice,
+        logicalDevice,
+        commandPool,
+        queue,
+        m_offsetTwoBuffer,
+        m_offsetTwoBufferMemory);
 
     m_descriptorSetLayout = InsertionSortUtil::createDescriptorSetLayout(logicalDevice);
     m_descriptorPool = InsertionSortUtil::createDescriptorPool(logicalDevice, 2);
@@ -90,7 +110,8 @@ InsertionSort::InsertionSort(
         m_descriptorPool,
         m_valueAndIndexBuffer,
         m_wasSwappedBuffer,
-        m_infoOneBuffer,
+        m_dataSizeBuffer,
+        m_offsetOneBuffer,
         numberOfElements);
 
     m_descriptorSetTwo = InsertionSortUtil::createDescriptorSet(
@@ -99,7 +120,8 @@ InsertionSort::InsertionSort(
         m_descriptorPool,
         m_valueAndIndexBuffer,
         m_wasSwappedBuffer,
-        m_infoTwoBuffer,
+        m_dataSizeBuffer,
+        m_offsetTwoBuffer,
         numberOfElements);
 
     m_commandBuffer = InsertionSortUtil::createCommandBuffer(
@@ -114,6 +136,13 @@ InsertionSort::InsertionSort(
         m_wasSwappedBufferHostVisible,
         numberOfElements);
 
+    m_setDataSizeCommandBuffer = Buffer::recordCopyCommand(
+        logicalDevice,
+        commandPool,
+        m_dataSizeBufferHostVisible,
+        m_dataSizeBuffer,
+        sizeof(uint32_t));
+
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -124,6 +153,33 @@ InsertionSort::InsertionSort(
     if (vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &m_fence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute fence");
     }
+}
+
+void InsertionSort::setDataSize(uint32_t dataSize) {
+
+    if (m_currentDataSize == dataSize) {
+        return;
+    }
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t dataSizeCopy = dataSize;
+    memcpy(dataMap, &dataSizeCopy, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible);
+
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &m_setDataSizeCommandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+
+    m_currentDataSize = dataSize;
 }
 
 void InsertionSort::setWasSwappedToZero() {
@@ -158,12 +214,15 @@ uint32_t InsertionSort::needsSorting() {
     return wasSwappedValue;
 }
 
-void InsertionSort::run() {
+void InsertionSort::run(uint32_t dataSize) {
 
     int numIterations = 0;
 
     {
         Timer time("Insertion Sort Vulkan");
+
+        setDataSize(dataSize);
+
         do {
             setWasSwappedToZero();
 
@@ -186,15 +245,22 @@ void InsertionSort::cleanUp() {
     vkFreeMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_wasSwappedBufferHostVisible, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_infoOneBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_infoOneBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_dataSizeBuffer, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_infoTwoBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_infoTwoBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_dataSizeBufferHostVisible, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_offsetOneBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_offsetOneBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_offsetTwoBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_offsetTwoBuffer, nullptr);
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
 
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+    std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setDataSizeCommandBuffer};
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
     vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);

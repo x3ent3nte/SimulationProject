@@ -6,12 +6,15 @@
 #include <sstream>
 
 #include <stdexcept>
+#include <functional>
 
 namespace TestUtils {
     template<typename T>
     void assertEqual(T a, T b);
 
     void assertTrue(bool b);
+
+    void testRunner(const std::string& name, std::function<void()> fn);
 }
 
 template <typename T>
