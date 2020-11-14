@@ -33,11 +33,20 @@
 #include <vector>
 #include <thread>
 
-class HelloTriangleApplication {
+class DefaultRenderer {
 public:
-    void run() {
-        m_keyboardControl = std::make_shared<KeyboardControl>();
-        m_window = Surface::createWindow(m_keyboardControl);
+    void run(
+        VkInstance instance,
+        std::shared_ptr<Surface::Window> window,
+        VkSurfaceKHR surface,
+        std::shared_ptr<KeyboardControl> keyboardControl) {
+
+        m_keyboardControl = keyboardControl;
+        m_window = window;
+
+        m_instance = instance;
+        m_surface = surface;
+
         initVulkan();
         mainLoop();
         cleanUp();
@@ -56,7 +65,6 @@ private:
     std::shared_ptr<Surface::Window> m_window;
 
     VkInstance m_instance;
-    VkDebugUtilsMessengerEXT m_debugMessenger;
 
     VkSurfaceKHR m_surface;
 
@@ -179,9 +187,6 @@ private:
         m_cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
         m_cameraRight = glm::vec3(0.0f, 1.0f, 0.0f);
 
-        m_instance = Instance::createInstance();
-        Instance::setupDebugMessenger(m_instance, m_debugMessenger);
-        m_surface = Surface::createSurface(m_instance, m_window->m_window);
         m_physicalDevice = PhysicalDevice::pickPhysicalDevice(m_instance, m_surface);
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
         LogicalDevice::createLogicalDevice(m_physicalDevice, m_surface, m_logicalDevice, m_graphicsQueue, m_presentQueue);
@@ -775,24 +780,22 @@ private:
 
         vkDestroyDevice(m_logicalDevice, nullptr);
 
-        if(Constants::kEnableValidationLayers) {
-            Instance::DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
-        }
-
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-        vkDestroyInstance(m_instance, nullptr);
 
         glfwDestroyWindow(m_window->m_window);
         glfwTerminate();
     }
 };
 
-int Renderer::render() {
-    HelloTriangleApplication app;
+int Renderer::render(
+    VkInstance instance,
+    std::shared_ptr<Surface::Window> window,
+    VkSurfaceKHR surface,
+    std::shared_ptr<KeyboardControl> keyboardControl) {
+    DefaultRenderer renderer;
 
-    srand(time(NULL));
     try {
-        app.run();
+        renderer.run(instance, window, surface, keyboardControl);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return EXIT_FAILURE;

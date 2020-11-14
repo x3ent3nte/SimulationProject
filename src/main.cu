@@ -1,8 +1,5 @@
-#include <stdio.h>
-#include <iostream>
-
 #include <Utils/Timer.h>
-#include <Renderer/Renderer.h>
+#include <Renderer/Application.h>
 #include <Cuda/Reduce.cuh>
 #include <Cuda/Scan.cuh>
 #include <Cuda/RadixSort.cuh>
@@ -10,6 +7,10 @@
 #include <Cuda/ContinuousCollision.cuh>
 #include <Cuda/CudaSimulator.cuh>
 #include <Test/InsertionSortCudaTest.cuh>
+
+#include <stdio.h>
+#include <iostream>
+#include <memory>
 
 #define checkCudaErrors(call)                                   \
 do {                                                            \
@@ -243,10 +244,12 @@ void cudaSimulator() {
 // For some mysterious reason, reduce and scan are non deterministic and suffer from errors when threadsPerBlock is not 1024
 
 int main() {
-    Renderer().render();
-    cudaSimulator();
+    srand(time(NULL));
+
+    Application().run();
+
+    //cudaSimulator();
     //reducePlayground();
     //scanPlayground();
-    //InsertionSortTest::run();
     //radixSortPlayground();
 }
