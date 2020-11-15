@@ -1,0 +1,68 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 256
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+struct Collision {
+    uint one;
+    uint two;
+    float time;
+};
+
+layout (std430, binding = 0) buffer bufferDataIn {
+    Collision dataIn[];
+};
+
+layout (std430, binding = 1) buffer bufferDataOut {
+    Collision dataOut[];
+};
+
+layout (std430, binding = 2) buffer bufferDataSize {
+    uint dataSize;
+};
+
+shared Collision sharedData[X_DIM];
+
+void main() {
+    uint globalOffset = gl_WorkGroupID.x * X_DIM * 2;
+    uint localIndex = gl_LocalInvocationID.x;
+    uint globalIndex = globalOffset + localIndex;
+
+    if (globalIndex >= dataSize) { return; }
+
+    Collision myValue = dataIn[globalIndex];
+    uint firstOtherIndex = globalIndex + X_DIM;
+    if (firstOtherIndex < dataSize) {
+        Collision otherValue = dataIn[firstOtherIndex];
+        if (otherValue.time < myValue.time) {
+            myValue = otherValue;
+        }
+    }
+
+    sharedData[localIndex] = myValue;
+
+    uint localSize = min(X_DIM, dataSize - globalOffset);
+
+    for (int offset = (X_DIM / 2); offset > 0; offset >>= 1) {
+        barrier();
+        if (localIndex < offset) {
+            uint otherIndex = localIndex + offset;
+            if (otherIndex < localSize) {
+                Collision myValue = sharedData[localIndex];
+                Collision otherValue = sharedData[otherIndex];
+
+                if (otherValue.time < myValue.time) {
+                    sharedData[localIndex] = otherValue;
+                }
+            }
+        }
+    }
+
+    barrier();
+
+    if (localIndex == 0) {
+        dataOut[gl_WorkGroupID.x] = sharedData[0];
+    }
+}
