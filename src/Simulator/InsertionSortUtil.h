@@ -18,12 +18,12 @@ namespace InsertionSortUtil {
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
 
-    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSet);
+    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets);
 
     VkDescriptorSet createDescriptorSet(
         VkDevice logicalDevice,
-        VkDescriptorSetLayout& descriptorSetLayout,
-        VkDescriptorPool& descriptorPool,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkDescriptorPool descriptorPool,
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
         VkBuffer dataSizeBuffer,

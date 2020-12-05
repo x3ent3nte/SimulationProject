@@ -6,22 +6,26 @@
 #include <stdexcept>
 #include <iostream>
 
+namespace {
+    constexpr size_t numberOfBindings = 4;
+} // namespace anonymous
+
 bool InsertionSortUtil::ValueAndIndex::operator<(const ValueAndIndex& other) const {
     return value < other.value;
 }
 
 VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
-    return Compute::createDescriptorSetLayout(logicalDevice, 4);
+    return Compute::createDescriptorSetLayout(logicalDevice, numberOfBindings);
 }
 
 VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
-    return Compute::createDescriptorPool(logicalDevice, 4, maxSets);
+    return Compute::createDescriptorPool(logicalDevice, numberOfBindings, maxSets);
 }
 
 VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkDevice logicalDevice,
-    VkDescriptorSetLayout& descriptorSetLayout,
-    VkDescriptorPool& descriptorPool,
+    VkDescriptorSetLayout descriptorSetLayout,
+    VkDescriptorPool descriptorPool,
     VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
     VkBuffer dataSizeBuffer,
