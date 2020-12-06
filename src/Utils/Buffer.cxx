@@ -92,7 +92,7 @@ void Buffer::createBuffer(
     }
 }
 
-void Buffer::createReadOnlyBuffer(
+void Buffer::createBufferWithData(
     void* data,
     VkDeviceSize bufferSize,
     VkBufferUsageFlags usage,

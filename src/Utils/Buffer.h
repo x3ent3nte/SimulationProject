@@ -29,7 +29,7 @@ namespace Buffer {
         VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
-    void createReadOnlyBuffer(
+    void createBufferWithData(
         void* data,
         VkDeviceSize bufferSize,
         VkBufferUsageFlags usage,

@@ -22,7 +22,7 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     }
 
     for (size_t i = 0; i < numBuffers; ++i) {
-        Buffer::createReadOnlyBuffer(
+        Buffer::createBufferWithData(
             initialPositions.data(),
             Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,

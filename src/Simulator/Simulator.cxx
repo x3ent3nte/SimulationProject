@@ -249,7 +249,7 @@ Simulator::Simulator(
         agents[i] = Agent{position, velocity, acceleration, target, rotation};
     }
 
-    Buffer::createReadOnlyBuffer(
+    Buffer::createBufferWithData(
         agents.data(),
         Constants::kNumberOfAgents * sizeof(Agent),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,

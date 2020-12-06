@@ -2,6 +2,7 @@
 
 #include <Utils/Compute.h>
 
+#include <iostream>
 #include <stdexcept>
 
 namespace {
@@ -16,14 +17,14 @@ VkDescriptorPool ReduceUtil::createDescriptorPool(VkDevice logicalDevice, size_t
     return Compute::createDescriptorPool(logicalDevice, numberOfBindings, maxSets);
 }
 
-VkDescriptorSet ReduceUtil::createDescriptoSet(
+VkDescriptorSet ReduceUtil::createDescriptorSet(
     VkDevice logicalDevice,
     VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorPool descriptorPool,
     VkBuffer inBuffer,
     VkBuffer outBuffer,
     VkBuffer dataSizeBuffer,
-    size_t numberOfElements) {
+    uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {inBuffer, numberOfElements * sizeof(ReduceUtil::Collision)},
@@ -47,7 +48,11 @@ VkPipeline ReduceUtil::createPipeline(
 
 VkCommandBuffer ReduceUtil::createCommandBuffer(
     VkDevice logicalDevice,
-    VkCommandPool commandPool) {
+    VkCommandPool commandPool,
+    VkPipeline pipeline,
+    VkPipelineLayout pipelineLayout,
+    VkDescriptorSet descriptorSet,
+    uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
 
@@ -59,6 +64,26 @@ VkCommandBuffer ReduceUtil::createCommandBuffer(
 
     if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute command buffer");
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin compute command buffer");
+    }
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * ReduceUtil::xDim));
+    std::cout << "Number of Reduce X groups = " << xGroups << "\n";
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end compute command buffer");
     }
 
     return commandBuffer;

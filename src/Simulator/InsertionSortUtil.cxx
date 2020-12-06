@@ -30,7 +30,7 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkBuffer wasSwappedBuffer,
     VkBuffer dataSizeBuffer,
     VkBuffer offsetBuffer,
-    size_t numberOfElements) {
+    uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex)},
@@ -63,7 +63,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
     VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
     VkBuffer wasSwappedBufferHostVisible,
-    size_t numberOfElements) {
+    uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
 
@@ -105,7 +105,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    size_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * X_DIM));
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * InsertionSortUtil::xDim));
     std::cout << "Number of X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);

@@ -5,6 +5,8 @@
 
 namespace ReduceUtil {
 
+    constexpr size_t xDim = 256;
+
     struct Collision {
         uint32_t one;
         uint32_t two;
@@ -15,14 +17,14 @@ namespace ReduceUtil {
 
     VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets);
 
-    VkDescriptorSet createDescriptoSet(
+    VkDescriptorSet createDescriptorSet(
         VkDevice logicalDevice,
         VkDescriptorSetLayout descriptorSetLayout,
         VkDescriptorPool descriptorPool,
         VkBuffer inBuffer,
         VkBuffer outBuffer,
         VkBuffer dataSizeBuffer,
-        size_t numberOfElements);
+        uint32_t numberOfElements);
 
     VkPipeline createPipeline(
         VkDevice logicalDevice,
@@ -30,7 +32,11 @@ namespace ReduceUtil {
 
     VkCommandBuffer createCommandBuffer(
         VkDevice logicalDevice,
-        VkCommandPool commandPool);
+        VkCommandPool commandPool,
+        VkPipeline pipeline,
+        VkPipelineLayout pipelineLayout,
+        VkDescriptorSet descriptorSet,
+        uint32_t numberOfElements);
 }
 
 #endif

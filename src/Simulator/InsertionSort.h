@@ -46,6 +46,8 @@ private:
     VkFence m_fence;
 
     void setDataSize(uint32_t dataSize);
+    void createCommandBuffer(uint32_t dataSize);
+
     void setWasSwappedToZero();
     void runSortCommands();
     uint32_t needsSorting();

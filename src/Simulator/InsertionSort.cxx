@@ -32,7 +32,7 @@ InsertionSort::InsertionSort(
         m_valueAndIndexBufferMemory);
 
     uint32_t zero = 0;
-    Buffer::createReadOnlyBuffer(
+    Buffer::createBufferWithData(
         &zero,
         sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -53,7 +53,7 @@ InsertionSort::InsertionSort(
         m_wasSwappedBufferMemoryHostVisible);
 
     m_currentDataSize = numberOfElements;
-    Buffer::createReadOnlyBuffer(
+    Buffer::createBufferWithData(
         &m_currentDataSize,
         sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -73,7 +73,7 @@ InsertionSort::InsertionSort(
         m_dataSizeBufferHostVisible,
         m_dataSizeBufferMemoryHostVisible);
 
-    Buffer::createReadOnlyBuffer(
+    Buffer::createBufferWithData(
         &zero,
         sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -84,8 +84,8 @@ InsertionSort::InsertionSort(
         m_offsetOneBuffer,
         m_offsetOneBufferMemory);
 
-    uint32_t offset = X_DIM;
-    Buffer::createReadOnlyBuffer(
+    uint32_t offset = InsertionSortUtil::xDim;
+    Buffer::createBufferWithData(
         &offset,
         sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -124,17 +124,7 @@ InsertionSort::InsertionSort(
         m_offsetTwoBuffer,
         numberOfElements);
 
-    m_commandBuffer = InsertionSortUtil::createCommandBuffer(
-        logicalDevice,
-        commandPool,
-        m_pipeline,
-        m_pipelineLayout,
-        m_descriptorSetOne,
-        m_descriptorSetTwo,
-        m_valueAndIndexBuffer,
-        m_wasSwappedBuffer,
-        m_wasSwappedBufferHostVisible,
-        numberOfElements);
+    createCommandBuffer(numberOfElements);
 
     m_setDataSizeCommandBuffer = Buffer::recordCopyCommand(
         logicalDevice,
@@ -195,6 +185,8 @@ void InsertionSort::setDataSize(uint32_t dataSize) {
         return;
     }
 
+    createCommandBuffer(dataSize);
+
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t dataSizeCopy = dataSize;
@@ -214,6 +206,20 @@ void InsertionSort::setDataSize(uint32_t dataSize) {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 
     m_currentDataSize = dataSize;
+}
+
+void InsertionSort::createCommandBuffer(uint32_t numberOfElements) {
+    m_commandBuffer = InsertionSortUtil::createCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_pipeline,
+        m_pipelineLayout,
+        m_descriptorSetOne,
+        m_descriptorSetTwo,
+        m_valueAndIndexBuffer,
+        m_wasSwappedBuffer,
+        m_wasSwappedBufferHostVisible,
+        numberOfElements);
 }
 
 void InsertionSort::setWasSwappedToZero() {

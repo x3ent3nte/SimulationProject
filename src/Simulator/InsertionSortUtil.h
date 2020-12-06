@@ -5,9 +5,9 @@
 
 #include <vector>
 
-#define X_DIM 256
-
 namespace InsertionSortUtil {
+
+    constexpr size_t xDim = 256;
 
     struct ValueAndIndex {
         float value;
@@ -28,7 +28,7 @@ namespace InsertionSortUtil {
         VkBuffer wasSwappedBuffer,
         VkBuffer dataSizeBuffer,
         VkBuffer offsetBuffer,
-        size_t numberOfElements);
+        uint32_t numberOfElements);
 
     VkPipeline createPipeline(
         VkDevice logicalDevice,
@@ -44,7 +44,7 @@ namespace InsertionSortUtil {
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
         VkBuffer wasSwappedBufferHostVisible,
-        size_t numberOfElements);
+        uint32_t numberOfElements);
 }
 
 #endif
