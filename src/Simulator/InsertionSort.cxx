@@ -124,6 +124,7 @@ InsertionSort::InsertionSort(
         m_offsetTwoBuffer,
         numberOfElements);
 
+    m_commandBuffer = VK_NULL_HANDLE;
     createCommandBuffer(numberOfElements);
 
     m_setDataSizeCommandBuffer = Buffer::recordCopyCommand(
@@ -169,12 +170,12 @@ InsertionSort::~InsertionSort() {
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
 
-    std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setDataSizeCommandBuffer};
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
-
     vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
+
+    std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setDataSizeCommandBuffer};
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
@@ -184,6 +185,8 @@ void InsertionSort::setDataSize(uint32_t dataSize) {
     if (m_currentDataSize == dataSize) {
         return;
     }
+
+    m_currentDataSize = dataSize;
 
     createCommandBuffer(dataSize);
 
@@ -204,11 +207,11 @@ void InsertionSort::setDataSize(uint32_t dataSize) {
         throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
-
-    m_currentDataSize = dataSize;
 }
 
 void InsertionSort::createCommandBuffer(uint32_t numberOfElements) {
+
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
     m_commandBuffer = InsertionSortUtil::createCommandBuffer(
         m_logicalDevice,
         m_commandPool,

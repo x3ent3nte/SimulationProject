@@ -1,4 +1,4 @@
-#include <Simulator/ReduceUtil.h>
+#include <Simulator/ReducerUtil.h>
 
 #include <Utils/Compute.h>
 
@@ -9,15 +9,15 @@ namespace {
     constexpr size_t numberOfBindings = 3;
 } // namespace anonymous
 
-VkDescriptorSetLayout ReduceUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
+VkDescriptorSetLayout ReducerUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     return Compute::createDescriptorSetLayout(logicalDevice, numberOfBindings);
 }
 
-VkDescriptorPool ReduceUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
+VkDescriptorPool ReducerUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
     return Compute::createDescriptorPool(logicalDevice, numberOfBindings, maxSets);
 }
 
-VkDescriptorSet ReduceUtil::createDescriptorSet(
+VkDescriptorSet ReducerUtil::createDescriptorSet(
     VkDevice logicalDevice,
     VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorPool descriptorPool,
@@ -27,8 +27,8 @@ VkDescriptorSet ReduceUtil::createDescriptorSet(
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {inBuffer, numberOfElements * sizeof(ReduceUtil::Collision)},
-        {outBuffer, numberOfElements * sizeof(ReduceUtil::Collision)},
+        {inBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
+        {outBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
         {dataSizeBuffer, sizeof(uint32_t)}
     };
 
@@ -39,19 +39,21 @@ VkDescriptorSet ReduceUtil::createDescriptorSet(
         bufferAndSizes);
 }
 
-VkPipeline ReduceUtil::createPipeline(
+VkPipeline ReducerUtil::createPipeline(
     VkDevice logicalDevice,
     VkPipelineLayout pipelineLayout) {
 
     return Compute::createPipeline("src/GLSL/Reduce.spv", logicalDevice, pipelineLayout);
 }
 
-VkCommandBuffer ReduceUtil::createCommandBuffer(
+VkCommandBuffer ReducerUtil::createCommandBuffer(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
     VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet,
+    VkBuffer dataSizeBuffer,
+    VkBuffer dataSizeBufferHostVisible,
     uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -74,9 +76,27 @@ VkCommandBuffer ReduceUtil::createCommandBuffer(
         throw std::runtime_error("Failed to begin compute command buffer");
     }
 
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = sizeof(uint32_t);
+    vkCmdCopyBuffer(commandBuffer, dataSizeBufferHostVisible, dataSizeBuffer, 1, &copyRegion);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * ReduceUtil::xDim));
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * ReducerUtil::xDim));
     std::cout << "Number of Reduce X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);

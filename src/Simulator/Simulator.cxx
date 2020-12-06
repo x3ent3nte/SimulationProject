@@ -291,6 +291,7 @@ Simulator::Simulator(
     vkDestroyShaderModule(m_logicalDevice, shaderModule, nullptr);
 
     m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
+    m_reducer = std::make_shared<Reducer>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
 }
 
 Simulator::~Simulator() {

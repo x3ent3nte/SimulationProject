@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.h>
 
-class Reduce {
+class Reducer {
 private:
 
     VkPhysicalDevice m_physicalDevice;
@@ -11,42 +11,41 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_bufferTwo;
+    VkBuffer m_twoBuffer;
     VkBuffer m_dataSizeBuffer;
     VkBuffer m_dataSizeBufferHostVisible;
 
-    VkDeviceMemory m_bufferTwoMemory;
+    VkDeviceMemory m_oneBufferMemory;
+    VkDeviceMemory m_twoBufferMemory;
     VkDeviceMemory m_dataSizeBufferMemory;
     VkDeviceMemory m_dataSizeBufferMemoryHostVisible;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
     VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_pipline;
+    VkPipeline m_pipeline;
 
     VkDescriptorSet m_oneToTwo;
     VkDescriptorSet m_twoToOne;
 
-    VkCommandBuffer m_setDataSizeCommandBuffer;
-
-    uint32_t m_currentDataSize;
+    VkFence m_fence;
 
     void setDataSize(uint32_t);
 
-    void runReduceCommand(uint32_t dataSize);
+    void runReduceCommand(uint32_t dataSize, VkDescriptorSet descriptorSet);
 
 public:
 
-    VkBuffer m_bufferOne;
+    VkBuffer m_oneBuffer;
 
-    Reduce(
+    Reducer(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,
         VkCommandPool commandPool,
         uint32_t numberOfElements);
 
-    virtual ~Reduce();
+    virtual ~Reducer();
 
     VkBuffer run(uint32_t numberOfElements);
 };

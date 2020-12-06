@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace ReduceUtil {
+namespace ReducerUtil {
 
     constexpr size_t xDim = 256;
 
@@ -36,6 +36,8 @@ namespace ReduceUtil {
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
         VkDescriptorSet descriptorSet,
+        VkBuffer dataSizeBuffer,
+        VkBuffer dataSizeBufferHostVisible,
         uint32_t numberOfElements);
 }
 
