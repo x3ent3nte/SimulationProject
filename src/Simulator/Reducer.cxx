@@ -47,8 +47,8 @@ Reducer::Reducer(
         logicalDevice,
         commandPool,
         queue,
-        m_dataSizeBuffer,
-        m_dataSizeBufferMemory);
+        m_numberOfElementsBuffer,
+        m_numberOfElementsBufferMemory);
 
     Buffer::createBuffer(
         m_physicalDevice,
@@ -56,8 +56,8 @@ Reducer::Reducer(
         sizeof(uint32_t),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        m_dataSizeBufferHostVisible,
-        m_dataSizeBufferMemoryHostVisible);
+        m_numberOfElementsBufferHostVisible,
+        m_numberOfElementsBufferMemoryHostVisible);
 
     m_descriptorSetLayout = ReducerUtil::createDescriptorSetLayout(logicalDevice);
     m_descriptorPool = ReducerUtil::createDescriptorPool(logicalDevice, 2);
@@ -73,7 +73,7 @@ Reducer::Reducer(
         m_descriptorPool,
         m_oneBuffer,
         m_twoBuffer,
-        m_dataSizeBuffer,
+        m_numberOfElementsBuffer,
         numberOfElements);
     m_twoToOne = ReducerUtil::createDescriptorSet(
         m_logicalDevice,
@@ -81,7 +81,7 @@ Reducer::Reducer(
         m_descriptorPool,
         m_twoBuffer,
         m_oneBuffer,
-        m_dataSizeBuffer,
+        m_numberOfElementsBuffer,
         numberOfElements);
 
     VkFenceCreateInfo fenceCreateInfo = {};
@@ -100,11 +100,11 @@ Reducer::~Reducer() {
     vkFreeMemory(m_logicalDevice, m_twoBufferMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_twoBuffer, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_dataSizeBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_numberOfElementsBufferMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBuffer, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_dataSizeBufferHostVisible, nullptr);
+    vkFreeMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
 
@@ -115,16 +115,16 @@ Reducer::~Reducer() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Reducer::setDataSize(uint32_t dataSize) {
+void Reducer::setNumberOfElements(uint32_t numberOfElements) {
     void* dataMap;
-    vkMapMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t dataSizeCopy = dataSize;
-    memcpy(dataMap, &dataSizeCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_dataSizeBufferMemoryHostVisible);
+    vkMapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t numberOfElementsCopy = numberOfElements;
+    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible);
 }
 
-void Reducer::runReduceCommand(uint32_t dataSize, VkDescriptorSet descriptorSet) {
-    setDataSize(dataSize);
+void Reducer::runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descriptorSet) {
+    setNumberOfElements(numberOfElements);
 
     VkCommandBuffer commandBuffer = ReducerUtil::createCommandBuffer(
         m_logicalDevice,
@@ -132,9 +132,9 @@ void Reducer::runReduceCommand(uint32_t dataSize, VkDescriptorSet descriptorSet)
         m_pipeline,
         m_pipelineLayout,
         descriptorSet,
-        m_dataSizeBuffer,
-        m_dataSizeBufferHostVisible,
-        dataSize);
+        m_numberOfElementsBuffer,
+        m_numberOfElementsBufferHostVisible,
+        numberOfElements);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -151,7 +151,7 @@ void Reducer::runReduceCommand(uint32_t dataSize, VkDescriptorSet descriptorSet)
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &commandBuffer);
 }
 
-VkBuffer Reducer::run(uint32_t dataSize) {
+VkBuffer Reducer::run(uint32_t numberOfElements) {
 
     VkBuffer currentInput = m_twoBuffer;
     VkBuffer currentOutput = m_oneBuffer;
@@ -159,11 +159,11 @@ VkBuffer Reducer::run(uint32_t dataSize) {
     VkDescriptorSet currentDescriptorSet = m_oneToTwo;
     VkDescriptorSet otherDescriptorSet = m_twoToOne;
 
-    while (dataSize > 1) {
+    while (numberOfElements > 1) {
 
-        runReduceCommand(dataSize, currentDescriptorSet);
+        runReduceCommand(numberOfElements, currentDescriptorSet);
 
-        dataSize = ceil(float(dataSize) / float(ReducerUtil::xDim * 2));
+        numberOfElements = ceil(float(numberOfElements) / float(ReducerUtil::xDim * 2));
 
         VkBuffer tempBuffer = currentInput;
         currentInput = currentOutput;

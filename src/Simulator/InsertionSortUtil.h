@@ -26,7 +26,7 @@ namespace InsertionSortUtil {
         VkDescriptorPool descriptorPool,
         VkBuffer valueAndIndexBuffer,
         VkBuffer wasSwappedBuffer,
-        VkBuffer dataSizeBuffer,
+        VkBuffer numberOfElementsBuffer,
         VkBuffer offsetBuffer,
         uint32_t numberOfElements);
 

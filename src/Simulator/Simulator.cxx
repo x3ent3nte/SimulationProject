@@ -262,7 +262,7 @@ Simulator::Simulator(
 
     m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
 
-    auto shaderCode = Utils::readFile("src/GLSL/kernel.spv");
+    auto shaderCode = Utils::readFile("src/GLSL/Simulation.spv");
     VkShaderModule shaderModule = Utils::createShaderModule(m_logicalDevice, shaderCode);
 
     for (size_t i = 0; i < numBuffers; ++i) {

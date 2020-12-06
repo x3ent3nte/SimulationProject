@@ -19,8 +19,8 @@ layout (std430, binding = 1) buffer bufferDataOut {
     Collision dataOut[];
 };
 
-layout (std430, binding = 2) buffer bufferDataSize {
-    uint dataSize;
+layout (std430, binding = 2) buffer bufferNumberOfElements {
+    uint numberOfElements;
 };
 
 shared Collision sharedData[X_DIM];
@@ -30,11 +30,11 @@ void main() {
     uint localIndex = gl_LocalInvocationID.x;
     uint globalIndex = globalOffset + localIndex;
 
-    if (globalIndex >= dataSize) { return; }
+    if (globalIndex >= numberOfElements) { return; }
 
     Collision myValue = dataIn[globalIndex];
     uint firstOtherIndex = globalIndex + X_DIM;
-    if (firstOtherIndex < dataSize) {
+    if (firstOtherIndex < numberOfElements) {
         Collision otherValue = dataIn[firstOtherIndex];
         if (otherValue.time < myValue.time) {
             myValue = otherValue;
@@ -43,7 +43,7 @@ void main() {
 
     sharedData[localIndex] = myValue;
 
-    uint localSize = min(X_DIM, dataSize - globalOffset);
+    uint localSize = min(X_DIM, numberOfElements - globalOffset);
 
     for (int offset = (X_DIM / 2); offset > 0; offset >>= 1) {
         barrier();

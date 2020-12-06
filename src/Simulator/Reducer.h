@@ -12,13 +12,13 @@ private:
     VkCommandPool m_commandPool;
 
     VkBuffer m_twoBuffer;
-    VkBuffer m_dataSizeBuffer;
-    VkBuffer m_dataSizeBufferHostVisible;
+    VkBuffer m_numberOfElementsBuffer;
+    VkBuffer m_numberOfElementsBufferHostVisible;
 
     VkDeviceMemory m_oneBufferMemory;
     VkDeviceMemory m_twoBufferMemory;
-    VkDeviceMemory m_dataSizeBufferMemory;
-    VkDeviceMemory m_dataSizeBufferMemoryHostVisible;
+    VkDeviceMemory m_numberOfElementsBufferMemory;
+    VkDeviceMemory m_numberOfElementsBufferMemoryHostVisible;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
@@ -30,9 +30,9 @@ private:
 
     VkFence m_fence;
 
-    void setDataSize(uint32_t);
+    void setNumberOfElements(uint32_t);
 
-    void runReduceCommand(uint32_t dataSize, VkDescriptorSet descriptorSet);
+    void runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descriptorSet);
 
 public:
 

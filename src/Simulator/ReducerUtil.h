@@ -23,7 +23,7 @@ namespace ReducerUtil {
         VkDescriptorPool descriptorPool,
         VkBuffer inBuffer,
         VkBuffer outBuffer,
-        VkBuffer dataSizeBuffer,
+        VkBuffer numberOfElementsBuffer,
         uint32_t numberOfElements);
 
     VkPipeline createPipeline(
@@ -36,8 +36,8 @@ namespace ReducerUtil {
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
         VkDescriptorSet descriptorSet,
-        VkBuffer dataSizeBuffer,
-        VkBuffer dataSizeBufferHostVisible,
+        VkBuffer numberOfElementsBuffer,
+        VkBuffer numberOfElementsBufferHostVisible,
         uint32_t numberOfElements);
 }
 

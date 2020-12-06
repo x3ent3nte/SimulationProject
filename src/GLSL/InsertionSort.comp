@@ -18,8 +18,8 @@ layout (std430, binding = 1) buffer bufferWasSwapped {
     uint wasSwapped;
 };
 
-layout (std430, binding = 2) buffer bufferDataSize {
-    uint dataSize;
+layout (std430, binding = 2) buffer bufferNumberOfElements {
+    uint numberOfElements;
 };
 
 layout (std430, binding = 3) buffer bufferOffset {
@@ -35,16 +35,16 @@ void main() {
     uint localLeftIndex = gl_LocalInvocationID.x * 2;
     uint globalLeftIndex = globalOffset + localLeftIndex;
 
-    if (globalLeftIndex >= dataSize) { return; }
+    if (globalLeftIndex >= numberOfElements) { return; }
 
     uint globalRightIndex = globalLeftIndex + 1;
     uint localRightIndex = localLeftIndex + 1;
     uint localRightIndexPlusOne = localRightIndex + 1;
 
-    uint localSize = min(2 * X_DIM, dataSize - globalOffset);
+    uint localSize = min(2 * X_DIM, numberOfElements - globalOffset);
 
     sharedData[localLeftIndex] = data[globalLeftIndex];
-    if (globalRightIndex < dataSize) {
+    if (globalRightIndex < numberOfElements) {
         sharedData[localRightIndex] = data[globalRightIndex];
     }
 
@@ -84,7 +84,7 @@ void main() {
     } while (localWasSwapped[0] != 0);
 
     data[globalLeftIndex] = sharedData[localLeftIndex];
-    if (globalRightIndex < dataSize) {
+    if (globalRightIndex < numberOfElements) {
         data[globalRightIndex] = sharedData[localRightIndex];
     }
 }

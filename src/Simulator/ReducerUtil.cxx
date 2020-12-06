@@ -23,13 +23,13 @@ VkDescriptorSet ReducerUtil::createDescriptorSet(
     VkDescriptorPool descriptorPool,
     VkBuffer inBuffer,
     VkBuffer outBuffer,
-    VkBuffer dataSizeBuffer,
+    VkBuffer numberOfElementsBuffer,
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {inBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
         {outBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
-        {dataSizeBuffer, sizeof(uint32_t)}
+        {numberOfElementsBuffer, sizeof(uint32_t)}
     };
 
     return Compute::createDescriptorSet(
@@ -52,8 +52,8 @@ VkCommandBuffer ReducerUtil::createCommandBuffer(
     VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet,
-    VkBuffer dataSizeBuffer,
-    VkBuffer dataSizeBufferHostVisible,
+    VkBuffer numberOfElementsBuffer,
+    VkBuffer numberOfElementsBufferHostVisible,
     uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -80,7 +80,7 @@ VkCommandBuffer ReducerUtil::createCommandBuffer(
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
     copyRegion.size = sizeof(uint32_t);
-    vkCmdCopyBuffer(commandBuffer, dataSizeBufferHostVisible, dataSizeBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, numberOfElementsBufferHostVisible, numberOfElementsBuffer, 1, &copyRegion);
 
     vkCmdPipelineBarrier(
         commandBuffer,

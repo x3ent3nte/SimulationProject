@@ -28,14 +28,14 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     VkDescriptorPool descriptorPool,
     VkBuffer valueAndIndexBuffer,
     VkBuffer wasSwappedBuffer,
-    VkBuffer dataSizeBuffer,
+    VkBuffer numberOfElementsBuffer,
     VkBuffer offsetBuffer,
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex)},
         {wasSwappedBuffer, sizeof(uint32_t)},
-        {dataSizeBuffer, sizeof(uint32_t)},
+        {numberOfElementsBuffer, sizeof(uint32_t)},
         {offsetBuffer, sizeof(uint32_t)}
     };
 

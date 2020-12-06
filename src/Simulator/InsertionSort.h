@@ -18,16 +18,16 @@ private:
 
     VkBuffer m_wasSwappedBuffer;
     VkBuffer m_wasSwappedBufferHostVisible;
-    VkBuffer m_dataSizeBuffer;
-    VkBuffer m_dataSizeBufferHostVisible;
+    VkBuffer m_numberOfElementsBuffer;
+    VkBuffer m_numberOfElementsBufferHostVisible;
     VkBuffer m_offsetOneBuffer;
     VkBuffer m_offsetTwoBuffer;
 
     VkDeviceMemory m_valueAndIndexBufferMemory;
     VkDeviceMemory m_wasSwappedBufferMemory;
     VkDeviceMemory m_wasSwappedBufferMemoryHostVisible;
-    VkDeviceMemory m_dataSizeBufferMemory;
-    VkDeviceMemory m_dataSizeBufferMemoryHostVisible;
+    VkDeviceMemory m_numberOfElementsBufferMemory;
+    VkDeviceMemory m_numberOfElementsBufferMemoryHostVisible;
     VkDeviceMemory m_offsetOneBufferMemory;
     VkDeviceMemory m_offsetTwoBufferMemory;
 
@@ -40,19 +40,19 @@ private:
     VkDescriptorSet m_descriptorSetTwo;
 
     VkCommandBuffer m_commandBuffer;
-    VkCommandBuffer m_setDataSizeCommandBuffer;
+    VkCommandBuffer m_setNumberOfElementsCommandBuffer;
 
     VkSemaphore m_semaphore;
     VkFence m_fence;
 
-    void setDataSize(uint32_t dataSize);
-    void createCommandBuffer(uint32_t dataSize);
+    void setNumberOfElements(uint32_t numberOfElements);
+    void createCommandBuffer(uint32_t numberOfElements);
 
     void setWasSwappedToZero();
     void runSortCommands();
     uint32_t needsSorting();
 
-    uint32_t m_currentDataSize;
+    uint32_t m_currentNumberOfElements;
 
 public:
 
@@ -67,7 +67,7 @@ public:
 
     virtual ~InsertionSort();
 
-    void run(uint32_t dataSize);
+    void run(uint32_t numberOfElements);
 };
 
 #endif
