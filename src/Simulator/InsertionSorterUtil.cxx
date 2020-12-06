@@ -1,4 +1,4 @@
-#include <Simulator/InsertionSortUtil.h>
+#include <Simulator/InsertionSorterUtil.h>
 
 #include <Utils/Compute.h>
 
@@ -10,19 +10,19 @@ namespace {
     constexpr size_t numberOfBindings = 4;
 } // namespace anonymous
 
-bool InsertionSortUtil::ValueAndIndex::operator<(const ValueAndIndex& other) const {
+bool InsertionSorterUtil::ValueAndIndex::operator<(const ValueAndIndex& other) const {
     return value < other.value;
 }
 
-VkDescriptorSetLayout InsertionSortUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
+VkDescriptorSetLayout InsertionSorterUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     return Compute::createDescriptorSetLayout(logicalDevice, numberOfBindings);
 }
 
-VkDescriptorPool InsertionSortUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
+VkDescriptorPool InsertionSorterUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
     return Compute::createDescriptorPool(logicalDevice, numberOfBindings, maxSets);
 }
 
-VkDescriptorSet InsertionSortUtil::createDescriptorSet(
+VkDescriptorSet InsertionSorterUtil::createDescriptorSet(
     VkDevice logicalDevice,
     VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorPool descriptorPool,
@@ -33,7 +33,7 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex)},
+        {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSorterUtil::ValueAndIndex)},
         {wasSwappedBuffer, sizeof(uint32_t)},
         {numberOfElementsBuffer, sizeof(uint32_t)},
         {offsetBuffer, sizeof(uint32_t)}
@@ -46,14 +46,14 @@ VkDescriptorSet InsertionSortUtil::createDescriptorSet(
         bufferAndSizes);
 }
 
-VkPipeline InsertionSortUtil::createPipeline(
+VkPipeline InsertionSorterUtil::createPipeline(
     VkDevice logicalDevice,
     VkPipelineLayout pipelineLayout) {
 
     return Compute::createPipeline("src/GLSL/InsertionSort.spv", logicalDevice, pipelineLayout);
 }
 
-VkCommandBuffer InsertionSortUtil::createCommandBuffer(
+VkCommandBuffer InsertionSorterUtil::createCommandBuffer(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
     VkPipeline pipeline,
@@ -105,7 +105,7 @@ VkCommandBuffer InsertionSortUtil::createCommandBuffer(
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * InsertionSortUtil::xDim));
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * InsertionSorterUtil::xDim));
     std::cout << "Number of X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);

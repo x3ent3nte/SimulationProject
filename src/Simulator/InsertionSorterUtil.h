@@ -1,11 +1,11 @@
-#ifndef INSERTION_SORT_UTIL_H
-#define INSERTION_SORT_UTIL_H
+#ifndef INSERTION_SORTER_UTIL_H
+#define INSERTION_SORTER_UTIL_H
 
 #include <vulkan/vulkan.h>
 
 #include <vector>
 
-namespace InsertionSortUtil {
+namespace InsertionSorterUtil {
 
     constexpr size_t xDim = 256;
 

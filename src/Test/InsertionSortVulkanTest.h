@@ -1,7 +1,7 @@
 #ifndef INSERTION_SORT_VULKAN_TEST_H
 #define INSERTION_SORT_VULKAN_TEST_H
 
-#include <Simulator/InsertionSort.h>
+#include <Simulator/InsertionSorter.h>
 
 #include <vulkan/vulkan.h>
 
@@ -17,7 +17,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    std::shared_ptr<InsertionSort> m_insertionSort;
+    std::shared_ptr<InsertionSorter> m_insertionSort;
 
 public:
     InsertionSortVulkanTest(

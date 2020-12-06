@@ -1,13 +1,13 @@
-#ifndef INSERTION_SORT_H
-#define INSERTION_SORT_H
+#ifndef INSERTION_SORTER_H
+#define INSERTION_SORTER_H
 
-#include <Simulator/InsertionSortUtil.h>
+#include <Simulator/InsertionSorterUtil.h>
 
 #include <vulkan/vulkan.h>
 
 #include <vector>
 
-class InsertionSort {
+class InsertionSorter {
 
 private:
 
@@ -58,14 +58,14 @@ public:
 
     VkBuffer m_valueAndIndexBuffer;
 
-    InsertionSort(
+    InsertionSorter(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,
         VkCommandPool commandPool,
         uint32_t numberOfElements);
 
-    virtual ~InsertionSort();
+    virtual ~InsertionSorter();
 
     void run(uint32_t numberOfElements);
 };

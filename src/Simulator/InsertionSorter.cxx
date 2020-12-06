@@ -1,4 +1,4 @@
-#include <Simulator/InsertionSort.h>
+#include <Simulator/InsertionSorter.h>
 
 #include <Utils/Buffer.h>
 #include <Utils/Utils.h>
@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <iostream>
 
-InsertionSort::InsertionSort(
+InsertionSorter::InsertionSorter(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
@@ -25,7 +25,7 @@ InsertionSort::InsertionSort(
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        numberOfElements * sizeof(InsertionSortUtil::ValueAndIndex),
+        numberOfElements * sizeof(InsertionSorterUtil::ValueAndIndex),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_valueAndIndexBuffer,
@@ -84,7 +84,7 @@ InsertionSort::InsertionSort(
         m_offsetOneBuffer,
         m_offsetOneBufferMemory);
 
-    uint32_t offset = InsertionSortUtil::xDim;
+    uint32_t offset = InsertionSorterUtil::xDim;
     Buffer::createBufferWithData(
         &offset,
         sizeof(uint32_t),
@@ -96,15 +96,15 @@ InsertionSort::InsertionSort(
         m_offsetTwoBuffer,
         m_offsetTwoBufferMemory);
 
-    m_descriptorSetLayout = InsertionSortUtil::createDescriptorSetLayout(logicalDevice);
-    m_descriptorPool = InsertionSortUtil::createDescriptorPool(logicalDevice, 2);
+    m_descriptorSetLayout = InsertionSorterUtil::createDescriptorSetLayout(logicalDevice);
+    m_descriptorPool = InsertionSorterUtil::createDescriptorPool(logicalDevice, 2);
     m_pipelineLayout = Compute::createPipelineLayout(logicalDevice, m_descriptorSetLayout);
 
-    m_pipeline = InsertionSortUtil::createPipeline(
+    m_pipeline = InsertionSorterUtil::createPipeline(
         logicalDevice,
         m_pipelineLayout);
 
-    m_descriptorSetOne = InsertionSortUtil::createDescriptorSet(
+    m_descriptorSetOne = InsertionSorterUtil::createDescriptorSet(
         logicalDevice,
         m_descriptorSetLayout,
         m_descriptorPool,
@@ -114,7 +114,7 @@ InsertionSort::InsertionSort(
         m_offsetOneBuffer,
         numberOfElements);
 
-    m_descriptorSetTwo = InsertionSortUtil::createDescriptorSet(
+    m_descriptorSetTwo = InsertionSorterUtil::createDescriptorSet(
         logicalDevice,
         m_descriptorSetLayout,
         m_descriptorPool,
@@ -146,7 +146,7 @@ InsertionSort::InsertionSort(
     }
 }
 
-InsertionSort::~InsertionSort() {
+InsertionSorter::~InsertionSorter() {
     vkFreeMemory(m_logicalDevice, m_valueAndIndexBufferMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_valueAndIndexBuffer, nullptr);
 
@@ -180,7 +180,7 @@ InsertionSort::~InsertionSort() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void InsertionSort::setNumberOfElements(uint32_t numberOfElements) {
+void InsertionSorter::setNumberOfElements(uint32_t numberOfElements) {
 
     if (m_currentNumberOfElements == numberOfElements) {
         return;
@@ -209,10 +209,10 @@ void InsertionSort::setNumberOfElements(uint32_t numberOfElements) {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void InsertionSort::createCommandBuffer(uint32_t numberOfElements) {
+void InsertionSorter::createCommandBuffer(uint32_t numberOfElements) {
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
-    m_commandBuffer = InsertionSortUtil::createCommandBuffer(
+    m_commandBuffer = InsertionSorterUtil::createCommandBuffer(
         m_logicalDevice,
         m_commandPool,
         m_pipeline,
@@ -225,7 +225,7 @@ void InsertionSort::createCommandBuffer(uint32_t numberOfElements) {
         numberOfElements);
 }
 
-void InsertionSort::setWasSwappedToZero() {
+void InsertionSorter::setWasSwappedToZero() {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t zero = 0;
@@ -233,7 +233,7 @@ void InsertionSort::setWasSwappedToZero() {
     vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
 }
 
-void InsertionSort::runSortCommands() {
+void InsertionSorter::runSortCommands() {
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfoOne.commandBufferCount = 1;
@@ -247,7 +247,7 @@ void InsertionSort::runSortCommands() {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-uint32_t InsertionSort::needsSorting() {
+uint32_t InsertionSorter::needsSorting() {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t wasSwappedValue = 0;
@@ -257,7 +257,7 @@ uint32_t InsertionSort::needsSorting() {
     return wasSwappedValue;
 }
 
-void InsertionSort::run(uint32_t numberOfElements) {
+void InsertionSorter::run(uint32_t numberOfElements) {
 
     int numIterations = 0;
 

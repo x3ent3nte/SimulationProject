@@ -1,5 +1,5 @@
-#ifndef REDUCE_H
-#define REDUCE_H
+#ifndef REDUCER_H
+#define REDUCER_H
 
 #include <vulkan/vulkan.h>
 

@@ -14,16 +14,16 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
     m_queue = queue;
     m_commandPool = commandPool;
 
-    m_insertionSort = std::make_shared<InsertionSort>(physicalDevice, logicalDevice, queue, commandPool, numberOfElements);
+    m_insertionSort = std::make_shared<InsertionSorter>(physicalDevice, logicalDevice, queue, commandPool, numberOfElements);
 }
 
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {
-    std::vector<InsertionSortUtil::ValueAndIndex> valueAndIndexes(data.size());
+    std::vector<InsertionSorterUtil::ValueAndIndex> valueAndIndexes(data.size());
     for (uint32_t i = 0; i < valueAndIndexes.size(); ++i) {
         valueAndIndexes[i] = {data[i], i};
     }
 
-    size_t bufferSize = valueAndIndexes.size() * sizeof(InsertionSortUtil::ValueAndIndex);
+    size_t bufferSize = valueAndIndexes.size() * sizeof(InsertionSorterUtil::ValueAndIndex);
 
     Buffer::copyHostToDeviceBuffer(
         valueAndIndexes.data(),
