@@ -4,6 +4,7 @@
 #include <vector>
 
 namespace InsertionSortCudaTest {
+
     std::vector<float> run(const std::vector<float>& data);
 }
 

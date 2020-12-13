@@ -7,7 +7,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
-#include <Test/InsertionSortTest.h>
+#include <Test/TestRunner.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -61,7 +61,9 @@ Application::~Application() {
 
 int Application::run() {
 
-    std::make_shared<InsertionSortTest>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool)->run();
+    {
+        TestRunner(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
+    }
 
     auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
     auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector);

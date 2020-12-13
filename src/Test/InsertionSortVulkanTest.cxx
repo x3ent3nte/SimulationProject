@@ -7,15 +7,17 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
     VkDevice logicalDevice,
     VkQueue queue,
     VkCommandPool commandPool,
-    uint32_t numberOfElements) {
-
-    m_physicalDevice = physicalDevice;
-    m_logicalDevice = logicalDevice;
-    m_queue = queue;
-    m_commandPool = commandPool;
-
-    m_insertionSort = std::make_shared<InsertionSorter>(physicalDevice, logicalDevice, queue, commandPool, numberOfElements);
-}
+    uint32_t numberOfElements)
+    : m_physicalDevice(physicalDevice)
+    , m_logicalDevice(logicalDevice)
+    , m_queue(queue)
+    , m_commandPool(commandPool)
+    , m_insertionSort(std::make_shared<InsertionSorter>(
+        physicalDevice,
+        logicalDevice,
+        queue,
+        commandPool,
+        numberOfElements)) {}
 
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {
     std::vector<InsertionSorterUtil::ValueAndIndex> valueAndIndexes(data.size());
