@@ -56,13 +56,13 @@ void reducePlayground() {
     cudaMemset(d_out, 0, kSize * sizeof(int));
 
     {
-        Timer time("Reduce GPU");
+        Timer timer("Reduce GPU");
         int result = Reduce::reduce<int, add>(d_in, d_out, kSize);
         printf("\nGPU result: %d\n", result);
     }
 
     {
-        Timer time("Reduce SER");
+        Timer timer("Reduce SER");
         int result = serialReduce(in, kSize);
         printf("\nSER result: %d\n", result);
     }
@@ -227,7 +227,7 @@ void cudaSimulator() {
     cudaMalloc(&d_positions, numElements * sizeof(float3));
 
     {
-        Timer time("Cuda Simulator");
+        Timer timer("Cuda Simulator");
 
         CudaSimulator::simulate(d_agents, d_positions, numElements);
         extractResultsFromCudaSimulator(d_agents, d_positions, numElements);

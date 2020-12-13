@@ -16,6 +16,6 @@ void TestRunner::run() {
     }
 
     {
-        ReduceTest().run();
+        ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
     }
 }

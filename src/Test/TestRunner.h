@@ -17,7 +17,7 @@ private:
 
 public:
 
-    TestRunner::TestRunner(
+    TestRunner(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,

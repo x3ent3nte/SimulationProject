@@ -599,7 +599,7 @@ private:
     }
 
     void updateAgentPositionsBuffer(size_t imageIndex) {
-        //Timer time("Update Agent Positions Buffer");
+        //Timer timer("Update Agent Positions Buffer");
         size_t connectorBufferIndex = m_connector->takeNewestBufferIndex();
 
         VkSubmitInfo submitInfo{};

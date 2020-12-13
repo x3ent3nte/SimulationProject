@@ -105,7 +105,7 @@ void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
     int numIterations = 0;
 
     {
-        Timer time("Insertion Sort Cuda");
+        Timer timer("Insertion Sort Cuda");
         do {
             cudaMemset(needsSortingFlag, 0, sizeof(int));
 

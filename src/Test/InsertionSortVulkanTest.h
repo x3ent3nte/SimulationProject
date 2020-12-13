@@ -27,6 +27,8 @@ public:
         VkCommandPool commandPool,
         uint32_t numberOfElements);
 
+    virtual ~InsertionSortVulkanTest();
+
     std::vector<float> run(const std::vector<float>& data);
 };
 

@@ -328,7 +328,7 @@ void Simulator::simulateNextStep(VkCommandBuffer commandBuffer) {
 }
 
 void Simulator::runSimulatorTask() {
-    Timer time("Vulkan Simulator");
+    Timer timer("Vulkan Simulator");
     uint64_t numFrames = 0;
 
     while (m_isActive) {

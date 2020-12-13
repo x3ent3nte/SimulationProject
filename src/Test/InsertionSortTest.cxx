@@ -2,18 +2,22 @@
 
 #include <Test/TestUtils.h>
 #include <Utils/MyMath.h>
+#include <Utils/Timer.h>
 
 #include <algorithm>
 #include <iostream>
 
-#define MAX_NUMBER_OF_ELEMENTS 64 * 1024
-
 namespace {
+
+    constexpr uint32_t kMaxNumberOfElements = 64 * 1024;
 
     std::vector<float> serialSort(const std::vector<float>& data) {
         std::vector<float> sorted(data);
 
-        std::sort(sorted.begin(), sorted.end());
+        {
+            Timer timer("Insertion Sort Serial");
+            std::sort(sorted.begin(), sorted.end());
+        }
         return sorted;
     }
 
@@ -109,13 +113,16 @@ namespace {
     }
 } // end namespace anonymous
 
-InsertionSortTest::InsertionSortTest(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkQueue queue, VkCommandPool commandPool) {
-    m_vulkanTest = std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, MAX_NUMBER_OF_ELEMENTS);
-}
+InsertionSortTest::InsertionSortTest(
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkQueue queue,
+    VkCommandPool commandPool)
+    : m_vulkanTest(std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, kMaxNumberOfElements)) {}
 
 void InsertionSortTest::run() {
 
-    std::vector<uint32_t> sizes = {MAX_NUMBER_OF_ELEMENTS, 1, 100, 99};
+    std::vector<uint32_t> sizes = {kMaxNumberOfElements, 1, 100, 99};
 
     TestUtils::testRunner("testReverseOrder", [this, sizes]() { testReverseOrder(m_vulkanTest, sizes); });
     TestUtils::testRunner("testRepeatedOrder", [this, sizes]() { testRepeatedOrder(m_vulkanTest, sizes); });

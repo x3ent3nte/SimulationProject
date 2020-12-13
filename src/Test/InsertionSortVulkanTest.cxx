@@ -13,11 +13,13 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
     , m_queue(queue)
     , m_commandPool(commandPool)
     , m_insertionSort(std::make_shared<InsertionSorter>(
-        physicalDevice,
-        logicalDevice,
-        queue,
-        commandPool,
+        m_physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
         numberOfElements)) {}
+
+InsertionSortVulkanTest::~InsertionSortVulkanTest() {}
 
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {
     std::vector<InsertionSorterUtil::ValueAndIndex> valueAndIndexes(data.size());
