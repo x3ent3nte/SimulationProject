@@ -3,6 +3,7 @@
 #include <Simulator/ReducerUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>
@@ -159,19 +160,22 @@ VkBuffer Reducer::run(uint32_t numberOfElements) {
     VkDescriptorSet currentDescriptorSet = m_oneToTwo;
     VkDescriptorSet otherDescriptorSet = m_twoToOne;
 
-    while (numberOfElements > 1) {
+    {
+        Timer timer("Reduce Vulkan");
+        while (numberOfElements > 1) {
 
-        runReduceCommand(numberOfElements, currentDescriptorSet);
+            runReduceCommand(numberOfElements, currentDescriptorSet);
 
-        numberOfElements = ceil(float(numberOfElements) / float(ReducerUtil::xDim * 2));
+            numberOfElements = ceil(float(numberOfElements) / float(ReducerUtil::xDim * 2));
 
-        VkBuffer tempBuffer = currentInput;
-        currentInput = currentOutput;
-        currentOutput = tempBuffer;
+            VkBuffer tempBuffer = currentInput;
+            currentInput = currentOutput;
+            currentOutput = tempBuffer;
 
-        VkDescriptorSet tempDescriptorSet = currentDescriptorSet;
-        currentDescriptorSet = otherDescriptorSet;
-        otherDescriptorSet = tempDescriptorSet;
+            VkDescriptorSet tempDescriptorSet = currentDescriptorSet;
+            currentDescriptorSet = otherDescriptorSet;
+            otherDescriptorSet = tempDescriptorSet;
+        }
     }
 
     return currentOutput;
