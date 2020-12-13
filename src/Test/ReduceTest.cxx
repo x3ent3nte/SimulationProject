@@ -33,7 +33,7 @@ namespace {
             collisions[i] = {i, i + 1, float(kMaxNumberOfElements - i)};
         }
 
-        collisions[kMaxNumberOfElements / 2] = {123, 321, 2};
+        collisions[kMaxNumberOfElements / 2] = {123, 321, 0};
         return collisions;
     }
 
@@ -60,9 +60,11 @@ namespace {
         std::shared_ptr<ReduceVulkanTest> vulkanTest) {
 
         auto expected = reduceSerial(collisions);
-        auto actual = vulkanTest->run(collisions);
+        auto actualVulkan = vulkanTest->run(collisions);
+        auto actualCuda = ReduceCudaTest::run(collisions);
 
-        expectEqual(expected, actual);
+        expectEqual(expected, actualVulkan);
+        expectEqual(expected, actualCuda);
     }
 
     void testBasic(std::shared_ptr<ReduceVulkanTest> vulkanTest) {
