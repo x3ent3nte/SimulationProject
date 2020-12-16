@@ -334,7 +334,7 @@ void Simulator::runSimulatorTask() {
 
     while (m_isActive) {
         size_t bufferIndex = m_connector->takeOldBufferIndex();
-        m_agentSorter->run(Constants::kNumberOfAgents);
+        m_agentSorter->run(0.09, Constants::kNumberOfAgents);
         //std::cout << "Updating buffer index " << bufferIndex << "\n";
         simulateNextStep(m_computeCommandBuffers[bufferIndex]);
         m_connector->updateBufferIndex(bufferIndex);

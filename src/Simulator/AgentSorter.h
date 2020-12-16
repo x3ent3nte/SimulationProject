@@ -24,7 +24,7 @@ public:
 
     virtual ~AgentSorter();
 
-    void run(uint32_t numberOfElements);
+    void run(float timeDelta, uint32_t numberOfElements);
 
 };
 

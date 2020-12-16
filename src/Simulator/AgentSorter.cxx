@@ -22,6 +22,6 @@ AgentSorter::~AgentSorter() {
 
 }
 
-void AgentSorter::run(uint32_t numberOfElements) {
+void AgentSorter::run(float timeDelta, uint32_t numberOfElements) {
 
 }
