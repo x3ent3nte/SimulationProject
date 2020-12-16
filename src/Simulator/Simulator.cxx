@@ -292,6 +292,7 @@ Simulator::Simulator(
 
     m_insertionSorter = std::make_shared<InsertionSorter>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
     m_reducer = std::make_shared<Reducer>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, 1024);
+    m_agentSorter = std::make_shared<AgentSorter>(physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, Constants::kNumberOfAgents);
 }
 
 Simulator::~Simulator() {
@@ -333,6 +334,7 @@ void Simulator::runSimulatorTask() {
 
     while (m_isActive) {
         size_t bufferIndex = m_connector->takeOldBufferIndex();
+        m_agentSorter->run(Constants::kNumberOfAgents);
         //std::cout << "Updating buffer index " << bufferIndex << "\n";
         simulateNextStep(m_computeCommandBuffers[bufferIndex]);
         m_connector->updateBufferIndex(bufferIndex);

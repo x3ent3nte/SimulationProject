@@ -4,6 +4,7 @@
 #include <Renderer/Connector.h>
 #include <Simulator/InsertionSorter.h>
 #include <Simulator/Reducer.h>
+#include <Simulator/AgentSorter.h>
 
 #include <vulkan/vulkan.h>
 
@@ -40,6 +41,7 @@ private:
 
     std::shared_ptr<InsertionSorter> m_insertionSorter;
     std::shared_ptr<Reducer> m_reducer;
+    std::shared_ptr<AgentSorter> m_agentSorter;
 
     void simulateNextStep(VkCommandBuffer commandBuffer);
     void runSimulatorTask();
