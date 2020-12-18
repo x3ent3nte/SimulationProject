@@ -39,8 +39,6 @@ private:
     VkBuffer m_agentsBuffer;
     VkDeviceMemory m_agentsBufferMemory;
 
-    std::shared_ptr<InsertionSorter> m_insertionSorter;
-    std::shared_ptr<Reducer> m_reducer;
     std::shared_ptr<AgentSorter> m_agentSorter;
 
     void simulateNextStep(VkCommandBuffer commandBuffer);

@@ -31,6 +31,8 @@ namespace MapXToAgentUtil {
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
         VkDescriptorSet descriptorSet,
+        VkBuffer otherAgentsBuffer,
+        VkBuffer agentsBuffer,
         uint32_t numberOfElements);
 }
 

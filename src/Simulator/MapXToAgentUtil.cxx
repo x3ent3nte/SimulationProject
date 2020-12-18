@@ -56,6 +56,8 @@ VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
     VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet,
+    VkBuffer otherAgentsBuffer,
+    VkBuffer agentsBuffer,
     uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -84,6 +86,25 @@ VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = numberOfElements * sizeof(Agent);
+
+    vkCmdCopyBuffer(commandBuffer, agentsBuffer, otherAgentsBuffer, 1, &copyRegion);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");
