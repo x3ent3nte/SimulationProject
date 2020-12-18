@@ -18,8 +18,8 @@ private:
 
     std::shared_ptr<InsertionSorter> m_insertionSorter;
 
-    VkBuffer m_otherAgentBuffer;
-    VkDeviceMemory m_otherAgentDeviceMemory;
+    VkBuffer m_otherAgentsBuffer;
+    VkDeviceMemory m_otherAgentsDeviceMemory;
 
     VkBuffer m_timeDeltaBuffer;
     VkDeviceMemory m_timeDeltaDeviceMemory;

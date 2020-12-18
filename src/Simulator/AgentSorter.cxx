@@ -36,8 +36,8 @@ AgentSorter::AgentSorter(
         numberOfElements * sizeof(Agent),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        m_otherAgentBuffer,
-        m_otherAgentDeviceMemory);
+        m_otherAgentsBuffer,
+        m_otherAgentsDeviceMemory);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -101,7 +101,7 @@ AgentSorter::AgentSorter(
         m_mapXToAgentDescriptorPool,
         m_insertionSorter->m_valueAndIndexBuffer,
         m_agentsBuffer,
-        m_otherAgentBuffer,
+        m_otherAgentsBuffer,
         m_numberOfElementsBuffer,
         numberOfElements);
 
@@ -144,7 +144,7 @@ void AgentSorter::createCommandBuffers(uint32_t numberOfElements) {
         m_mapXToAgentPipeline,
         m_mapXToAgentPipelineLayout,
         m_mapXToAgentDescriptorSet,
-        m_otherAgentBuffer,
+        m_otherAgentsBuffer,
         m_agentsBuffer,
         numberOfElements);
 }
@@ -181,7 +181,7 @@ void AgentSorter::mapAgentToX(float timeDelta) {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
     float timeDeltaCopy = timeDelta;
-    memcpy(dataMap, &timeDelta, sizeof(float));
+    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
     vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
 
     VkSubmitInfo submitInfoOne{};
@@ -212,8 +212,8 @@ void AgentSorter::mapXToAgent() {
 }
 
 AgentSorter::~AgentSorter() {
-    vkFreeMemory(m_logicalDevice, m_otherAgentDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_otherAgentBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_otherAgentsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_otherAgentsBuffer, nullptr);
 
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
