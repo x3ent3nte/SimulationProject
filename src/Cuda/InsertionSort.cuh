@@ -115,7 +115,7 @@ void InsertionSort::sort(T* elements, int* needsSortingFlag, int size) {
             numIterations += 1;
         } while (needsSorting(needsSortingFlag));
     }
-    std::cout << "Insertion Sort Cuda total number of iterations = " << numIterations << "\n";
+    //std::cout << "Insertion Sort Cuda total number of iterations = " << numIterations << "\n";
 }
 
 #endif

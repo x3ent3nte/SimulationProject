@@ -8,6 +8,7 @@
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
 #include <Test/TestRunner.h>
+#include <Utils/Timer.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -83,13 +84,17 @@ int Application::run() {
 
     m_prevTime = std::chrono::high_resolution_clock::now();
 
+    int numFramesRendered = 0;
     try {
         while (!glfwWindowShouldClose(m_window->m_window)) {
             auto currentTime = std::chrono::high_resolution_clock::now();
             float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_prevTime).count();
 
             glfwPollEvents();
+            //Timer timer("Render Frame " + numFramesRendered);
             renderer->render(time);
+
+            numFramesRendered += 1;
 
             m_prevTime = currentTime;
         }
@@ -97,6 +102,8 @@ int Application::run() {
         std::cerr << e.what() << "\n";
         return EXIT_FAILURE;
     }
+
+    std::cout << "Number of Frames Rendered= " << numFramesRendered << "\n";
 
     simulator->stopSimulation(m_physicalDevice);
 

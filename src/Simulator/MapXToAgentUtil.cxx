@@ -104,7 +104,7 @@ VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
     copyRegion.dstOffset = 0;
     copyRegion.size = numberOfElements * sizeof(Agent);
 
-    vkCmdCopyBuffer(commandBuffer, agentsBuffer, otherAgentsBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, otherAgentsBuffer, agentsBuffer, 1, &copyRegion);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");

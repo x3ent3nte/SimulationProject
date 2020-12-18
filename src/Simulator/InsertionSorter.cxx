@@ -262,7 +262,7 @@ void InsertionSorter::run(uint32_t numberOfElements) {
     int numIterations = 0;
 
     {
-        Timer timer("Insertion Sort Vulkan");
+        //Timer timer("Insertion Sort Vulkan");
 
         setNumberOfElements(numberOfElements);
 
@@ -275,5 +275,5 @@ void InsertionSorter::run(uint32_t numberOfElements) {
         } while (needsSorting());
     }
 
-    std::cout << "Insertion Sort Vulkan total number of iterations = " << numIterations << "\n";
+    //std::cout << "Insertion Sort Vulkan total number of iterations = " << numIterations << "\n";
 }

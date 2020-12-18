@@ -13,9 +13,6 @@ namespace Constants {
     constexpr uint32_t kWidth = 800;
     constexpr uint32_t kHeight = 600;
 
-    //const std::string kModelPath = "models/viking_room.obj";
-    //const std::string kTexturePath = "textures/viking_room.png";
-
     const std::string kModelPath = "models/arwing.obj";
     const std::string kTexturePath = "textures/arwing_texture.png";
 

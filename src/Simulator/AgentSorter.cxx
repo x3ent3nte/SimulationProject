@@ -247,7 +247,7 @@ AgentSorter::~AgentSorter() {
 }
 
 void AgentSorter::run(float timeDelta, uint32_t numberOfElements) {
-    Timer timer("AgentSorter::run");
+    //Timer timer("AgentSorter::run");
     updateNumberOfElementsIfNecessary(numberOfElements);
     mapAgentToX(timeDelta);
     m_insertionSorter->run(numberOfElements);
