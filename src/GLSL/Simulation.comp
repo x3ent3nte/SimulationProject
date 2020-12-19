@@ -14,6 +14,7 @@ struct Agent {
     vec3 acceleration;
     vec3 target;
     vec4 rotation;
+    float radius;
 };
 
 struct AgentPositionAndRotation {
@@ -123,7 +124,7 @@ void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
 }
 
 vec3 quadraticEquationFromVec2(const vec2 v) {
-    return vec3(v.x * v.x, 2 * v.x * v.y , v.y * v.y);
+    return vec3(v.x * v.x, 2 * v.x * v.y, v.y * v.y);
 }
 
 struct QuadraticSolution {

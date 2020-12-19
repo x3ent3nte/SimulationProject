@@ -9,6 +9,7 @@ struct Agent {
     glm::vec3 acceleration;
     glm::vec3 target;
     glm::vec4 rotation;
+    float radius;
 };
 
 struct AgentPositionAndRotation {

@@ -246,7 +246,7 @@ Simulator::Simulator(
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
         glm::vec4 rotation = MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f);
-        agents[i] = Agent{position, velocity, acceleration, target, rotation};
+        agents[i] = Agent{position, velocity, acceleration, target, rotation, 50.0f};
     }
 
     Buffer::createBufferWithData(
@@ -345,7 +345,7 @@ void Simulator::runSimulatorTask() {
 
         numFrames++;
     }
-    std::cout << "Number of frames simulated: " << numFrames << "\n";
+    std::cout << "Number of frames simulated= " << numFrames << "\n";
 }
 
 void Simulator::simulate() {

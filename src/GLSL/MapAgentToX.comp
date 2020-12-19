@@ -11,6 +11,7 @@ struct Agent {
     vec3 acceleration;
     vec3 target;
     vec4 rotation;
+    float radius;
 };
 
 struct ValueAndIndex {
@@ -41,7 +42,7 @@ void main() {
 
     Agent agent = agents[index];
 
-    float maxX = max(agent.position.x, agent.position.x + (agent.velocity.x * timeDelta));
+    float maxX = agent.radius + max(agent.position.x, agent.position.x + (agent.velocity.x * timeDelta));
 
     valueAndIndexes[index] = ValueAndIndex(maxX, index);
 }
