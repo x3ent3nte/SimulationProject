@@ -1,16 +1,14 @@
-#include <Simulator/AgentSorter.h>
+#include <Simulator/Collider.h>
 
-#include <Simulator/MapAgentToXUtil.h>
-#include <Simulator/MapXToAgentUtil.h>
-#include <Simulator/Agent.h>
+#include <Simulator/Collision.h>
+#include <Simulator/ColliderUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
-#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>
 
-AgentSorter::AgentSorter(
+Collider::Collider(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
@@ -20,24 +18,24 @@ AgentSorter::AgentSorter(
     : m_logicalDevice(logicalDevice)
     , m_queue(queue)
     , m_commandPool(commandPool)
-    , m_agentsBuffer(agentsBuffer)
-    , m_insertionSorter(std::make_shared<InsertionSorter>(
-        physicalDevice,
-        logicalDevice,
-        queue,
-        commandPool,
-        numberOfElements)) {
+    , m_agentsBuffer(agentsBuffer) {
 
     m_currentNumberOfElements = numberOfElements;
 
-    Buffer::createBuffer(
+    m_agentSorter = std::make_shared<AgentSorter>(
         physicalDevice,
         m_logicalDevice,
-        numberOfElements * sizeof(Agent),
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        m_otherAgentsBuffer,
-        m_otherAgentsDeviceMemory);
+        m_queue,
+        m_commandPool,
+        m_agentsBuffer,
+        numberOfElements);
+
+    m_reducer = std::make_shared<Reducer>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        numberOfElements);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -77,37 +75,22 @@ AgentSorter::AgentSorter(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
-    m_mapAgentToXDescriptorSetLayout = MapAgentToXUtil::createDescriptorSetLayout(m_logicalDevice);
-    m_mapAgentToXDescriptorPool = MapAgentToXUtil::createDescriptorPool(m_logicalDevice, 1);
-    m_mapAgentToXPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_mapAgentToXDescriptorSetLayout);
-    m_mapAgentToXPipeline = MapAgentToXUtil::createPipeline(m_logicalDevice, m_mapAgentToXPipelineLayout);
-    m_mapAgentToXDescriptorSet = MapAgentToXUtil::createDescriptorSet(
+    m_descriptorSetLayout = ColliderUtil::createDescriptorSetLayout(m_logicalDevice);
+    m_descriptorPool = ColliderUtil::createDescriptorPool(m_logicalDevice, 1);
+    m_pipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_descriptorSetLayout);
+    m_pipeline = ColliderUtil::createPipeline(m_logicalDevice, m_pipelineLayout);
+    m_descriptorSet = ColliderUtil::createDescriptorSet(
         m_logicalDevice,
-        m_mapAgentToXDescriptorSetLayout,
-        m_mapAgentToXDescriptorPool,
-        agentsBuffer,
-        m_insertionSorter->m_valueAndIndexBuffer,
+        m_descriptorSetLayout,
+        m_descriptorPool,
+        m_agentsBuffer,
+        m_reducer->m_oneBuffer,
         m_timeDeltaBuffer,
         m_numberOfElementsBuffer,
         numberOfElements);
 
-    m_mapXToAgentDescriptorSetLayout = MapXToAgentUtil::createDescriptorSetLayout(m_logicalDevice);
-    m_mapXToAgentDescriptorPool = MapXToAgentUtil::createDescriptorPool(m_logicalDevice, 1);
-    m_mapXToAgentPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_mapXToAgentDescriptorSetLayout);
-    m_mapXToAgentPipeline = MapXToAgentUtil::createPipeline(m_logicalDevice, m_mapXToAgentPipelineLayout);
-    m_mapXToAgentDescriptorSet = MapXToAgentUtil::createDescriptorSet(
-        m_logicalDevice,
-        m_mapXToAgentDescriptorSetLayout,
-        m_mapXToAgentDescriptorPool,
-        m_insertionSorter->m_valueAndIndexBuffer,
-        m_agentsBuffer,
-        m_otherAgentsBuffer,
-        m_numberOfElementsBuffer,
-        numberOfElements);
-
-    m_mapAgentToXCommandBuffer = VK_NULL_HANDLE;
-    m_mapXToAgentCommandBuffer = VK_NULL_HANDLE;
-    createCommandBuffers(numberOfElements);
+    m_commandBuffer = VK_NULL_HANDLE;
+    createCommandBuffer(numberOfElements);
 
     m_setNumberOfElementsCommandBuffer = Buffer::recordCopyCommand(
         m_logicalDevice,
@@ -125,39 +108,25 @@ AgentSorter::AgentSorter(
     }
 }
 
-void AgentSorter::createCommandBuffers(uint32_t numberOfElements) {
-    std::array<VkCommandBuffer, 2> commandBuffers = {
-        m_mapAgentToXCommandBuffer,
-        m_mapXToAgentCommandBuffer};
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
-
-    m_mapAgentToXCommandBuffer = MapAgentToXUtil::createCommandBuffer(
+void Collider::createCommandBuffer(uint32_t numberOfElements) {
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+    m_commandBuffer = ColliderUtil::createCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_mapAgentToXPipeline,
-        m_mapAgentToXPipelineLayout,
-        m_mapAgentToXDescriptorSet,
+        m_pipeline,
+        m_pipelineLayout,
+        m_descriptorSet,
         m_timeDeltaBuffer,
         m_timeDeltaBufferHostVisible,
         numberOfElements);
-
-    m_mapXToAgentCommandBuffer = MapXToAgentUtil::createCommandBuffer(
-        m_logicalDevice,
-        m_commandPool,
-        m_mapXToAgentPipeline,
-        m_mapXToAgentPipelineLayout,
-        m_mapXToAgentDescriptorSet,
-        m_otherAgentsBuffer,
-        m_agentsBuffer,
-        numberOfElements);
 }
 
-void AgentSorter::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
+void Collider::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     if (m_currentNumberOfElements == numberOfElements) {
         return;
     }
 
-    createCommandBuffers(numberOfElements);
+    createCommandBuffer(numberOfElements);
 
     m_currentNumberOfElements = numberOfElements;
 
@@ -180,7 +149,7 @@ void AgentSorter::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void AgentSorter::mapAgentToX(float timeDelta) {
+void Collider::runCollisionDetection(float timeDelta) {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
     float timeDeltaCopy = timeDelta;
@@ -190,7 +159,7 @@ void AgentSorter::mapAgentToX(float timeDelta) {
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_mapAgentToXCommandBuffer;
+    submitInfoOne.pCommandBuffers = &m_commandBuffer;
 
     vkResetFences(m_logicalDevice, 1, &m_fence);
 
@@ -200,23 +169,7 @@ void AgentSorter::mapAgentToX(float timeDelta) {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void AgentSorter::mapXToAgent() {
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_mapXToAgentCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapXToAgent command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
-}
-
-AgentSorter::~AgentSorter() {
-    vkFreeMemory(m_logicalDevice, m_otherAgentsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_otherAgentsBuffer, nullptr);
+Collider::~Collider() {
 
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
@@ -230,29 +183,22 @@ AgentSorter::~AgentSorter() {
     vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_mapAgentToXDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_mapAgentToXDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_mapAgentToXPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice,  m_mapAgentToXPipeline, nullptr);
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice,  m_pipeline, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_mapXToAgentDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_mapXToAgentDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_mapXToAgentPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice,  m_mapXToAgentPipeline, nullptr);
-
-    std::array<VkCommandBuffer, 3> commandBuffers = {
-        m_mapAgentToXCommandBuffer,
-        m_mapXToAgentCommandBuffer,
+    std::array<VkCommandBuffer, 2> commandBuffers = {
+        m_commandBuffer,
         m_setNumberOfElementsCommandBuffer};
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void AgentSorter::run(float timeDelta, uint32_t numberOfElements) {
-    //Timer timer("AgentSorter::run");
-    updateNumberOfElementsIfNecessary(numberOfElements);
-    mapAgentToX(timeDelta);
-    m_insertionSorter->run(numberOfElements);
-    mapXToAgent();
+void Collider::run(float timeDelta, uint32_t numberOfElements) {
+
+    m_agentSorter->run(timeDelta, numberOfElements);
+    runCollisionDetection(timeDelta);
+    m_reducer->run(numberOfElements);
 }

@@ -4,7 +4,7 @@
 #include <Renderer/Connector.h>
 #include <Simulator/InsertionSorter.h>
 #include <Simulator/Reducer.h>
-#include <Simulator/AgentSorter.h>
+#include <Simulator/Collider.h>
 
 #include <vulkan/vulkan.h>
 
@@ -39,7 +39,7 @@ private:
     VkBuffer m_agentsBuffer;
     VkDeviceMemory m_agentsBufferMemory;
 
-    std::shared_ptr<AgentSorter> m_agentSorter;
+    std::shared_ptr<Collider> m_collider;
 
     void simulateNextStep(VkCommandBuffer commandBuffer);
     void runSimulatorTask();

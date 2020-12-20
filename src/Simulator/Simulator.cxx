@@ -290,7 +290,7 @@ Simulator::Simulator(
 
     vkDestroyShaderModule(m_logicalDevice, shaderModule, nullptr);
 
-    m_agentSorter = std::make_shared<AgentSorter>(
+    m_collider = std::make_shared<Collider>(
         physicalDevice,
         m_logicalDevice,
         m_computeQueue,
@@ -339,7 +339,7 @@ void Simulator::runSimulatorTask() {
     while (m_isActive) {
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();
-        m_agentSorter->run(0.09, Constants::kNumberOfAgents);
+        m_collider->run(0.09, Constants::kNumberOfAgents);
         simulateNextStep(m_computeCommandBuffers[bufferIndex]);
         m_connector->updateBufferIndex(bufferIndex);
 

@@ -98,7 +98,7 @@ VkCommandBuffer ReducerUtil::createCommandBuffer(
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
     uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * ReducerUtil::xDim));
-    std::cout << "Number of Reduce X groups = " << xGroups << "\n";
+    //std::cout << "Number of Reduce X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
