@@ -2,7 +2,7 @@
 #define REDUCE_VULKAN_TEST_H
 
 #include <Simulator/Reducer.h>
-#include <Simulator/ReducerUtil.h>
+#include <Simulator/Collision.h>
 
 #include <vulkan/vulkan.h>
 
@@ -31,7 +31,7 @@ ReduceVulkanTest(
 
 virtual ~ReduceVulkanTest();
 
-ReducerUtil::Collision run(const std::vector<ReducerUtil::Collision>& data);
+Collision run(const std::vector<Collision>& data);
 
 };
 

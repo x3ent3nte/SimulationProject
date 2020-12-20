@@ -1,5 +1,6 @@
 #include <Simulator/InsertionSorter.h>
 
+#include <Simulator/Collision.h>
 #include <Utils/Buffer.h>
 #include <Utils/Utils.h>
 #include <Utils/MyMath.h>
@@ -25,7 +26,7 @@ InsertionSorter::InsertionSorter(
     Buffer::createBuffer(
         physicalDevice,
         logicalDevice,
-        numberOfElements * sizeof(InsertionSorterUtil::ValueAndIndex),
+        numberOfElements * sizeof(ValueAndIndex),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_valueAndIndexBuffer,

@@ -1,5 +1,6 @@
 #include <Test/InsertionSortVulkanTest.h>
 
+#include <Simulator/Collision.h>
 #include <Utils/Buffer.h>
 
 InsertionSortVulkanTest::InsertionSortVulkanTest(
@@ -22,12 +23,12 @@ InsertionSortVulkanTest::InsertionSortVulkanTest(
 InsertionSortVulkanTest::~InsertionSortVulkanTest() {}
 
 std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) {
-    std::vector<InsertionSorterUtil::ValueAndIndex> valueAndIndexes(data.size());
+    std::vector<ValueAndIndex> valueAndIndexes(data.size());
     for (uint32_t i = 0; i < valueAndIndexes.size(); ++i) {
         valueAndIndexes[i] = {data[i], i};
     }
 
-    size_t bufferSize = valueAndIndexes.size() * sizeof(InsertionSorterUtil::ValueAndIndex);
+    size_t bufferSize = valueAndIndexes.size() * sizeof(ValueAndIndex);
 
     Buffer::copyHostToDeviceBuffer(
         valueAndIndexes.data(),

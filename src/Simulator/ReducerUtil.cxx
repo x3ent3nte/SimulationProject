@@ -1,5 +1,6 @@
 #include <Simulator/ReducerUtil.h>
 
+#include <Simulator/Collision.h>
 #include <Utils/Compute.h>
 
 #include <iostream>
@@ -27,8 +28,8 @@ VkDescriptorSet ReducerUtil::createDescriptorSet(
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {inBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
-        {outBuffer, numberOfElements * sizeof(ReducerUtil::Collision)},
+        {inBuffer, numberOfElements * sizeof(Collision)},
+        {outBuffer, numberOfElements * sizeof(Collision)},
         {numberOfElementsBuffer, sizeof(uint32_t)}
     };
 

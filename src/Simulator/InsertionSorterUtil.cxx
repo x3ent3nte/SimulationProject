@@ -1,5 +1,6 @@
 #include <Simulator/InsertionSorterUtil.h>
 
+#include <Simulator/Collision.h>
 #include <Utils/Compute.h>
 
 #include <array>
@@ -9,10 +10,6 @@
 namespace {
     constexpr size_t numberOfBindings = 4;
 } // namespace anonymous
-
-bool InsertionSorterUtil::ValueAndIndex::operator<(const ValueAndIndex& other) const {
-    return value < other.value;
-}
 
 VkDescriptorSetLayout InsertionSorterUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     return Compute::createDescriptorSetLayout(logicalDevice, numberOfBindings);
@@ -33,7 +30,7 @@ VkDescriptorSet InsertionSorterUtil::createDescriptorSet(
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSorterUtil::ValueAndIndex)},
+        {valueAndIndexBuffer, numberOfElements * sizeof(ValueAndIndex)},
         {wasSwappedBuffer, sizeof(uint32_t)},
         {numberOfElementsBuffer, sizeof(uint32_t)},
         {offsetBuffer, sizeof(uint32_t)}

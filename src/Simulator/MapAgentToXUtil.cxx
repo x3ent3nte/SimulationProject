@@ -1,6 +1,7 @@
 #include <Simulator/MapAgentToXUtil.h>
 
 #include <Simulator/Agent.h>
+#include <Simulator/Collision.h>
 #include <Simulator/InsertionSorterUtil.h>
 
 #include <Utils/Compute.h>
@@ -31,7 +32,7 @@ VkDescriptorSet MapAgentToXUtil::createDescriptorSet(
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {agentsBuffer, numberOfElements * sizeof(Agent)},
-        {valueAndIndexBuffer, numberOfElements * sizeof(InsertionSorterUtil::ValueAndIndex)},
+        {valueAndIndexBuffer, numberOfElements * sizeof(ValueAndIndex)},
         {timeDeltaBuffer, sizeof(float)},
         {numberOfElementsBuffer, sizeof(uint32_t)}
     };

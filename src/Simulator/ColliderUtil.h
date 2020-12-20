@@ -1,11 +1,9 @@
-#ifndef INSERTION_SORTER_UTIL_H
-#define INSERTION_SORTER_UTIL_H
+#ifndef COLLIDER_UTIL_H
+#define COLLIDER_UTIL_H
 
 #include <vulkan/vulkan.h>
 
-#include <vector>
-
-namespace InsertionSorterUtil {
+namespace ColliderUtil {
 
     constexpr size_t xDim = 256;
 
@@ -17,26 +15,22 @@ namespace InsertionSorterUtil {
         VkDevice logicalDevice,
         VkDescriptorSetLayout descriptorSetLayout,
         VkDescriptorPool descriptorPool,
-        VkBuffer valueAndIndexBuffer,
-        VkBuffer wasSwappedBuffer,
+        VkBuffer agentsBuffer,
+        VkBuffer collisionsBuffer,
+        VkBuffer timeDeltaBuffer,
         VkBuffer numberOfElementsBuffer,
-        VkBuffer offsetBuffer,
         uint32_t numberOfElements);
 
-    VkPipeline createPipeline(
-        VkDevice logicalDevice,
-        VkPipelineLayout pipelineLayout);
+    VkPipeline createPipeline(VkDevice logicalDevice, VkPipelineLayout pipelineLayout);
 
     VkCommandBuffer createCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSetOne,
-        VkDescriptorSet descriptorSetTwo,
-        VkBuffer valueAndIndexBuffer,
-        VkBuffer wasSwappedBuffer,
-        VkBuffer wasSwappedBufferHostVisible,
+        VkDescriptorSet descriptorSet,
+        VkBuffer timeDeltaBuffer,
+        VkBuffer timeDeltaHostVisibleBuffer,
         uint32_t numberOfElements);
 }
 

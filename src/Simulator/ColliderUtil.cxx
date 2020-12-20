@@ -1,9 +1,7 @@
-#include <Simulator/MapXToAgentUtil.h>
+#include <Simulator/ColliderUtil.h>
 
 #include <Simulator/Agent.h>
 #include <Simulator/Collision.h>
-#include <Simulator/InsertionSorterUtil.h>
-
 #include <Utils/Compute.h>
 
 #include <stdexcept>
@@ -12,28 +10,28 @@ namespace {
     constexpr size_t kNumberOfBindings = 4;
 } // end namespace anonymous
 
-VkDescriptorSetLayout MapXToAgentUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
+VkDescriptorSetLayout ColliderUtil::createDescriptorSetLayout(VkDevice logicalDevice) {
     return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
 }
 
-VkDescriptorPool MapXToAgentUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
+VkDescriptorPool ColliderUtil::createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
     return Compute::createDescriptorPool(logicalDevice, kNumberOfBindings, maxSets);
 }
 
-VkDescriptorSet MapXToAgentUtil::createDescriptorSet(
+VkDescriptorSet ColliderUtil::createDescriptorSet(
     VkDevice logicalDevice,
     VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorPool descriptorPool,
-    VkBuffer valueAndIndexBuffer,
-    VkBuffer agentsBufferIn,
-    VkBuffer agentsBufferOut,
+    VkBuffer agentsBuffer,
+    VkBuffer collisionsBuffer,
+    VkBuffer timeDeltaBuffer,
     VkBuffer numberOfElementsBuffer,
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {valueAndIndexBuffer, numberOfElements * sizeof(ValueAndIndex)},
-        {agentsBufferIn, numberOfElements * sizeof(Agent)},
-        {agentsBufferOut, numberOfElements * sizeof(Agent)},
+        {agentsBuffer, numberOfElements * sizeof(Agent)},
+        {collisionsBuffer, numberOfElements * sizeof(Collision)},
+        {timeDeltaBuffer, sizeof(float)},
         {numberOfElementsBuffer, sizeof(uint32_t)}
     };
 
@@ -44,21 +42,18 @@ VkDescriptorSet MapXToAgentUtil::createDescriptorSet(
         bufferAndSizes);
 }
 
-VkPipeline MapXToAgentUtil::createPipeline(
-    VkDevice logicalDevice,
-    VkPipelineLayout pipelineLayout) {
-
-    return Compute::createPipeline("src/GLSL/MapXToAgent.spv", logicalDevice, pipelineLayout);
+VkPipeline ColliderUtil::createPipeline(VkDevice logicalDevice, VkPipelineLayout pipelineLayout) {
+    return Compute::createPipeline("src/GLSL/CollisionDetection.spv", logicalDevice, pipelineLayout);
 }
 
-VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
+VkCommandBuffer ColliderUtil::createCommandBuffer(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
     VkPipeline pipeline,
     VkPipelineLayout pipelineLayout,
     VkDescriptorSet descriptorSet,
-    VkBuffer otherAgentsBuffer,
-    VkBuffer agentsBuffer,
+    VkBuffer timeDeltaBuffer,
+    VkBuffer timeDeltaHostVisibleBuffer,
     uint32_t numberOfElements) {
 
     VkCommandBuffer commandBuffer;
@@ -81,12 +76,11 @@ VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
         throw std::runtime_error("Failed to begin compute command buffer");
     }
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
-    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) MapXToAgentUtil::xDim));
-
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = sizeof(float);
+    vkCmdCopyBuffer(commandBuffer, timeDeltaHostVisibleBuffer, timeDeltaBuffer, 1, &copyRegion);
 
     vkCmdPipelineBarrier(
         commandBuffer,
@@ -100,12 +94,12 @@ VkCommandBuffer MapXToAgentUtil::createCommandBuffer(
         0,
         nullptr);
 
-    VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0;
-    copyRegion.dstOffset = 0;
-    copyRegion.size = numberOfElements * sizeof(Agent);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    vkCmdCopyBuffer(commandBuffer, otherAgentsBuffer, agentsBuffer, 1, &copyRegion);
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) ColliderUtil::xDim));
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");

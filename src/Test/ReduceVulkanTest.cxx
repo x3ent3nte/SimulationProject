@@ -21,10 +21,10 @@ ReduceVulkanTest::ReduceVulkanTest(
 
 ReduceVulkanTest::~ReduceVulkanTest() {}
 
-ReducerUtil::Collision ReduceVulkanTest::run(const std::vector<ReducerUtil::Collision>& data) {
+Collision ReduceVulkanTest::run(const std::vector<Collision>& data) {
 
-    size_t bufferSize = data.size() * sizeof(ReducerUtil::Collision);
-    std::vector<ReducerUtil::Collision> dataCopy(data);
+    size_t bufferSize = data.size() * sizeof(Collision);
+    std::vector<Collision> dataCopy(data);
 
     Buffer::copyHostToDeviceBuffer(
         dataCopy.data(),
@@ -37,10 +37,10 @@ ReducerUtil::Collision ReduceVulkanTest::run(const std::vector<ReducerUtil::Coll
 
     VkBuffer resultBuffer = m_reducer->run(data.size());
 
-    ReducerUtil::Collision result;
+    Collision result;
     Buffer::copyDeviceBufferToHost(
         &result,
-        sizeof(ReducerUtil::Collision),
+        sizeof(Collision),
         resultBuffer,
         m_physicalDevice,
         m_logicalDevice,

@@ -7,12 +7,6 @@ namespace ReducerUtil {
 
     constexpr size_t xDim = 256;
 
-    struct Collision {
-        uint32_t one;
-        uint32_t two;
-        float time;
-    };
-
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
 
     VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets);

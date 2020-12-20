@@ -1,13 +1,13 @@
 #ifndef REDUCE_CUDA_TEST_H
 #define REDUCE_CUDA_TEST_H
 
-#include <Simulator/ReducerUtil.h>
+#include <Simulator/Collision.h>
 
 #include <vector>
 
 namespace ReduceCudaTest {
 
-    ReducerUtil::Collision run(const std::vector<ReducerUtil::Collision>& data);
+    Collision run(const std::vector<Collision>& data);
 }
 
 #endif
