@@ -67,7 +67,7 @@ int Application::run() {
     }
 
     auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
-    auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector);
+    auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector, Constants::kNumberOfAgents);
     simulator->simulate();
 
     std::shared_ptr<Renderer> renderer = Renderer::create(

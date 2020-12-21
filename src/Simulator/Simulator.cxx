@@ -2,11 +2,11 @@
 
 #include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
+#include <Utils/Compute.h>
 #include <Utils/Utils.h>
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/MyGLM.h>
 #include <Utils/MyMath.h>
-#include <Renderer/Constants.h>
 
 #include <Utils/Timer.h>
 
@@ -16,55 +16,15 @@
 
 namespace {
 
+    constexpr size_t simulatorXDim = 512;
+    constexpr size_t kNumberOfBindings = 4;
+
     VkDescriptorSetLayout createComputeDescriptorSetLayout(VkDevice logicalDevice) {
-        VkDescriptorSetLayout descriptorSetLayout;
-
-        VkDescriptorSetLayoutBinding agentDescriptor = {};
-        agentDescriptor.binding = 0;
-        agentDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        agentDescriptor.descriptorCount = 1;
-        agentDescriptor.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        VkDescriptorSetLayoutBinding positionDescriptor = {};
-        positionDescriptor.binding = 1;
-        positionDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        positionDescriptor.descriptorCount = 1;
-        positionDescriptor.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings = {agentDescriptor, positionDescriptor};
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.bindingCount = 2;
-        descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
-
-        if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor set layout");
-        }
-
-        return descriptorSetLayout;
+        return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
     }
 
     VkDescriptorPool createComputeDescriptorPool(VkDevice logicalDevice) {
-        VkDescriptorPool descriptorPool;
-
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[0].descriptorCount = 1;
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[1].descriptorCount = 1;
-
-        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-        descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        descriptorPoolCreateInfo.maxSets = 1;
-        descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());;
-        descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
-
-        if (vkCreateDescriptorPool(logicalDevice, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor pool");
-        }
-
-        return descriptorPool;
+        return Compute::createDescriptorPool(logicalDevice, kNumberOfBindings, 1);
     }
 
     VkDescriptorSet createComputeDescriptorSet(
@@ -72,92 +32,35 @@ namespace {
         VkDescriptorSetLayout& descriptorSetLayout,
         VkDescriptorPool& descriptorPool,
         VkBuffer agentsBuffer,
-        VkBuffer positionsBuffer) {
+        VkBuffer positionsBuffer,
+        VkBuffer timeDeltaBuffer,
+        VkBuffer numberOfElementsBuffer,
+        uint32_t numberOfElements) {
 
-        VkDescriptorSet descriptorSet;
+        std::vector<Compute::BufferAndSize> bufferAndSizes = {
+            {agentsBuffer, numberOfElements * sizeof(Agent)},
+            {positionsBuffer, numberOfElements * sizeof(AgentPositionAndRotation)},
+            {timeDeltaBuffer, sizeof(float)},
+            {numberOfElementsBuffer, sizeof(uint32_t)}
+        };
 
-        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
-        descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-        descriptorSetAllocateInfo.descriptorSetCount = 1;
-        descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
-
-        if (vkAllocateDescriptorSets(logicalDevice, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute descriptor sets");
-        }
-
-        VkDescriptorBufferInfo agentsBufferDescriptor = {};
-        agentsBufferDescriptor.buffer = agentsBuffer;
-        agentsBufferDescriptor.offset = 0;
-        agentsBufferDescriptor.range = Constants::kNumberOfAgents * sizeof(Agent);
-
-        VkWriteDescriptorSet agentsWriteDescriptorSet = {};
-        agentsWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        agentsWriteDescriptorSet.dstSet = descriptorSet;
-        agentsWriteDescriptorSet.dstBinding = 0;
-        agentsWriteDescriptorSet.descriptorCount = 1;
-        agentsWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        agentsWriteDescriptorSet.pBufferInfo = &agentsBufferDescriptor;
-
-        VkDescriptorBufferInfo positionsBufferDescriptor = {};
-        positionsBufferDescriptor.buffer = positionsBuffer;
-        positionsBufferDescriptor.offset = 0;
-        positionsBufferDescriptor.range = Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation);
-
-        VkWriteDescriptorSet positionsWriteDescriptorSet = {};
-        positionsWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        positionsWriteDescriptorSet.dstSet = descriptorSet;
-        positionsWriteDescriptorSet.dstBinding = 1;
-        positionsWriteDescriptorSet.descriptorCount = 1;
-        positionsWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        positionsWriteDescriptorSet.pBufferInfo = &positionsBufferDescriptor;
-
-        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = {agentsWriteDescriptorSet, positionsWriteDescriptorSet};
-
-        vkUpdateDescriptorSets(logicalDevice, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-
-        return descriptorSet;
+        return Compute::createDescriptorSet(
+            logicalDevice,
+            descriptorSetLayout,
+            descriptorPool,
+            bufferAndSizes);
     }
 
     VkPipelineLayout createComputePipelineLayout(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout) {
-        VkPipelineLayout pipelineLayout;
-
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
-
-        if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create pipeline layout");
-        }
-
-        return pipelineLayout;
+        return Compute::createPipelineLayout(logicalDevice, descriptorSetLayout);
     }
 
     VkPipeline createComputePipeline(
         VkDevice logicalDevice,
-        VkShaderModule shaderModule,
         VkDescriptorSetLayout descriptorSetLayout,
         VkPipelineLayout pipelineLayout) {
 
-        VkPipeline pipeline;
-
-        VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
-        shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        shaderStageCreateInfo.module = shaderModule;
-        shaderStageCreateInfo.pName = "main";
-
-        VkComputePipelineCreateInfo pipelineCreateInfo = {};
-        pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.stage = shaderStageCreateInfo;
-        pipelineCreateInfo.layout = pipelineLayout;
-
-        if (vkCreateComputePipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create compute pipeline");
-        }
-
-        return pipeline;
+        return Compute::createPipeline("src/GLSL/Simulation.spv", logicalDevice, pipelineLayout);
     }
 
     VkCommandBuffer createComputeCommandBuffer(
@@ -165,7 +68,10 @@ namespace {
         VkCommandPool commandPool,
         VkPipeline pipeline,
         VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet) {
+        VkDescriptorSet descriptorSet,
+        VkBuffer timeDeltaHostVisibleBuffer,
+        VkBuffer timeDeltaBuffer,
+        uint32_t numberOfElements) {
 
         VkCommandBuffer commandBuffer;
 
@@ -187,11 +93,29 @@ namespace {
             throw std::runtime_error("Failed to begin compute command buffer");
         }
 
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = sizeof(float);
+        vkCmdCopyBuffer(commandBuffer, timeDeltaHostVisibleBuffer, timeDeltaBuffer, 1, &copyRegion);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-        size_t xThreads = Constants::kNumberOfAgents / 512;
-        vkCmdDispatch(commandBuffer, xThreads, 1, 1);
+        uint32_t xGroups = ceil(((float) numberOfElements) / ((float) simulatorXDim));
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -219,11 +143,14 @@ Simulator::Simulator(
     VkDevice logicalDevice,
     VkQueue computeQueue,
     VkCommandPool computeCommandPool,
-    std::shared_ptr<Connector> connector) {
+    std::shared_ptr<Connector> connector,
+    uint32_t numberOfElements) {
 
     m_logicalDevice = logicalDevice;
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
+
+    m_currentNumberOfElements = numberOfElements;
 
     m_isActive = false;
     m_connector = connector;
@@ -239,8 +166,8 @@ Simulator::Simulator(
 
     m_computeFence = createComputeFence(m_logicalDevice);
 
-    std::vector<Agent> agents(Constants::kNumberOfAgents);
-    for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
+    std::vector<Agent> agents(numberOfElements);
+    for (size_t i = 0; i < numberOfElements; ++i) {
         glm::vec3 position = MyMath::randomVec3InSphere(512.0f);
         glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -251,7 +178,7 @@ Simulator::Simulator(
 
     Buffer::createBufferWithData(
         agents.data(),
-        Constants::kNumberOfAgents * sizeof(Agent),
+        numberOfElements * sizeof(Agent),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
         m_logicalDevice,
@@ -260,10 +187,45 @@ Simulator::Simulator(
         m_agentsBuffer,
         m_agentsBufferMemory);
 
-    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        sizeof(float),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        m_timeDeltaBuffer,
+        m_timeDeltaDeviceMemory);
 
-    auto shaderCode = Utils::readFile("src/GLSL/Simulation.spv");
-    VkShaderModule shaderModule = Utils::createShaderModule(m_logicalDevice, shaderCode);
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_timeDeltaBufferHostVisible,
+        m_timeDeltaDeviceMemoryHostVisible);
+
+    Buffer::createBufferWithData(
+        &numberOfElements,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        physicalDevice,
+        m_logicalDevice,
+        m_computeCommandPool,
+        m_computeQueue,
+        m_numberOfElementsBuffer,
+        m_numberOfElementsDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_numberOfElementsBufferHostVisible,
+        m_numberOfElementsDeviceMemoryHostVisible);
+
+    m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
 
     for (size_t i = 0; i < numBuffers; ++i) {
 
@@ -274,21 +236,25 @@ Simulator::Simulator(
             m_computeDescriptorSetLayout,
             m_computeDescriptorPools[i],
             m_agentsBuffer,
-            m_connector->m_buffers[i]);
+            m_connector->m_buffers[i],
+            m_timeDeltaBuffer,
+            m_numberOfElementsBuffer,
+            numberOfElements);
 
         m_computePipelineLayouts[i] = createComputePipelineLayout(m_logicalDevice, m_computeDescriptorSetLayout);
 
-        m_computePipelines[i] = createComputePipeline(m_logicalDevice, shaderModule, m_computeDescriptorSetLayout, m_computePipelineLayouts[i]);
+        m_computePipelines[i] = createComputePipeline(m_logicalDevice, m_computeDescriptorSetLayout, m_computePipelineLayouts[i]);
 
         m_computeCommandBuffers[i] = createComputeCommandBuffer(
             m_logicalDevice,
             m_computeCommandPool,
             m_computePipelines[i],
             m_computePipelineLayouts[i],
-            m_computeDescriptorSets[i]);
+            m_computeDescriptorSets[i],
+            m_timeDeltaBufferHostVisible,
+            m_timeDeltaBuffer,
+            numberOfElements);
     }
-
-    vkDestroyShaderModule(m_logicalDevice, shaderModule, nullptr);
 
     m_collider = std::make_shared<Collider>(
         physicalDevice,
@@ -296,12 +262,24 @@ Simulator::Simulator(
         m_computeQueue,
         m_computeCommandPool,
         m_agentsBuffer,
-        Constants::kNumberOfAgents);
+        numberOfElements);
 }
 
 Simulator::~Simulator() {
     vkFreeMemory(m_logicalDevice, m_agentsBufferMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_agentsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_timeDeltaBufferHostVisible, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_computeDescriptorSetLayout, nullptr);
 
@@ -316,14 +294,20 @@ Simulator::~Simulator() {
     vkDestroyFence(m_logicalDevice, m_computeFence, nullptr);
 }
 
-void Simulator::simulateNextStep(VkCommandBuffer commandBuffer) {
-    vkResetFences(m_logicalDevice, 1, &m_computeFence);
+void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta) {
 
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
+    float timeDeltaCopy = timeDelta;
+    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
+    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_computeFence);
 
     if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit compute command buffer");
@@ -336,14 +320,21 @@ void Simulator::runSimulatorTask() {
     Timer timer("Vulkan Simulator");
     uint64_t numFrames = 0;
 
+    auto prevTime = std::chrono::high_resolution_clock::now();
+
     while (m_isActive) {
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float timeDelta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - prevTime).count();
+        //std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();
-        m_collider->run(0.09, Constants::kNumberOfAgents);
-        simulateNextStep(m_computeCommandBuffers[bufferIndex]);
+        m_collider->run(timeDelta, m_currentNumberOfElements);
+        simulateNextStep(m_computeCommandBuffers[bufferIndex], timeDelta);
         m_connector->updateBufferIndex(bufferIndex);
 
         numFrames++;
+        prevTime = currentTime;
     }
     std::cout << "Number of frames simulated= " << numFrames << "\n";
 }
@@ -357,21 +348,21 @@ void Simulator::stopSimulation(VkPhysicalDevice physicalDevice) {
     m_isActive = false;
     m_simulateTask.join();
 
-    std::vector<Agent> agents(Constants::kNumberOfAgents);
+    std::vector<Agent> agents(m_currentNumberOfElements);
 
     Buffer::copyDeviceBufferToHost(
         agents.data(),
-        Constants::kNumberOfAgents * sizeof(Agent),
+        m_currentNumberOfElements * sizeof(Agent),
         m_agentsBuffer,
         physicalDevice,
         m_logicalDevice,
         m_computeCommandPool,
         m_computeQueue);
 
-    for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
+    for (size_t i = 0; i < m_currentNumberOfElements; ++i) {
         //glm::vec3 position = agents[i].position;
         //std::cout << "i " << i << " " << position.x << " " << position.y << " " << position.z << "\n";
-        glm::vec3 acceleration = agents[i].acceleration;
+        //glm::vec3 acceleration = agents[i].acceleration;
         //std::cout << "Acceleration Mag: " << glm::length(acceleration) << "\n";
     }
 }
