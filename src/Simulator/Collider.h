@@ -54,6 +54,8 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
     void runCollisionDetection(float timeDelta);
+    float computeNextStep(float timeDelta);
+    float computeEarliestCollision(float timeDelta);
 
 public:
 

@@ -104,13 +104,17 @@ void main() {
             break;
         }
 
-        QuadraticSolution impact = calculateTimeOfImpact(agent, other);
-        if (impact.exists) {
-            if (isEarlierCollision(impact.sol1, earliestCollision.time)) {
-                earliestCollision = Collision(otherIndex, index, impact.sol1);
-            } else {
-                if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
-                    earliestCollision = Collision(otherIndex, index, impact.sol2);
+        float radiusSum = agent.radius + other.radius;
+        if (length(agent.position - other.position) > radiusSum)
+        {
+            QuadraticSolution impact = calculateTimeOfImpact(agent, other);
+            if (impact.exists) {
+                if (isEarlierCollision(impact.sol1, earliestCollision.time)) {
+                    earliestCollision = Collision(otherIndex, index, impact.sol1);
+                } else {
+                    if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
+                        earliestCollision = Collision(otherIndex, index, impact.sol2);
+                    }
                 }
             }
         }

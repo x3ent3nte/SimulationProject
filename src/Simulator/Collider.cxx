@@ -7,6 +7,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <iostream>
 
 Collider::Collider(
     VkPhysicalDevice physicalDevice,
@@ -204,11 +205,26 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Collider::run(float timeDelta, uint32_t numberOfElements) {
+float Collider::computeEarliestCollision(float timeDelta) {
+    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
+    return timeDelta;
+}
 
-    m_agentSorter->run(timeDelta, numberOfElements);
-    updateNumberOfElementsIfNecessary(numberOfElements);
+float Collider::computeNextStep(float timeDelta) {
+    m_agentSorter->run(timeDelta, m_currentNumberOfElements);
     runCollisionDetection(timeDelta);
-    m_reducer->run(numberOfElements);
-    m_timeAdvancer->run(timeDelta, numberOfElements);
+    m_reducer->run(m_currentNumberOfElements);
+    return computeEarliestCollision(timeDelta);
+}
+
+void Collider::run(float timeDelta, uint32_t numberOfElements) {
+    updateNumberOfElementsIfNecessary(numberOfElements);
+
+    int numberOfSteps = 0;
+    while (timeDelta > 0.0f) {
+        timeDelta -= computeNextStep(timeDelta);
+        numberOfSteps += 1;
+    }
+
+    std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
 }
