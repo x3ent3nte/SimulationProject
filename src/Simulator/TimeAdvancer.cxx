@@ -1,14 +1,14 @@
-#include <Simulator/Collider.h>
+#include <Simulator/TimeAdvancer.h>
 
-#include <Simulator/Collision.h>
-#include <Simulator/ColliderUtil.h>
+#include <Simulator/TimeAdvancerUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 
 #include <array>
+#include <memory>
 #include <stdexcept>
 
-Collider::Collider(
+TimeAdvancer::TimeAdvancer(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
@@ -18,32 +18,8 @@ Collider::Collider(
     : m_logicalDevice(logicalDevice)
     , m_queue(queue)
     , m_commandPool(commandPool)
-    , m_agentsBuffer(agentsBuffer) {
-
-    m_currentNumberOfElements = numberOfElements;
-
-    m_agentSorter = std::make_shared<AgentSorter>(
-        physicalDevice,
-        m_logicalDevice,
-        m_queue,
-        m_commandPool,
-        m_agentsBuffer,
-        numberOfElements);
-
-    m_reducer = std::make_shared<Reducer>(
-        physicalDevice,
-        m_logicalDevice,
-        m_queue,
-        m_commandPool,
-        numberOfElements);
-
-    m_timeAdvancer = std::make_shared<TimeAdvancer>(
-        physicalDevice,
-        m_logicalDevice,
-        m_queue,
-        m_commandPool,
-        m_agentsBuffer,
-        numberOfElements);
+    , m_agentsBuffer(agentsBuffer)
+    , m_currentNumberOfElements(numberOfElements) {
 
     Buffer::createBuffer(
         physicalDevice,
@@ -83,16 +59,15 @@ Collider::Collider(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
-    m_descriptorSetLayout = ColliderUtil::createDescriptorSetLayout(m_logicalDevice);
-    m_descriptorPool = ColliderUtil::createDescriptorPool(m_logicalDevice, 1);
+    m_descriptorSetLayout = TimeAdvancerUtil::createDescriptorSetLayout(m_logicalDevice);
+    m_descriptorPool = TimeAdvancerUtil::createDescriptorPool(m_logicalDevice, 1);
     m_pipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_descriptorSetLayout);
-    m_pipeline = ColliderUtil::createPipeline(m_logicalDevice, m_pipelineLayout);
-    m_descriptorSet = ColliderUtil::createDescriptorSet(
+    m_pipeline = TimeAdvancerUtil::createPipeline(m_logicalDevice, m_pipelineLayout);
+    m_descriptorSet = TimeAdvancerUtil::createDescriptorSet(
         m_logicalDevice,
         m_descriptorSetLayout,
         m_descriptorPool,
         m_agentsBuffer,
-        m_reducer->m_oneBuffer,
         m_timeDeltaBuffer,
         m_numberOfElementsBuffer,
         numberOfElements);
@@ -116,20 +91,7 @@ Collider::Collider(
     }
 }
 
-void Collider::createCommandBuffer(uint32_t numberOfElements) {
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
-    m_commandBuffer = ColliderUtil::createCommandBuffer(
-        m_logicalDevice,
-        m_commandPool,
-        m_pipeline,
-        m_pipelineLayout,
-        m_descriptorSet,
-        m_timeDeltaBuffer,
-        m_timeDeltaBufferHostVisible,
-        numberOfElements);
-}
-
-void Collider::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
+void TimeAdvancer::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     if (m_currentNumberOfElements == numberOfElements) {
         return;
     }
@@ -157,28 +119,20 @@ void Collider::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void Collider::runCollisionDetection(float timeDelta) {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
-    float timeDeltaCopy = timeDelta;
-    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
-    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
-
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+void TimeAdvancer::createCommandBuffer(uint32_t numberOfElements) {
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+    m_commandBuffer = TimeAdvancerUtil::createCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_pipeline,
+        m_pipelineLayout,
+        m_descriptorSet,
+        m_timeDeltaBuffer,
+        m_timeDeltaBufferHostVisible,
+        numberOfElements);
 }
 
-Collider::~Collider() {
-
+TimeAdvancer::~TimeAdvancer() {
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
 
@@ -204,11 +158,25 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Collider::run(float timeDelta, uint32_t numberOfElements) {
+void TimeAdvancer::run(float timeDelta, uint32_t numberOfElements) {
 
-    m_agentSorter->run(timeDelta, numberOfElements);
     updateNumberOfElementsIfNecessary(numberOfElements);
-    runCollisionDetection(timeDelta);
-    m_reducer->run(numberOfElements);
-    m_timeAdvancer->run(timeDelta, numberOfElements);
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
+    float timeDeltaCopy = timeDelta;
+    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
+    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
+
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &m_commandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }

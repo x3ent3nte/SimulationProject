@@ -273,7 +273,7 @@ vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
 void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
     agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
 
-    agent.position += agent.velocity * timeDelta;
+    //agent.position += agent.velocity * timeDelta;
 }
 
 void main() {

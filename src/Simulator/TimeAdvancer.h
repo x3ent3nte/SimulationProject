@@ -1,15 +1,9 @@
-#ifndef COLLIDER_H
-#define COLLIDER_H
-
-#include <Simulator/AgentSorter.h>
-#include <Simulator/Reducer.h>
-#include <Simulator/TimeAdvancer.h>
+#ifndef TIME_ADVANCER_H
+#define TIME_ADVANCER_H
 
 #include <vulkan/vulkan.h>
 
-#include <memory>
-
-class Collider {
+class TimeAdvancer {
 
 private:
 
@@ -17,13 +11,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
     VkBuffer m_agentsBuffer;
-
-    std::shared_ptr<AgentSorter> m_agentSorter;
-    std::shared_ptr<Reducer> m_reducer;
-    std::shared_ptr<TimeAdvancer> m_timeAdvancer;
-
-    VkBuffer m_collisionsBuffer;
-    VkDeviceMemory m_collisionsDeviceMemory;
+    uint32_t m_currentNumberOfElements;
 
     VkBuffer m_timeDeltaBuffer;
     VkDeviceMemory m_timeDeltaDeviceMemory;
@@ -49,15 +37,12 @@ private:
 
     VkFence m_fence;
 
-    uint32_t m_currentNumberOfElements;
-
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
-    void runCollisionDetection(float timeDelta);
 
 public:
 
-    Collider(
+    TimeAdvancer(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,
@@ -65,9 +50,10 @@ public:
         VkBuffer agentsBuffer,
         uint32_t numberOfElements);
 
-    virtual ~Collider();
+    virtual ~TimeAdvancer();
 
     void run(float timeDelta, uint32_t numberOfElements);
+
 };
 
 #endif

@@ -199,7 +199,7 @@ Simulator::Simulator(
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        sizeof(uint32_t),
+        sizeof(float),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_timeDeltaBufferHostVisible,
