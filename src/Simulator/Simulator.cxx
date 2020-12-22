@@ -171,9 +171,9 @@ Simulator::Simulator(
         glm::vec3 position = MyMath::randomVec3InSphere(512.0f);
         glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
+        glm::vec3 target = MyMath::randomVec3InSphere(512.f) + position;
         glm::vec4 rotation = MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f);
-        agents[i] = Agent{position, velocity, acceleration, target, rotation, 50.0f};
+        agents[i] = Agent{position, velocity, acceleration, target, rotation, 5.0f};
     }
 
     Buffer::createBufferWithData(
