@@ -173,7 +173,7 @@ Simulator::Simulator(
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 target = MyMath::randomVec3InSphere(512.f) + position;
         glm::vec4 rotation = MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f);
-        agents[i] = Agent{position, velocity, acceleration, target, rotation, 5.0f};
+        agents[i] = Agent{position, velocity, acceleration, target, rotation, 2.0f};
     }
 
     Buffer::createBufferWithData(
@@ -326,7 +326,8 @@ void Simulator::runSimulatorTask() {
 
         auto currentTime = std::chrono::high_resolution_clock::now();
         float timeDelta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - prevTime).count();
-        //std::cout << "Time Delta= " << timeDelta << "\n";
+        timeDelta = fmin(timeDelta, 0.05);
+        std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();
         m_collider->run(timeDelta, m_currentNumberOfElements);

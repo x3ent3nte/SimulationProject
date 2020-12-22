@@ -1,6 +1,5 @@
 #include <Simulator/Collider.h>
 
-#include <Simulator/Collision.h>
 #include <Simulator/ColliderUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
@@ -45,6 +44,15 @@ Collider::Collider(
         m_commandPool,
         m_agentsBuffer,
         numberOfElements);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        numberOfElements * sizeof(Collision),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_collisionsHostVisibleBuffer,
+        m_collisionsHostVisibleDeviceMemory);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -180,6 +188,9 @@ void Collider::runCollisionDetection(float timeDelta) {
 
 Collider::~Collider() {
 
+    vkFreeMemory(m_logicalDevice, m_collisionsHostVisibleDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_collisionsHostVisibleBuffer, nullptr);
+
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
 
@@ -205,16 +216,69 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-float Collider::computeEarliestCollision(float timeDelta) {
-    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
-    return timeDelta;
+void Collider::computeEarliestCollision(const Collision& collision) {
+
+}
+
+Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
+    size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
+    VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
+        m_logicalDevice,
+        m_commandPool,
+        reduceResult,
+        m_collisionsHostVisibleBuffer,
+        collisionsSize);
+
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &copyCollisionsCommandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+
+    std::vector<Collision> collisions(m_currentNumberOfElements);
+    void* dataMap;
+    vkMapMemory(m_logicalDevice,  m_collisionsHostVisibleDeviceMemory, 0, collisionsSize, 0, &dataMap);
+    memcpy(collisions.data(), dataMap, collisionsSize);
+    vkUnmapMemory(m_logicalDevice, m_collisionsHostVisibleDeviceMemory);
+
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCollisionsCommandBuffer);
+
+    int numberOfCollisions = 0;
+    for (int i = 0; i < collisions.size(); ++i) {
+        Collision col = collisions[i];
+        if (!((col.one == 0) && (col.two == 0))) {
+            numberOfCollisions += 1;
+        }
+        //std::cout << "Collision one= " << col.one << " two= " << col.two << " time= " << col.time << "\n";
+    }
+
+    std::cout << "Number of collisions= " << numberOfCollisions << "\n";
+
+    return {0, 0, 123.0f};
 }
 
 float Collider::computeNextStep(float timeDelta) {
     m_agentSorter->run(timeDelta, m_currentNumberOfElements);
     runCollisionDetection(timeDelta);
-    m_reducer->run(m_currentNumberOfElements);
-    return computeEarliestCollision(timeDelta);
+    Collision earliestCollision = extractEarliestCollision(m_reducer->m_oneBuffer);
+    VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
+
+    //Collision earliestCollision = extractEarliestCollision(reduceResult);
+    float timeToAdvance;
+    if (earliestCollision.time < timeDelta) {
+        timeToAdvance = earliestCollision.time;
+    } else {
+        timeToAdvance = timeDelta;
+    }
+    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
+    computeEarliestCollision(earliestCollision);
+    return timeToAdvance;
 }
 
 void Collider::run(float timeDelta, uint32_t numberOfElements) {

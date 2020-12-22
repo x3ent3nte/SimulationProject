@@ -1,6 +1,7 @@
 #ifndef COLLIDER_H
 #define COLLIDER_H
 
+#include <Simulator/Collision.h>
 #include <Simulator/AgentSorter.h>
 #include <Simulator/Reducer.h>
 #include <Simulator/TimeAdvancer.h>
@@ -22,8 +23,8 @@ private:
     std::shared_ptr<Reducer> m_reducer;
     std::shared_ptr<TimeAdvancer> m_timeAdvancer;
 
-    VkBuffer m_collisionsBuffer;
-    VkDeviceMemory m_collisionsDeviceMemory;
+    VkBuffer m_collisionsHostVisibleBuffer;
+    VkDeviceMemory m_collisionsHostVisibleDeviceMemory;
 
     VkBuffer m_timeDeltaBuffer;
     VkDeviceMemory m_timeDeltaDeviceMemory;
@@ -54,8 +55,9 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
     void runCollisionDetection(float timeDelta);
+    void computeEarliestCollision(const Collision& collision);
+    Collision extractEarliestCollision(VkBuffer reduceResult);
     float computeNextStep(float timeDelta);
-    float computeEarliestCollision(float timeDelta);
 
 public:
 
