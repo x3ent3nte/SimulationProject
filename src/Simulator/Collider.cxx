@@ -246,14 +246,15 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 
-    std::vector<Collision> collisions(m_currentNumberOfElements);
+    Collision earliestCollision;
     void* dataMap;
-    vkMapMemory(m_logicalDevice,  m_collisionsHostVisibleDeviceMemory, 0, collisionsSize, 0, &dataMap);
-    memcpy(collisions.data(), dataMap, collisionsSize);
+    vkMapMemory(m_logicalDevice,  m_collisionsHostVisibleDeviceMemory, 0, sizeof(Collision), 0, &dataMap);
+    memcpy(&earliestCollision, dataMap, sizeof(Collision));
     vkUnmapMemory(m_logicalDevice, m_collisionsHostVisibleDeviceMemory);
-
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCollisionsCommandBuffer);
 
+    return earliestCollision;
+    /*
     int numberOfCollisions = 0;
     for (int i = 0; i < collisions.size(); ++i) {
         Collision col = collisions[i];
@@ -264,8 +265,8 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
     }
 
     std::cout << "Number of collisions= " << numberOfCollisions << "\n";
-
-    return {0, 0, 123.0f};
+    return collisions[0];
+    */
 }
 
 float Collider::computeNextStep(float timeDelta) {
@@ -281,6 +282,7 @@ float Collider::computeNextStep(float timeDelta) {
         earliestCollision = extractEarliestCollision(reduceResult);
     }
 
+    std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two << " time= " << earliestCollision.time << "\n";
     if (earliestCollision.time < timeDelta) {
         {
             Timer timer("Advance Time");
@@ -290,7 +292,7 @@ float Collider::computeNextStep(float timeDelta) {
             Timer timer("Impacter");
             m_impacter->run(earliestCollision);
         }
-        return timeDelta;
+        return earliestCollision.time;
     } else {
         {
             Timer timer("Advance Time Full");
@@ -308,10 +310,12 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     while (timeDelta > 0.0f) {
         {
             Timer timer("computeNextStep");
-            timeDelta -= computeNextStep(timeDelta);
+            float timeDepleted = computeNextStep(timeDelta);
+            std::cout << "Time depleted= " << timeDepleted << "\n";
+            timeDelta -= timeDepleted;
         }
         numberOfSteps += 1;
     }
 
-    std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
+    std::cout << "Number of Collider steps= " << numberOfSteps << "\n\n";
 }

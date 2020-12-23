@@ -28,12 +28,36 @@ layout (std430, binding = 1) buffer bufferCollisions {
     Collision collisions[];
 };
 
+float cosineSimilarity(vec3 a, vec3 b) {
+    float magMult = length(a) * length(b);
+    if (magMult == 0.0f) {
+        return 0.0f;
+    }
+
+    return dot(a, b) / magMult;
+}
+
 void main() {
 
     Collision col = collisions[0];
 
     Agent one = agents[col.one];
     Agent two = agents[col.two];
+
+    float oneMass = 1.0f;
+    float twoMass = 1.0f;
+
+    vec3 posDiff = two.position - one.position;
+    vec3 oneImpactVelocity = one.velocity * cosineSimilarity(posDiff, one.velocity);
+    vec3 twoImpactVelocity = two.velocity * cosineSimilarity(-posDiff, two.velocity);
+
+    vec3 oneMomentum = oneImpactVelocity * oneMass;
+    vec3 twoMomentum = twoImpactVelocity * twoMass;
+
+    vec3 totalMomentum = oneMomentum + twoMomentum;
+
+    two.velocity += oneImpactVelocity;
+    one.velocity += twoImpactVelocity;
 
     agents[col.one] = one;
     agents[col.two] = two;
