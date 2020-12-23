@@ -292,7 +292,7 @@ void main() {
 
     float maxDistance = 0.1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.target = hashVec3(1024.0, agent.target);
+        agent.target = hashVec3(512.0, agent.target);
     }
 
     agents[index] = agent;
