@@ -1,4 +1,4 @@
-#version 450
+#version 460
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
@@ -292,7 +292,7 @@ void main() {
 
     float maxDistance = 0.1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.target = hashVec3(512.0, agent.target);
+        agent.target = hashVec3(1024.0, agent.target);
     }
 
     agents[index] = agent;

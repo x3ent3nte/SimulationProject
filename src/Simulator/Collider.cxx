@@ -3,6 +3,7 @@
 #include <Simulator/ColliderUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>
@@ -38,6 +39,14 @@ Collider::Collider(
         numberOfElements);
 
     m_timeAdvancer = std::make_shared<TimeAdvancer>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        m_agentsBuffer,
+        numberOfElements);
+
+    m_impacter = std::make_shared<Impacter>(
         physicalDevice,
         m_logicalDevice,
         m_queue,
@@ -216,10 +225,6 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Collider::computeEarliestCollision(const Collision& collision) {
-
-}
-
 Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
     size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
     VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
@@ -265,20 +270,35 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
 
 float Collider::computeNextStep(float timeDelta) {
     m_agentSorter->run(timeDelta, m_currentNumberOfElements);
-    runCollisionDetection(timeDelta);
-    Collision earliestCollision = extractEarliestCollision(m_reducer->m_oneBuffer);
-    VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
-
-    //Collision earliestCollision = extractEarliestCollision(reduceResult);
-    float timeToAdvance;
-    if (earliestCollision.time < timeDelta) {
-        timeToAdvance = earliestCollision.time;
-    } else {
-        timeToAdvance = timeDelta;
+    {
+        Timer timer("runCollisionDetection");
+        runCollisionDetection(timeDelta);
     }
-    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
-    computeEarliestCollision(earliestCollision);
-    return timeToAdvance;
+    Collision earliestCollision;
+    {
+        Timer timer("Reduce Collisions");
+        VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
+        earliestCollision = extractEarliestCollision(reduceResult);
+    }
+
+    if (earliestCollision.time < timeDelta) {
+        {
+            Timer timer("Advance Time");
+            m_timeAdvancer->run(earliestCollision.time, m_currentNumberOfElements);
+        }
+        {
+            Timer timer("Impacter");
+            m_impacter->run(earliestCollision);
+        }
+        return timeDelta;
+    } else {
+        {
+            Timer timer("Advance Time Full");
+            m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
+        }
+        return timeDelta;
+    }
+
 }
 
 void Collider::run(float timeDelta, uint32_t numberOfElements) {
@@ -286,7 +306,10 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
 
     int numberOfSteps = 0;
     while (timeDelta > 0.0f) {
-        timeDelta -= computeNextStep(timeDelta);
+        {
+            Timer timer("computeNextStep");
+            timeDelta -= computeNextStep(timeDelta);
+        }
         numberOfSteps += 1;
     }
 

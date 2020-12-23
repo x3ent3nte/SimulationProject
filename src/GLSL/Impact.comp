@@ -1,0 +1,40 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 1
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+struct Agent {
+    vec3 position;
+    vec3 velocity;
+    vec3 acceleration;
+    vec3 target;
+    vec4 rotation;
+    float radius;
+};
+
+struct Collision {
+    uint one;
+    uint two;
+    float time;
+};
+
+layout (std430, binding = 0) buffer bufferAgents {
+    Agent agents[];
+};
+
+layout (std430, binding = 1) buffer bufferCollisions {
+    Collision collisions[];
+};
+
+void main() {
+
+    Collision col = collisions[0];
+
+    Agent one = agents[col.one];
+    Agent two = agents[col.two];
+
+    agents[col.one] = one;
+    agents[col.two] = two;
+}

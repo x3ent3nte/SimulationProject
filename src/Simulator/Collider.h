@@ -5,6 +5,7 @@
 #include <Simulator/AgentSorter.h>
 #include <Simulator/Reducer.h>
 #include <Simulator/TimeAdvancer.h>
+#include <Simulator/Impacter.h>
 
 #include <vulkan/vulkan.h>
 
@@ -22,6 +23,7 @@ private:
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Reducer> m_reducer;
     std::shared_ptr<TimeAdvancer> m_timeAdvancer;
+    std::shared_ptr<Impacter> m_impacter;
 
     VkBuffer m_collisionsHostVisibleBuffer;
     VkDeviceMemory m_collisionsHostVisibleDeviceMemory;
@@ -55,7 +57,6 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
     void runCollisionDetection(float timeDelta);
-    void computeEarliestCollision(const Collision& collision);
     Collision extractEarliestCollision(VkBuffer reduceResult);
     float computeNextStep(float timeDelta);
 
