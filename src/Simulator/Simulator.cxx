@@ -60,7 +60,7 @@ namespace {
         VkDescriptorSetLayout descriptorSetLayout,
         VkPipelineLayout pipelineLayout) {
 
-        return Compute::createPipeline("src/GLSL/Simulation.spv", logicalDevice, pipelineLayout);
+        return Compute::createPipeline("src/GLSL/spv/Simulation.spv", logicalDevice, pipelineLayout);
     }
 
     VkCommandBuffer createComputeCommandBuffer(
@@ -326,7 +326,7 @@ void Simulator::runSimulatorTask() {
 
         auto currentTime = std::chrono::high_resolution_clock::now();
         float timeDelta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - prevTime).count();
-        timeDelta = fmin(timeDelta, 0.05);
+        timeDelta = fmin(timeDelta, 0.01);
         std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();

@@ -100,8 +100,8 @@ void Pipeline::createPipeline(
     VkPipelineLayout& pipelineLayout,
     VkPipeline& graphicsPipeline) {
 
-    auto vertShaderCode = Utils::readFile("src/GLSL/vert.spv");
-    auto fragShaderCode = Utils::readFile("src/GLSL/frag.spv");
+    auto vertShaderCode = Utils::readFile("src/GLSL/spv/vert.spv");
+    auto fragShaderCode = Utils::readFile("src/GLSL/spv/frag.spv");
 
     VkShaderModule vertShaderModule = Utils::createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = Utils::createShaderModule(device, fragShaderCode);

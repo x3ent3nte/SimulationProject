@@ -45,7 +45,7 @@ namespace ImpacterUtil {
         VkDevice logicalDevice,
         VkPipelineLayout pipelineLayout) {
 
-        return Compute::createPipeline("src/GLSL/Impact.spv", logicalDevice, pipelineLayout);
+        return Compute::createPipeline("src/GLSL/spv/Impact.spv", logicalDevice, pipelineLayout);
     }
 
     VkCommandBuffer createCommandBuffer(

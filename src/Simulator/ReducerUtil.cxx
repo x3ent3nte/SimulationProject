@@ -44,7 +44,7 @@ VkPipeline ReducerUtil::createPipeline(
     VkDevice logicalDevice,
     VkPipelineLayout pipelineLayout) {
 
-    return Compute::createPipeline("src/GLSL/Reduce.spv", logicalDevice, pipelineLayout);
+    return Compute::createPipeline("src/GLSL/spv/Reduce.spv", logicalDevice, pipelineLayout);
 }
 
 VkCommandBuffer ReducerUtil::createCommandBuffer(

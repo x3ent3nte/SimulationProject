@@ -40,7 +40,7 @@ VkDescriptorSet TimeAdvancerUtil::createDescriptorSet(
 }
 
 VkPipeline TimeAdvancerUtil::createPipeline(VkDevice logicalDevice, VkPipelineLayout pipelineLayout) {
-    return Compute::createPipeline("src/GLSL/AdvanceTime.spv", logicalDevice, pipelineLayout);
+    return Compute::createPipeline("src/GLSL/spv/AdvanceTime.spv", logicalDevice, pipelineLayout);
 }
 
 VkCommandBuffer TimeAdvancerUtil::createCommandBuffer(

@@ -47,7 +47,7 @@ VkPipeline InsertionSorterUtil::createPipeline(
     VkDevice logicalDevice,
     VkPipelineLayout pipelineLayout) {
 
-    return Compute::createPipeline("src/GLSL/InsertionSort.spv", logicalDevice, pipelineLayout);
+    return Compute::createPipeline("src/GLSL/spv/InsertionSort.spv", logicalDevice, pipelineLayout);
 }
 
 VkCommandBuffer InsertionSorterUtil::createCommandBuffer(

@@ -43,7 +43,7 @@ VkDescriptorSet ColliderUtil::createDescriptorSet(
 }
 
 VkPipeline ColliderUtil::createPipeline(VkDevice logicalDevice, VkPipelineLayout pipelineLayout) {
-    return Compute::createPipeline("src/GLSL/CollisionDetection.spv", logicalDevice, pipelineLayout);
+    return Compute::createPipeline("src/GLSL/spv/CollisionDetection.spv", logicalDevice, pipelineLayout);
 }
 
 VkCommandBuffer ColliderUtil::createCommandBuffer(

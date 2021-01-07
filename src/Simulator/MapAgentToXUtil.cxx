@@ -48,7 +48,7 @@ VkPipeline MapAgentToXUtil::createPipeline(
     VkDevice logicalDevice,
     VkPipelineLayout pipelineLayout) {
 
-    return Compute::createPipeline("src/GLSL/MapAgentToX.spv", logicalDevice, pipelineLayout);
+    return Compute::createPipeline("src/GLSL/spv/MapAgentToX.spv", logicalDevice, pipelineLayout);
 }
 
 VkCommandBuffer MapAgentToXUtil::createCommandBuffer(
