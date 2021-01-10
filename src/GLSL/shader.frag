@@ -25,7 +25,7 @@ void main() {
     if (lightCosSim < 0.0f) {
         lightCosSim = 0.0f;
     }
-    vec3 light = vec3(0.1, 0.0, 0.2) + (vec3(0.2, 0.0, 0.7) * lightCosSim);
+    vec3 light = vec3(0.04, 0.04, 0.04) + (vec3(0.99, 0.7, 0.7) * lightCosSim);
 
     outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
 }
