@@ -236,7 +236,7 @@ private:
 
         Buffer::createBufferWithData(
             m_vertices.data(),
-            sizeof(m_vertices[0]) * m_vertices.size(),
+            sizeof(Vertex) * m_vertices.size(),
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             m_physicalDevice,
             m_logicalDevice,
@@ -247,7 +247,7 @@ private:
 
        Buffer::createBufferWithData(
             m_indices.data(),
-            sizeof(m_indices[0]) * m_indices.size(),
+            sizeof(uint32_t) * m_indices.size(),
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             m_physicalDevice,
             m_logicalDevice,

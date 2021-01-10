@@ -8,13 +8,16 @@ layout(binding = 0) uniform UniformBufferObject {
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inColour;
-layout(location = 2) in vec2 inTexCoord;
-layout(location = 3) in vec3 inInstancePosition;
-layout(location = 4) in vec4 inInstanceRotation;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec3 inColour;
+layout(location = 3) in vec2 inTexCoord;
+layout(location = 4) in vec3 inInstancePosition;
+layout(location = 5) in vec4 inInstanceRotation;
 
 layout(location = 0) out vec3 fragColour;
 layout(location = 1) out vec2 fragTexCoord;
+layout(location = 2) out vec3 fragNormal;
+layout(location = 3) out vec3 fragPosition;
 
 vec4 hamiltonProduct(vec4 a, vec4 b) {
     float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
@@ -43,4 +46,6 @@ void main() {
     gl_Position = ubo.proj * ubo.view * model * vec4(rotatePointByQuaternion(inPosition, inInstanceRotation), 1.0);
     fragColour = inColour;
     fragTexCoord = inTexCoord;
+    fragNormal = rotatePointByQuaternion(inNormal, inInstanceRotation);
+    fragPosition = inPosition;
 }
