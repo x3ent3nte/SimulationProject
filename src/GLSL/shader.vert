@@ -5,6 +5,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
+    vec3 cameraPosition;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -18,6 +19,7 @@ layout(location = 0) out vec3 fragColour;
 layout(location = 1) out vec2 fragTexCoord;
 layout(location = 2) out vec3 fragNormal;
 layout(location = 3) out vec3 fragPosition;
+layout(location = 4) out vec3 fragCameraPosition;
 
 vec4 hamiltonProduct(vec4 a, vec4 b) {
     float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
@@ -50,4 +52,5 @@ void main() {
     fragTexCoord = inTexCoord;
     fragNormal = rotatePointByQuaternion(inNormal, inInstanceRotation);
     fragPosition = worldPosition.xyz;
+    fragCameraPosition = ubo.cameraPosition;
 }

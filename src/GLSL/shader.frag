@@ -7,6 +7,7 @@ layout(location = 0) in vec3 fragColour;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragNormal;
 layout(location = 3) in vec3 fragPosition;
+layout(location = 4) in flat vec3 fragCameraPosition;
 
 layout(location = 0) out vec4 outColour;
 
@@ -20,14 +21,23 @@ float cosineSimilarity(vec3 a, vec3 b) {
 }
 
 void main() {
+    vec3 lightColour = vec3(0.9, 0.9, 0.9);
+
+    float ambientStrength = 0.1f;
+    vec3 ambient = ambientStrength * lightColour;
+
     vec3 lightVector = vec3(0.0f, 0.0f, 0.0f) - fragPosition;
     float lightCosSim = max(cosineSimilarity(fragNormal, lightVector), 0.0f);
-    vec3 lightColour = vec3(0.9, 0.9, 0.9);
     vec3 diffuse = lightCosSim * lightColour;
 
-    vec3 ambient = vec3(0.04f, 0.04f, 0.04f);
+    float specularStrength = 0.0;
+    vec3 viewVector = normalize(fragCameraPosition);
+    vec3 reflectVector = reflect(-lightVector, normalize(fragNormal));
 
-    vec3 light = ambient + diffuse;
+    float specularFocus = pow(max(dot(viewVector, reflectVector), 0.0f), 2);
+    vec3 specular = specularStrength * specularFocus * lightColour;
+
+    vec3 light = ambient + diffuse + specular;
 
     //outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
     outColour = vec4(light * fragColour * vec3(0.3, 0.0, 0.99), 1.0f);
