@@ -43,9 +43,11 @@ void main() {
     mat4 model = mat4(1.0f);
     model[3] = vec4(inInstancePosition, 1.0f);
 
-    gl_Position = ubo.proj * ubo.view * model * vec4(rotatePointByQuaternion(inPosition, inInstanceRotation), 1.0);
+    vec4 worldPosition = model * vec4(rotatePointByQuaternion(inPosition, inInstanceRotation), 1.0);
+    gl_Position = ubo.proj * ubo.view * worldPosition;
+
     fragColour = inColour;
     fragTexCoord = inTexCoord;
     fragNormal = rotatePointByQuaternion(inNormal, inInstanceRotation);
-    fragPosition = inPosition;
+    fragPosition = worldPosition.xyz;
 }
