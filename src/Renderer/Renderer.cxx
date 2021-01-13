@@ -230,7 +230,7 @@ private:
 
         m_textureImageView = Image::createImageView(m_logicalDevice, m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
         m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
-        Utils::loadModel(m_vertices, m_indices, Constants::kModelPath);
+        Utils::loadModel(m_vertices, m_indices, Constants::kFreyjaModelPath);
 
         createInstanceBuffers();
 
