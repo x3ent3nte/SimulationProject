@@ -21,9 +21,9 @@ vec3 safeNormalize(vec3 v) {
 }
 
 void main() {
-    vec3 lightColour = vec3(0.9, 0.9, 0.9);
+    vec3 lightColour = vec3(0.6, 0.6, 0.99);
 
-    float ambientStrength = 0.1f;
+    float ambientStrength = 0.05f;
     vec3 ambient = ambientStrength * lightColour;
 
     vec3 normalizedNormal = safeNormalize(fragNormal);
@@ -41,5 +41,5 @@ void main() {
     vec3 light = ambient + diffuse + specular;
 
     //outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
-    outColour = vec4(light * fragColour * vec3(0.3, 0.0, 0.99), 1.0f);
+    outColour = vec4(light * fragColour * vec3(0.8, 0.8, 0.8), 1.0f);
 }
