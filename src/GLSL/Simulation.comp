@@ -287,8 +287,8 @@ void main() {
     vec3 delta = agent.target - agent.position;
     float distanceBetweenTargetAndPosition = length(delta);
 
-    rotateAgent(agent, forward, timeDelta);
-    moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta);
+    //rotateAgent(agent, forward, timeDelta);
+    //moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta);
 
     float maxDistance = 0.1;
     if (distanceBetweenTargetAndPosition < maxDistance) {
