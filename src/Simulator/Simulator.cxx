@@ -60,7 +60,7 @@ namespace {
         VkDescriptorSetLayout descriptorSetLayout,
         VkPipelineLayout pipelineLayout) {
 
-        return Compute::createPipeline("src/GLSL/spv/Boids.spv", logicalDevice, pipelineLayout);
+        return Compute::createPipeline("src/GLSL/spv/Simulation.spv", logicalDevice, pipelineLayout);
     }
 
     VkCommandBuffer createComputeCommandBuffer(
@@ -272,6 +272,14 @@ Simulator::Simulator(
         m_agentsBuffer,
         numberOfElements,
         false);
+
+    m_boids = std::make_shared<Boids>(
+        physicalDevice,
+        m_logicalDevice,
+        m_computeQueue,
+        m_computeCommandPool,
+        m_agentsBuffer,
+        numberOfElements);
 }
 
 Simulator::~Simulator() {
@@ -339,8 +347,11 @@ void Simulator::runSimulatorTask() {
         std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();
+
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
+        m_boids->run(timeDelta, m_currentNumberOfElements);
+
         simulateNextStep(m_computeCommandBuffers[bufferIndex], timeDelta);
         m_connector->updateBufferIndex(bufferIndex);
 
