@@ -16,7 +16,8 @@ AgentSorter::AgentSorter(
     VkQueue queue,
     VkCommandPool commandPool,
     VkBuffer agentsBuffer,
-    uint32_t numberOfElements)
+    uint32_t numberOfElements,
+    bool useMaxX)
     : m_logicalDevice(logicalDevice)
     , m_queue(queue)
     , m_commandPool(commandPool)
@@ -80,7 +81,7 @@ AgentSorter::AgentSorter(
     m_mapAgentToXDescriptorSetLayout = MapAgentToXUtil::createDescriptorSetLayout(m_logicalDevice);
     m_mapAgentToXDescriptorPool = MapAgentToXUtil::createDescriptorPool(m_logicalDevice, 1);
     m_mapAgentToXPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_mapAgentToXDescriptorSetLayout);
-    m_mapAgentToXPipeline = MapAgentToXUtil::createPipeline(m_logicalDevice, m_mapAgentToXPipelineLayout);
+    m_mapAgentToXPipeline = MapAgentToXUtil::createPipeline(m_logicalDevice, m_mapAgentToXPipelineLayout, useMaxX);
     m_mapAgentToXDescriptorSet = MapAgentToXUtil::createDescriptorSet(
         m_logicalDevice,
         m_mapAgentToXDescriptorSetLayout,

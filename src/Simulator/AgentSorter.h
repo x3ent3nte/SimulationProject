@@ -67,7 +67,8 @@ public:
         VkQueue queue,
         VkCommandPool commandPool,
         VkBuffer agentsBuffer,
-        uint32_t numberOfElements);
+        uint32_t numberOfElements,
+        bool useMaxX);
 
     virtual ~AgentSorter();
 

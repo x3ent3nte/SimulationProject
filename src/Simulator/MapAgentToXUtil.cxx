@@ -46,9 +46,14 @@ VkDescriptorSet MapAgentToXUtil::createDescriptorSet(
 
 VkPipeline MapAgentToXUtil::createPipeline(
     VkDevice logicalDevice,
-    VkPipelineLayout pipelineLayout) {
+    VkPipelineLayout pipelineLayout,
+    bool useMaxX) {
 
-    return Compute::createPipeline("src/GLSL/spv/MapAgentToX.spv", logicalDevice, pipelineLayout);
+    if (useMaxX) {
+        return Compute::createPipeline("src/GLSL/spv/MapAgentToMaxX.spv", logicalDevice, pipelineLayout);
+    } else {
+        return Compute::createPipeline("src/GLSL/spv/MapAgentToCurrentX.spv", logicalDevice, pipelineLayout);
+    }
 }
 
 VkCommandBuffer MapAgentToXUtil::createCommandBuffer(

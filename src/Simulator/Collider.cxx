@@ -29,7 +29,8 @@ Collider::Collider(
         m_queue,
         m_commandPool,
         m_agentsBuffer,
-        numberOfElements);
+        numberOfElements,
+        true);
 
     m_reducer = std::make_shared<Reducer>(
         physicalDevice,

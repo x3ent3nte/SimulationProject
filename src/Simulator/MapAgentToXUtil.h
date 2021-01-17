@@ -23,7 +23,8 @@ namespace MapAgentToXUtil {
 
     VkPipeline createPipeline(
         VkDevice logicalDevice,
-        VkPipelineLayout pipelineLayout);
+        VkPipelineLayout pipelineLayout,
+        bool useMaxX);
 
     VkCommandBuffer createCommandBuffer(
         VkDevice logicalDevice,

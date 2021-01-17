@@ -55,6 +55,7 @@ private:
     uint32_t m_currentNumberOfElements;
 
     std::shared_ptr<Collider> m_collider;
+    std::shared_ptr<AgentSorter> m_agentSorter;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void runSimulatorTask();
