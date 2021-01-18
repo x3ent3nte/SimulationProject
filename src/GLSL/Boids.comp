@@ -3,7 +3,7 @@
 
 #define X_DIM 512
 
-#define DETECTION_RADIUS 30
+#define DETECTION_RADIUS 45
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -33,9 +33,9 @@ layout (std430, binding = 3) buffer bufferNumberOfElements {
 };
 
 struct Steering {
-    vec3 averagePosition;
-    vec3 averageHeading;
-    vec3 averageTooCloseHeading;
+    vec3 alignment;
+    vec3 cohesion;
+    vec3 separation;
 };
 
 vec3 safeNormalize(vec3 v) {
@@ -92,21 +92,25 @@ vec3 calculateForward(vec4 rotation) {
 void checkAgent(
     inout Agent agent,
     inout Agent otherAgent,
-    inout vec3 sumHeading,
-    inout vec3 sumPosition,
-    inout vec3 sumTooCloseHeading,
+    inout vec3 sumAlignment,
+    inout vec3 sumCohesion,
+    inout vec3 sumSeparation,
     inout uint numBoids) {
 
     float distanceBetween = length(otherAgent.position - agent.position);
     if (distanceBetween < DETECTION_RADIUS) {
         vec3 otherAgentForward = calculateForward(otherAgent.rotation);
 
-        sumPosition += otherAgent.position;
+        //sumAlignment += otherAgentForward * (distanceBetween / DETECTION_RADIUS);
+        sumAlignment += otherAgentForward;
 
-        if (distanceBetween < DETECTION_RADIUS / 2) {
-            sumTooCloseHeading += otherAgentForward;
+        float tooCloseRadius = DETECTION_RADIUS / 2;
+
+        if (distanceBetween < tooCloseRadius) {
+            sumSeparation += (agent.position - otherAgent.position) * ((tooCloseRadius - distanceBetween) / tooCloseRadius);
         } else {
-            sumHeading += otherAgentForward;
+            //sumCohesion += (otherAgent.position - agent.position) * ((DETECTION_RADIUS - distanceBetween) / DETECTION_RADIUS);
+            sumCohesion += (otherAgent.position - agent.position);
         }
 
         numBoids += 1;
@@ -115,9 +119,9 @@ void checkAgent(
 
 Steering calculateSteering(Agent agent, uint index) {
 
-    vec3 sumHeading = calculateForward(agent.rotation);
-    vec3 sumPosition = agent.position;
-    vec3 sumTooCloseHeading = vec3(0.0f);
+    vec3 sumAlignment = calculateForward(agent.rotation);
+    vec3 sumCohesion = agent.position;
+    vec3 sumSeparation = agent.position;
     uint numBoids = 1;
 
     for (uint i = index; i < numberOfElements - 1; ++i) {
@@ -126,7 +130,7 @@ Steering calculateSteering(Agent agent, uint index) {
             break;
         }
 
-        checkAgent(agent, otherAgent, sumHeading, sumPosition, sumTooCloseHeading, numBoids);
+        checkAgent(agent, otherAgent, sumAlignment, sumCohesion, sumSeparation, numBoids);
     }
 
     for (uint i = index; i >= 1; --i) {
@@ -135,17 +139,20 @@ Steering calculateSteering(Agent agent, uint index) {
             break;
         }
 
-        checkAgent(agent, otherAgent, sumHeading, sumPosition, sumTooCloseHeading, numBoids);
+        checkAgent(agent, otherAgent, sumAlignment, sumCohesion, sumSeparation, numBoids);
     }
 
-    return Steering(sumPosition / numBoids, sumHeading / numBoids, sumTooCloseHeading / numBoids);
+    return Steering(
+        safeNormalize(sumAlignment / numBoids),
+        safeNormalize(sumCohesion / numBoids),
+        safeNormalize(sumSeparation / numBoids));
 }
 
 vec4 calculateChangeInRotation(vec3 current, vec3 desired) {
     float cosSim = cosineSimilarity(current, desired);
     float angleBetween = acos(cosSim);
 
-    float theta = min(angleBetween, 0.03);
+    float theta = min(angleBetween, 0.07);
     vec3 targetRight = cross(current, desired);
     return createQuaternionFromAxisAndTheta(targetRight, theta);
 }
@@ -164,23 +171,16 @@ void main() {
     const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
     vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
-    vec3 targetCohesion = safeNormalize(steering.averagePosition - agent.position);
-    vec4 cohesionQuaternion = calculateChangeInRotation(forward, targetCohesion);
-
-    vec4 alignmentQuaternion = calculateChangeInRotation(forward, steering.averageHeading);
-
-    vec4 separationQuaternion = calculateChangeInRotation(forward, -steering.averageTooCloseHeading);
-
-    vec4 steeringQuaternion = normalize(
-        hamiltonProduct(
-            separationQuaternion,
-            normalize(
-                hamiltonProduct(cohesionQuaternion, alignmentQuaternion))));
+    vec3 steeringVector = safeNormalize(
+        (2 * steering.alignment) +
+        (10 * steering.cohesion) +
+        (4 * steering.separation));
+    vec4 steeringQuaternion = normalize(calculateChangeInRotation(forward, steeringVector));
 
     agent.rotation = normalize(hamiltonProduct(steeringQuaternion, agent.rotation));
     forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
-    agent.velocity = forward * 90.0f;
+    agent.velocity = forward * 120.0f;
 
     agentsOut[index] = agent;
 }
