@@ -11,6 +11,7 @@ struct Agent {
     vec3 acceleration;
     vec3 target;
     vec4 rotation;
+    vec4 rotationalVelocity;
     float radius;
 };
 

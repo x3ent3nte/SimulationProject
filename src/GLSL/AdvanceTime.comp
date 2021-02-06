@@ -11,6 +11,7 @@ struct Agent {
     vec3 acceleration;
     vec3 target;
     vec4 rotation;
+    vec4 rotationalVelocity;
     float radius;
 };
 
@@ -26,6 +27,20 @@ layout (std430, binding = 2) buffer bufferNumberOfElements {
     uint numberOfElements;
 };
 
+vec4 hamiltonProduct(vec4 a, vec4 b) {
+    float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+    float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+    float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
+    float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
+
+    return vec4(i, j, k, r);
+}
+
+vec4 rotationalVelocityMultipliedByTime(vec4 rotationalVelocity, float timeDelta) {
+    float theta = 2 * acos(rotationalVelocity.w) * timeDelta;
+    return normalize(vec4(rotationalVelocity.xyz, cos(theta / 2)));
+}
+
 void main() {
 
     uint index = gl_GlobalInvocationID.x;
@@ -35,6 +50,9 @@ void main() {
     Agent agent = agents[index];
 
     agent.position += agent.velocity * timeDelta;
+    agent.rotation = normalize(hamiltonProduct(
+        rotationalVelocityMultipliedByTime(agent.rotationalVelocity, timeDelta),
+        agent.rotation));
 
     agents[index] = agent;
 }

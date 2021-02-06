@@ -13,6 +13,7 @@ struct Agent {
     vec3 acceleration;
     vec3 target;
     vec4 rotation;
+    vec4 rotationalVelocity;
     float radius;
 };
 
@@ -148,11 +149,11 @@ Steering calculateSteering(Agent agent, uint index) {
         safeNormalize(sumSeparation / numBoids));
 }
 
-vec4 calculateChangeInRotation(vec3 current, vec3 desired) {
+vec4 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
     float cosSim = cosineSimilarity(current, desired);
     float angleBetween = acos(cosSim);
 
-    float theta = min(angleBetween, 0.07);
+    float theta = min(angleBetween, timeDelta * 0.3f);
     vec3 targetRight = cross(current, desired);
     return createQuaternionFromAxisAndTheta(targetRight, theta);
 }
@@ -175,12 +176,13 @@ void main() {
         (2 * steering.alignment) +
         (10 * steering.cohesion) +
         (4 * steering.separation));
-    vec4 steeringQuaternion = normalize(calculateChangeInRotation(forward, steeringVector));
+    vec4 steeringQuaternion = normalize(calculateChangeInRotationalVelocity(forward, steeringVector));
 
-    agent.rotation = normalize(hamiltonProduct(steeringQuaternion, agent.rotation));
+    agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
+    //agent.rotation = normalize(hamiltonProduct(steeringQuaternion, agent.rotation));
     forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
-    agent.velocity = forward * 120.0f;
+    agent.velocity = forward * 130.0f;
 
     agentsOut[index] = agent;
 }
