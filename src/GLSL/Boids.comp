@@ -79,7 +79,7 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
 
 vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
     float thetaHalved = theta / 2;
-    return vec4(sin(thetaHalved) * axis, cos(thetaHalved));
+    return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
 
 vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
@@ -153,7 +153,7 @@ vec4 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
     float cosSim = cosineSimilarity(current, desired);
     float angleBetween = acos(cosSim);
 
-    float theta = min(angleBetween, timeDelta * 0.3f);
+    float theta = min(angleBetween, timeDelta * 30.0f);
     vec3 targetRight = cross(current, desired);
     return createQuaternionFromAxisAndTheta(targetRight, theta);
 }
@@ -176,13 +176,12 @@ void main() {
         (2 * steering.alignment) +
         (10 * steering.cohesion) +
         (4 * steering.separation));
-    vec4 steeringQuaternion = normalize(calculateChangeInRotationalVelocity(forward, steeringVector));
+    vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
 
     agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
-    //agent.rotation = normalize(hamiltonProduct(steeringQuaternion, agent.rotation));
     forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
-    agent.velocity = forward * 130.0f;
+    agent.velocity = forward * 200.0f;
 
     agentsOut[index] = agent;
 }

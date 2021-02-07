@@ -37,8 +37,15 @@ vec4 hamiltonProduct(vec4 a, vec4 b) {
 }
 
 vec4 rotationalVelocityMultipliedByTime(vec4 rotationalVelocity, float timeDelta) {
-    float theta = 2 * acos(rotationalVelocity.w) * timeDelta;
-    return normalize(vec4(rotationalVelocity.xyz, cos(theta / 2)));
+    float thetaHalved = acos(rotationalVelocity.w);
+    float sinThetaHalved = sin(thetaHalved);
+    vec3 axis = vec3(1.0f, 0.0f, 0.0f);
+    if (sinThetaHalved != 0.0f) {
+        axis = rotationalVelocity.xyz / sinThetaHalved;
+    }
+    float newThetaHalved = thetaHalved * timeDelta;
+
+    return vec4(axis * sin(newThetaHalved), cos(newThetaHalved));
 }
 
 void main() {
