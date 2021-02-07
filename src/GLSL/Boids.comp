@@ -176,7 +176,7 @@ void main() {
 
     agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
 
-    agent.velocity = forward * 200.0f;
+    agent.velocity = forward * 40.0f;
 
     agentsOut[index] = agent;
 }
