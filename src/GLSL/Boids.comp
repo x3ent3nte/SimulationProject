@@ -82,10 +82,6 @@ vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
 
-vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
-    return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
-}
-
 vec3 calculateForward(vec4 rotation) {
     return rotatePointByQuaternion(vec3(0.0f, 0.0f, -1.0f), rotation);
 }
@@ -179,7 +175,6 @@ void main() {
     vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
 
     agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
-    forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
     agent.velocity = forward * 200.0f;
 
