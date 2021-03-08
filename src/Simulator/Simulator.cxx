@@ -283,6 +283,13 @@ Simulator::Simulator(
         m_computeCommandPool,
         m_agentsBuffer,
         numberOfElements);
+
+    m_scanner = std::make_shared<Scanner>(
+        physicalDevice,
+        m_logicalDevice,
+        m_computeQueue,
+        m_computeCommandPool,
+        numberOfElements);
 }
 
 Simulator::~Simulator() {

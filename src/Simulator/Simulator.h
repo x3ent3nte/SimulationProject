@@ -3,9 +3,10 @@
 
 #include <Renderer/Connector.h>
 #include <Simulator/InsertionSorter.h>
-#include <Simulator/Reducer.h>
+#include <Simulator/Scanner.h>
 #include <Simulator/Collider.h>
 #include <Simulator/Boids.h>
+#include <Simulator/Scanner.h>
 
 #include <vulkan/vulkan.h>
 
@@ -58,6 +59,7 @@ private:
     std::shared_ptr<Collider> m_collider;
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Boids> m_boids;
+    std::shared_ptr<Scanner> m_scanner;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void runSimulatorTask();

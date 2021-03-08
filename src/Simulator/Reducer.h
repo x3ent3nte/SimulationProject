@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 class Reducer {
+
 private:
 
     VkPhysicalDevice m_physicalDevice;
