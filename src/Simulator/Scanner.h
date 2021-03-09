@@ -14,22 +14,26 @@ private:
     VkBuffer m_infoBuffer;
     VkBuffer m_infoBufferHostVisible;
 
-    VkDeviceMemory m_dataBufferMemory;
-    VkDeviceMemory m_infoBufferMemory;
-    VkDeviceMemory m_infoBufferMemoryHostVisible;
+    VkDeviceMemory m_dataDeviceMemory;
+    VkDeviceMemory m_infoDeviceMemory;
+    VkDeviceMemory m_infoDeviceMemoryHostVisible;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
     VkPipelineLayout m_pipelineLayout;
+
     VkPipeline m_pipeline;
+    VkPipeline m_addOffsetsPipeline;
 
     VkDescriptorSet m_descriptorSet;
 
     VkFence m_fence;
 
-    void setNumberOfElements(uint32_t numberOfElements);
+    void setInfo(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
 
-    void runScanCommand(uint32_t numberOfElements);
+    void addOffsets(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
+
+    void runScanCommand(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
 
 public:
 

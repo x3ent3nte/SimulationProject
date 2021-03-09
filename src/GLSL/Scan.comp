@@ -30,7 +30,7 @@ void main() {
 
     uint localSize = min(X_DIM, info.numberOfElements - globalOffset);
 
-    uint globalAddress = globalOffset + info.dataOffset;
+    uint globalAddress = globalIndex + info.dataOffset;
 
     sharedData[localIndex] = data[globalAddress];
 
