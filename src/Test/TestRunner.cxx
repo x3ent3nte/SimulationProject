@@ -4,6 +4,8 @@
 #include <Test/ReduceTest.h>
 #include <Test/ScanTest.h>
 
+#include <iostream>
+
 TestRunner::TestRunner(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
@@ -15,6 +17,9 @@ TestRunner::TestRunner(
     , m_commandPool(commandPool) {}
 
 void TestRunner::run() {
+
+    std::cout << "\n\033[94mTest Runner started\033[0m\n";
+
     {
         InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
     }
@@ -26,4 +31,6 @@ void TestRunner::run() {
     {
         ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
     }
+
+    std::cout << "\n\033[95mTest Runner finished\033[0m\n";
 }

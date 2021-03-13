@@ -40,10 +40,10 @@ void TestUtils::assertEqual(const std::vector<T>& expected, const std::vector<T>
         if (expected[i] != actual[i]) {
             numberOfErrors += 1;
 
-            std::cout << "Mismatch at index = " << i << " Expected = " << expected[i] << " Actual = " << actual[i] << "\n";
+            //std::cout << "Mismatch at index = " << i << " Expected = " << expected[i] << " Actual = " << actual[i] << "\n";
         }
     }
-
+    std::cout << "Number of errors = " << numberOfErrors << "\n";
     assertTrue(numberOfErrors == 0);
 }
 

@@ -38,7 +38,7 @@ void main() {
 
     for (int i = 1; i < localSize; i <<= 1) {
         int otherIndex = int(localIndex) - i;
-        bool validLeft = otherIndex >= 1;
+        bool validLeft = otherIndex >= 0;
 
         int leftValue;
         if (validLeft) {
