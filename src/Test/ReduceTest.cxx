@@ -82,5 +82,9 @@ ReduceTest::ReduceTest(
 ReduceTest::~ReduceTest() {}
 
 void ReduceTest::run() {
+    std::cout << "\n\033[94mReduceTest started\033[0m\n";
+
     TestUtils::testRunner("testReduceBasic", [this]() { testBasic(m_vulkanTest); });
+
+    std::cout << "\n\033[95mReduceTest finished\033[0m\n";
 }

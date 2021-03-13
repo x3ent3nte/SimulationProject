@@ -8,10 +8,10 @@ void TestUtils::assertTrue(bool b) {
 
 void TestUtils::testRunner(const std::string& name, std::function<void()> fn) {
     try {
-        std::cout << "\n[RUNNING " << name << "]\n\n";
+        std::cout << "\n\033[96m[RUNNING " << name << "]\033[0m\n\n";
         fn();
-        std::cout << "\n[PASSED " << name << "]\n\n";
+        std::cout << "\n\033[92m[PASSED " << name << "]\033[0m\n\n";
     } catch (const std::runtime_error& ex) {
-        std::cout << "\n[FAILED " << name << "] " << ex.what() << "\n\n";
+        std::cout << "\n\033[91m[FAILED " << name << "] " << ex.what() << "\033[0m\n\n";
     }
 }

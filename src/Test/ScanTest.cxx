@@ -63,5 +63,9 @@ ScanTest::~ScanTest() {
 }
 
 void ScanTest::run() {
+    std::cout << "\n\033[94mScanTest started\033[0m\n";
+
     TestUtils::testRunner("testScanBasic", [this]() { testAllOnes(m_vulkanTest); });
+
+    std::cout << "\n\033[95mScanTest finished\033[0m\n";
 }
