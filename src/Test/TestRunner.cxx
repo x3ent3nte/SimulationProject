@@ -1,5 +1,9 @@
 #include <Test/TestRunner.h>
 
+#include <Test/InsertionSortTest.h>
+#include <Test/ReduceTest.h>
+#include <Test/ScanTest.h>
+
 TestRunner::TestRunner(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
@@ -17,5 +21,9 @@ void TestRunner::run() {
 
     {
         ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
+    }
+
+    {
+        ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
     }
 }

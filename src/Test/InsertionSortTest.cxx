@@ -21,22 +21,6 @@ namespace {
         return sorted;
     }
 
-    void expectEqual(const std::vector<float>& expected, const std::vector<float>& actual) {
-        TestUtils::assertEqual(expected.size(), actual.size());
-
-        int numberOfErrors = 0;
-
-        for (int i = 0; i < expected.size(); ++i) {
-            if (expected[i] != actual[i]) {
-                numberOfErrors += 1;
-
-                std::cout << "Mismatch at index = " << i << " Expected = " << expected[i] << " Actual = " << actual[i] << "\n";
-            }
-        }
-
-        TestUtils::assertTrue(numberOfErrors == 0);
-    }
-
     std::vector<float> serialInsertionSort(const std::vector<float>& data) {
         std::vector<float> sorted(data);
 
@@ -65,31 +49,31 @@ namespace {
         auto expected = serialSort(data);
 
         auto actualSerial = serialInsertionSort(expected);
-        expectEqual(expected, actualSerial);
+        TestUtils::assertEqual(expected, actualSerial);
 
         auto actualVulkan = vulkanTest->run(data);
-        expectEqual(expected, actualVulkan);
+        TestUtils::assertEqual(expected, actualVulkan);
 
         auto actualVulkanTwo = vulkanTest->run(actualVulkan);
-        expectEqual(expected, actualVulkanTwo);
+        TestUtils::assertEqual(expected, actualVulkanTwo);
 
         auto actualVulkanThree = vulkanTest->run(actualVulkanTwo);
-        expectEqual(expected, actualVulkanThree);
+        TestUtils::assertEqual(expected, actualVulkanThree);
 
         auto actualVulkanFour = vulkanTest->run(actualVulkanThree);
-        expectEqual(expected, actualVulkanFour);
+        TestUtils::assertEqual(expected, actualVulkanFour);
 
         auto actualCuda = InsertionSortCudaTest::run(data);
-        expectEqual(expected, actualCuda);
+        TestUtils::assertEqual(expected, actualCuda);
 
         auto actualCudaTwo = InsertionSortCudaTest::run(actualCuda);
-        expectEqual(expected, actualCudaTwo);
+        TestUtils::assertEqual(expected, actualCudaTwo);
 
         auto actualCudaThree = InsertionSortCudaTest::run(actualCudaTwo);
-        expectEqual(expected, actualCudaThree);
+        TestUtils::assertEqual(expected, actualCudaThree);
 
         auto actualCudaFour = InsertionSortCudaTest::run(actualCudaThree);
-        expectEqual(expected, actualCudaFour);
+        TestUtils::assertEqual(expected, actualCudaFour);
     }
 
     std::vector<float> generateDataWithReverseOrder(uint32_t size) {

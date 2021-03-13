@@ -1,9 +1,6 @@
 #ifndef TEST_RUNNER_H
 #define TEST_RUNNER_H
 
-#include <Test/InsertionSortTest.h>
-#include <Test/ReduceTest.h>
-
 #include <vulkan/vulkan.h>
 
 class TestRunner {
