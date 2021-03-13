@@ -107,31 +107,23 @@ void scanPlayground() {
         input[i] = 1;
     }
 
-    int* d_in;
-    int* d_out;
-    int* d_offsets;
+    int* d_data;
 
-    checkCudaErrors(cudaMalloc(&d_in, kSize * sizeof(int)));
-    cudaMalloc(&d_out, kSize * sizeof(int));
-    cudaMalloc(&d_offsets, kSize * sizeof(int));
+    checkCudaErrors(cudaMalloc(&d_data, kSize * sizeof(int) * 2));
 
-    cudaMemcpy(d_in, input, kSize * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemset(d_out, 0, kSize * sizeof(int));
-    cudaMemset(d_offsets, 0, kSize * sizeof(int));
+    cudaMemcpy(d_data, input, kSize * sizeof(int), cudaMemcpyHostToDevice);
 
     {
         Timer timer("GPU Scan");
         for (int i = 0; i < 10; ++i) {
-            Scan::scan<int, add>(d_in, d_out, d_offsets, kSize);
-            checkScanErrors(input, output, d_out, kSize);
+            Scan::scan<int, add>(d_data, kSize);
+            checkScanErrors(input, output, d_data, kSize);
         }
     }
 
     free(input);
     free(output);
-    cudaFree(d_in);
-    cudaFree(d_out);
-    cudaFree(d_offsets);
+    cudaFree(d_data);
 
     printf("\nEnd scanPlayground\n\n");
 }
@@ -152,13 +144,11 @@ void radixSortPlayground() {
 
     unsigned int* d_a;
     unsigned int* d_b;
-    uint4* d_flags_a;
-    uint4* d_flags_b;
+    uint4* d_flags;
 
     cudaMalloc(&d_a, kSize * sizeof(unsigned int));
     cudaMalloc(&d_b, kSize * sizeof(unsigned int));
-    cudaMalloc(&d_flags_a, kSize * sizeof(uint4));
-    cudaMalloc(&d_flags_b, kSize * sizeof(uint4));
+    cudaMalloc(&d_flags, kSize * sizeof(uint4) * 2);
 
     cudaMemcpy(d_a, input, kSize * sizeof(unsigned int), cudaMemcpyHostToDevice);
     cudaMemset(d_b, 0, kSize * sizeof(unsigned int));
@@ -166,7 +156,7 @@ void radixSortPlayground() {
     unsigned int* sorted;
     {
         Timer timer("GPU Radix Sort");
-        sorted = RadixSort::sort<unsigned int>(d_a, d_b, d_flags_a, d_flags_b, kSize);
+        sorted = RadixSort::sort<unsigned int>(d_a, d_b, d_flags, kSize);
     }
 
     cudaMemcpy(output, sorted, kSize * sizeof(unsigned int), cudaMemcpyDeviceToHost);
@@ -188,8 +178,7 @@ void radixSortPlayground() {
     free(output);
     cudaFree(d_a);
     cudaFree(d_b);
-    cudaFree(d_flags_a);
-    cudaFree(d_flags_b);
+    cudaFree(d_flags);
 
     printf("\nEnd radixSortPlayground\n");
 }

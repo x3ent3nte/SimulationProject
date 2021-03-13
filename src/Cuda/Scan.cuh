@@ -5,7 +5,7 @@
 
 namespace Scan {
     template<typename T, T (*FN)(T, T)>
-    void scan(T* in, T* out, T* offsets, int size);
+    void scan(T* data, int size);
 }
 
 namespace {
@@ -36,7 +36,7 @@ void scanKernel(T* in, T* out, T* offsets, int size) {
     int localSize = min(blockDim.x, size - globalOffset);
 
     sharedInts[tid] = in[gid];
-    
+
     __syncthreads();
 
     for (int offset = 1; offset < localSize; offset <<= 1) {
@@ -73,7 +73,7 @@ void printOffsets(int* offsets, int size) {
     for (int i = 0; i < size; ++i) {
         int value = offsetsHost[i];
         total += value;
-        
+
         if ((prev != value)) {
             printf("XXXX Outlier at %d %d prev was %d\n", i, value, prev);
         }
@@ -89,19 +89,20 @@ void printOffsets(int* offsets, int size) {
 } // namespace anonymous
 
 template<typename T, T (*FN)(T, T)>
-void Scan::scan(T* in, T* out, T* offsets, int size) {
+void Scan::scan(T* data, int size) {
 
+    T* offsets = data + size;
     //printf("Scan size %d\n", size);
     constexpr int threadsPerBlock = 32;
     int numBlocks = ceil(size / (float) threadsPerBlock);
-    scanKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(in, out, offsets, size);
+    scanKernel<T, FN, threadsPerBlock><<<numBlocks, threadsPerBlock>>>(data, data, offsets, size);
 
     //printOffsets(offsets, numBlocks);
 
     if (numBlocks > 1) {
-        Scan::scan<T, FN>(offsets, offsets, offsets + numBlocks, numBlocks);
+        Scan::scan<T, FN>(offsets, numBlocks);
 
-        applyBlockOffsets<T, FN><<<numBlocks - 1, threadsPerBlock>>>(out + threadsPerBlock, offsets, size - threadsPerBlock);
+        applyBlockOffsets<T, FN><<<numBlocks - 1, threadsPerBlock>>>(data + threadsPerBlock, offsets, size - threadsPerBlock);
     }
 }
 

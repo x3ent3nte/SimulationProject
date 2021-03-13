@@ -6,7 +6,7 @@
 
 namespace RadixSort {
     template<typename T>
-    T* sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size);
+    T* sort(T* a, T* b, uint4* flags, int size);
 }
 
 namespace {
@@ -92,7 +92,7 @@ void printAddress(unsigned int* addresses, int size) {
 } // namespace anonymous
 
 template<typename T>
-T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
+T* RadixSort::sort(T* a, T* b, uint4* flags, int size) {
 
     constexpr int numBits = sizeof(T) * 8;
     constexpr int threadsPerBlock = 1024;
@@ -100,18 +100,18 @@ T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
 
     for (int pos = 0; pos < numBits; pos += 2) {
         printf("Radix Sort at bit position %d\n", pos);
-        mark<T><<<numBlocks, threadsPerBlock>>>(a, flags_a, pos, size);
+        mark<T><<<numBlocks, threadsPerBlock>>>(a, flags, pos, size);
 
         //printf("Printing flags after marking\n");
-        //printFlags(flags_a, size);
+        //printFlags(flags, size);
 
-        Scan::scan<uint4, uint4Add>(flags_a, flags_a, flags_b, size);
+        Scan::scan<uint4, uint4Add>(flags, size);
 
         //printf("Printing flags after scanning\n");
-        //printFlags(flags_a, size);
+        //printFlags(flags, size);
 
         uint4 totalOffset = {0, 0, 0, 0};
-        uint4* lastFlag = flags_a + (size - 1);
+        uint4* lastFlag = flags + (size - 1);
         cudaMemcpy(&totalOffset, lastFlag, sizeof(uint4), cudaMemcpyDeviceToHost);
         totalOffset.w = totalOffset.z + totalOffset.y + totalOffset.x;
         totalOffset.z = totalOffset.y + totalOffset.x;
@@ -120,7 +120,7 @@ T* RadixSort::sort(T* a, T* b, uint4* flags_a, uint4* flags_b, int size) {
 
         //printf("Total Offset %d %d %d %d\n", totalOffset.x, totalOffset.y, totalOffset.z, totalOffset.w);
 
-        scatter<T><<<numBlocks, threadsPerBlock>>>(a, b, flags_a, totalOffset, pos, size);
+        scatter<T><<<numBlocks, threadsPerBlock>>>(a, b, flags, totalOffset, pos, size);
         //printAddress(b, size);
 
         T* temp = a;

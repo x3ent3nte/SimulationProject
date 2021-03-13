@@ -13,29 +13,21 @@ namespace {
 std::vector<int> ScanCudaTest::run(const std::vector<int>& data) {
     size_t bufferSize = data.size() * sizeof(int);
 
-    int* d_in;
-    int* d_out;
-    int* d_offsets;
+    int* d_data;
 
-    cudaMalloc(&d_in, bufferSize);
-    cudaMalloc(&d_out, bufferSize);
-    cudaMalloc(&d_offsets, bufferSize);
+    cudaMalloc(&d_data, bufferSize * 2);
 
-    cudaMemcpy(d_in, data.data(), bufferSize, cudaMemcpyHostToDevice);
-    cudaMemset(d_out, 0, bufferSize);
-    cudaMemset(d_offsets, 0, bufferSize);
+    cudaMemcpy(d_data, data.data(), bufferSize, cudaMemcpyHostToDevice);
 
     {
         Timer timer("Scan CUDA");
-        Scan::scan<int, add>(d_in, d_out, d_offsets, data.size());
+        Scan::scan<int, add>(d_data, data.size());
     }
 
     std::vector<int> result(data.size());
-    cudaMemcpy(result.data(), d_out, bufferSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(result.data(), d_data, bufferSize, cudaMemcpyDeviceToHost);
 
-    cudaFree(d_in);
-    cudaFree(d_out);
-    cudaFree(d_offsets);
+    cudaFree(d_data);
 
     return result;
 }

@@ -192,6 +192,7 @@ Scanner::~Scanner() {
     vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_addOffsetsPipeline, nullptr);
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
