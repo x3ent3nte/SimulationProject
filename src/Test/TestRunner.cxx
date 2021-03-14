@@ -20,17 +20,9 @@ void TestRunner::run() {
 
     std::cout << "\n\033[94mTest Runner started\033[0m\n";
 
-    {
-        InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
-    }
-
-    {
-        ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
-    }
-
-    {
-        ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
-    }
+    InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
+    ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
+    ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run();
 
     std::cout << "\n\033[95mTest Runner finished\033[0m\n";
 }

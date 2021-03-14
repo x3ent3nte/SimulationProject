@@ -139,10 +139,10 @@ void InsertionSortTest::run() {
 
     std::cout << "\n\033[94mInsertionSortTest started\033[0m\n";
 
-    std::vector<uint32_t> sizes = {kMaxNumberOfElements, 1, 100, 99};
+    std::vector<uint32_t> sizes = {kMaxNumberOfElements, 1, 2, 100, 99};
 
-    TestUtils::testRunner("testReverseOrder", [this, sizes]() { testReverseOrder(m_vulkanTest, sizes); });
-    TestUtils::testRunner("testRepeatedOrder", [this, sizes]() { testRepeatedOrder(m_vulkanTest, sizes); });
+    TestUtils::testRunner("testReverseOrder", [this, &sizes]() { testReverseOrder(m_vulkanTest, sizes); });
+    TestUtils::testRunner("testRepeatedOrder", [this, &sizes]() { testRepeatedOrder(m_vulkanTest, sizes); });
     //TestUtils::testRunner("testRandomOrder", [this, sizes]() { testRandomOrder(m_vulkanTest, sizes); });
 
     std::cout << "\n\033[95mInsertionSortTest finished\033[0m\n";
