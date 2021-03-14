@@ -1,6 +1,7 @@
 #ifndef REDUCE_TEST_H
 #define REDUCE_TEST_H
 
+#include <Test/TestInstance.h>
 #include <Test/ReduceVulkanTest.h>
 #include <Test/ReduceCudaTest.cuh>
 
@@ -23,7 +24,7 @@ public:
 
     virtual ~ReduceTest();
 
-    void run();
+    void run(std::shared_ptr<TestInstance> testInstance);
 };
 
 #endif

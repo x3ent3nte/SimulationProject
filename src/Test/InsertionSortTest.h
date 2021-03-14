@@ -3,6 +3,7 @@
 
 #include <Test/InsertionSortCudaTest.cuh>
 #include <Test/InsertionSortVulkanTest.h>
+#include <Test/TestInstance.h>
 
 #include <memory>
 
@@ -18,7 +19,7 @@ public:
 
     virtual ~InsertionSortTest() = default;
 
-    void run();
+    void run(std::shared_ptr<TestInstance> testInstance);
 };
 
 #endif

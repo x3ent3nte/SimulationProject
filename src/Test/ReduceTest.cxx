@@ -1,6 +1,5 @@
 #include <Test/ReduceTest.h>
 
-#include <Test/TestUtils.h>
 #include <Simulator/Agent.h>
 #include <Utils/Timer.h>
 
@@ -41,7 +40,7 @@ namespace {
         ss << "one= " << collision.one << " two= " << collision.two << " time= " << collision.time;
     }
 
-    void expectEqual(const Collision& expected, const Collision& actual) {
+    void expectEqual(const Collision& expected, const Collision& actual, std::shared_ptr<TestInstance> testInstance) {
 
         std::stringstream ss;
             ss << "expected = ";
@@ -51,24 +50,25 @@ namespace {
             std::cout << ss.str() << "\n";
 
         if ((expected.one != actual.one) || (expected.two != actual.two) || (expected.time != actual.time)) {
-            TestUtils::assertTrue(false);
+            testInstance->assertTrue(false);
         }
     }
 
     void testHelper(
         const std::vector<Collision>& collisions,
-        std::shared_ptr<ReduceVulkanTest> vulkanTest) {
+        std::shared_ptr<ReduceVulkanTest> vulkanTest,
+        std::shared_ptr<TestInstance> testInstance) {
 
         auto expected = reduceSerial(collisions);
         auto actualVulkan = vulkanTest->run(collisions);
         auto actualCuda = ReduceCudaTest::run(collisions);
 
-        expectEqual(expected, actualVulkan);
-        expectEqual(expected, actualCuda);
+        expectEqual(expected, actualVulkan, testInstance);
+        expectEqual(expected, actualCuda, testInstance);
     }
 
-    void testBasic(std::shared_ptr<ReduceVulkanTest> vulkanTest) {
-        testHelper(generateCollisions(kMaxNumberOfElements), vulkanTest);
+    void testBasic(std::shared_ptr<ReduceVulkanTest> vulkanTest, std::shared_ptr<TestInstance> testInstance) {
+        testHelper(generateCollisions(kMaxNumberOfElements), vulkanTest, testInstance);
     }
 } // end namespace anonymous
 
@@ -81,10 +81,11 @@ ReduceTest::ReduceTest(
 
 ReduceTest::~ReduceTest() {}
 
-void ReduceTest::run() {
+void ReduceTest::run(std::shared_ptr<TestInstance> testInstance) {
+
     std::cout << "\n\033[94mReduceTest started\033[0m\n";
 
-    TestUtils::testRunner("testReduceBasic", [this]() { testBasic(m_vulkanTest); });
+    testInstance->test("testReduceBasic", [this, testInstance]() { testBasic(m_vulkanTest, testInstance); });
 
     std::cout << "\n\033[95mReduceTest finished\033[0m\n";
 }

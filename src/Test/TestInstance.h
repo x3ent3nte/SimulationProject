@@ -1,5 +1,5 @@
-#ifndef TEST_UTILS_H
-#define TEST_UTILS_H
+#ifndef TEST_INSTANCES_H
+#define TEST_INSTANCES_H
 
 #include <string>
 #include <iostream>
@@ -8,8 +8,17 @@
 #include <stdexcept>
 #include <functional>
 #include <vector>
+#include <memory>
 
-namespace TestUtils {
+class TestInstance {
+
+private:
+
+    int m_numberPassed = 0;
+    int m_numberFailed = 0;
+
+public:
+
     template<typename T>
     void assertEqual(T a, T b);
 
@@ -18,11 +27,13 @@ namespace TestUtils {
 
     void assertTrue(bool b);
 
-    void testRunner(const std::string& name, std::function<void()> fn);
-}
+    void test(const std::string& name, std::function<void()> fn);
+
+    void printReport();
+};
 
 template <typename T>
-void TestUtils::assertEqual(T a, T b) {
+void TestInstance::assertEqual(T a, T b) {
     if (a != b) {
         std::stringstream ss;
         ss << "assertEqualsError: " << a << " does not equal " << b << "\n";
@@ -31,7 +42,7 @@ void TestUtils::assertEqual(T a, T b) {
 }
 
 template <typename T>
-void TestUtils::assertEqual(const std::vector<T>& expected, const std::vector<T>& actual) {
+void TestInstance::assertEqual(const std::vector<T>& expected, const std::vector<T>& actual) {
     assertEqual(expected.size(), actual.size());
 
     int numberOfErrors = 0;

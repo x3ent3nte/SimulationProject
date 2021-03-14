@@ -1,6 +1,5 @@
 #include <Test/InsertionSortTest.h>
 
-#include <Test/TestUtils.h>
 #include <Utils/MyMath.h>
 #include <Utils/Timer.h>
 
@@ -43,37 +42,41 @@ namespace {
         return sorted;
     }
 
-    void testHelper(const std::vector<float>& data, std::shared_ptr<InsertionSortVulkanTest> vulkanTest) {
+    void testHelper(
+        const std::vector<float>& data,
+        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
+        std::shared_ptr<TestInstance> testInstance) {
+
         std::cout << "Number of elements = " << data.size() << "\n";
 
         auto expected = serialSort(data);
 
         auto actualSerial = serialInsertionSort(expected);
-        TestUtils::assertEqual(expected, actualSerial);
+        testInstance->assertEqual(expected, actualSerial);
 
         auto actualVulkan = vulkanTest->run(data);
-        TestUtils::assertEqual(expected, actualVulkan);
+        testInstance->assertEqual(expected, actualVulkan);
 
         auto actualVulkanTwo = vulkanTest->run(actualVulkan);
-        TestUtils::assertEqual(expected, actualVulkanTwo);
+        testInstance->assertEqual(expected, actualVulkanTwo);
 
         auto actualVulkanThree = vulkanTest->run(actualVulkanTwo);
-        TestUtils::assertEqual(expected, actualVulkanThree);
+        testInstance->assertEqual(expected, actualVulkanThree);
 
         auto actualVulkanFour = vulkanTest->run(actualVulkanThree);
-        TestUtils::assertEqual(expected, actualVulkanFour);
+        testInstance->assertEqual(expected, actualVulkanFour);
 
         auto actualCuda = InsertionSortCudaTest::run(data);
-        TestUtils::assertEqual(expected, actualCuda);
+        testInstance->assertEqual(expected, actualCuda);
 
         auto actualCudaTwo = InsertionSortCudaTest::run(actualCuda);
-        TestUtils::assertEqual(expected, actualCudaTwo);
+        testInstance->assertEqual(expected, actualCudaTwo);
 
         auto actualCudaThree = InsertionSortCudaTest::run(actualCudaTwo);
-        TestUtils::assertEqual(expected, actualCudaThree);
+        testInstance->assertEqual(expected, actualCudaThree);
 
         auto actualCudaFour = InsertionSortCudaTest::run(actualCudaThree);
-        TestUtils::assertEqual(expected, actualCudaFour);
+        testInstance->assertEqual(expected, actualCudaFour);
     }
 
     std::vector<float> generateDataWithReverseOrder(uint32_t size) {
@@ -86,10 +89,11 @@ namespace {
 
     void testReverseOrder(
         std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes) {
+        const std::vector<uint32_t>& sizes,
+        std::shared_ptr<TestInstance> testInstance) {
 
         for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithReverseOrder(sizes[i]), vulkanTest);
+            testHelper(generateDataWithReverseOrder(sizes[i]), vulkanTest, testInstance);
         }
     }
 
@@ -103,10 +107,11 @@ namespace {
 
     void testRepeatedOrder(
         std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes) {
+        const std::vector<uint32_t>& sizes,
+        std::shared_ptr<TestInstance> testInstance) {
 
         for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithRepeatedOrder(sizes[i]), vulkanTest);
+            testHelper(generateDataWithRepeatedOrder(sizes[i]), vulkanTest, testInstance);
         }
     }
 
@@ -120,10 +125,11 @@ namespace {
 
     void testRandomOrder(
         std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes) {
+        const std::vector<uint32_t>& sizes,
+        std::shared_ptr<TestInstance> testInstance) {
 
         for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithRandomOrder(sizes[i]), vulkanTest);
+            testHelper(generateDataWithRandomOrder(sizes[i]), vulkanTest, testInstance);
         }
     }
 } // end namespace anonymous
@@ -135,15 +141,15 @@ InsertionSortTest::InsertionSortTest(
     VkCommandPool commandPool)
     : m_vulkanTest(std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, kMaxNumberOfElements)) {}
 
-void InsertionSortTest::run() {
+void InsertionSortTest::run(std::shared_ptr<TestInstance> testInstance) {
 
     std::cout << "\n\033[94mInsertionSortTest started\033[0m\n";
 
     std::vector<uint32_t> sizes = {kMaxNumberOfElements, 1, 2, 100, 99};
 
-    TestUtils::testRunner("testReverseOrder", [this, &sizes]() { testReverseOrder(m_vulkanTest, sizes); });
-    TestUtils::testRunner("testRepeatedOrder", [this, &sizes]() { testRepeatedOrder(m_vulkanTest, sizes); });
-    //TestUtils::testRunner("testRandomOrder", [this, sizes]() { testRandomOrder(m_vulkanTest, sizes); });
+    testInstance->test("testReverseOrder", [this, testInstance, &sizes]() { testReverseOrder(m_vulkanTest, sizes, testInstance); });
+    testInstance->test("testRepeatedOrder", [this, testInstance, &sizes]() { testRepeatedOrder(m_vulkanTest, sizes, testInstance); });
+    //testInstance->test("testRandomOrder", [this, testInstance, sizes]() { testRandomOrder(m_vulkanTest, sizes, testInstance); });
 
     std::cout << "\n\033[95mInsertionSortTest finished\033[0m\n";
 }
