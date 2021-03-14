@@ -5,7 +5,7 @@
 
 namespace Scan {
     template<typename T, T (*FN)(T, T)>
-    void scan(T* data, int size);
+    T scan(T* data, int size);
 }
 
 namespace {
@@ -89,7 +89,7 @@ void printOffsets(int* offsets, int size) {
 } // namespace anonymous
 
 template<typename T, T (*FN)(T, T)>
-void Scan::scan(T* data, int size) {
+T Scan::scan(T* data, int size) {
 
     T* offsets = data + size;
     //printf("Scan size %d\n", size);
@@ -99,11 +99,15 @@ void Scan::scan(T* data, int size) {
 
     //printOffsets(offsets, numBlocks);
 
+    T resultChild;
     if (numBlocks > 1) {
-        Scan::scan<T, FN>(offsets, numBlocks);
-
+        resultChild = Scan::scan<T, FN>(offsets, numBlocks);
         applyBlockOffsets<T, FN><<<numBlocks - 1, threadsPerBlock>>>(data + threadsPerBlock, offsets, size - threadsPerBlock);
     }
+    T result;
+    cudaMemcpy(&result, data, sizeof(T), cudaMemcpyDeviceToHost);
+
+    return FN(result, resultChild);
 }
 
 #endif
