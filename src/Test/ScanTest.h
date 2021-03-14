@@ -2,7 +2,7 @@
 #define SCAN_TEST_H
 
 #include <Test/ScanVulkanTest.h>
-#include <Test/TestInstance.h>
+#include <Test/TestRunner.h>
 
 #include <vulkan/vulkan.h>
 
@@ -24,7 +24,7 @@ public:
 
     virtual ~ScanTest();
 
-    void run(std::shared_ptr<TestInstance> testInstance);
+    void run(std::shared_ptr<TestRunner> testRunner);
 };
 
 #endif

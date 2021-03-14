@@ -10,6 +10,32 @@ namespace {
 
     constexpr uint32_t kMaxNumberOfElements = 64 * 1024;
 
+    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, 1, 2, 100, 99};
+
+    std::vector<float> generateDataWithReverseOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            data[i] = (size - 1.0f) - i;
+        }
+        return data;
+    }
+
+    std::vector<float> generateDataWithRepeatedOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            data[i] = -1.23;
+        }
+        return data;
+    }
+
+    std::vector<float> generateDataWithRandomOrder(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            data[i] = MyMath::randomFloatBetweenZeroAndOne() * 100.0f;
+        }
+        return data;
+    }
+
     std::vector<float> serialSort(const std::vector<float>& data) {
         std::vector<float> sorted(data);
 
@@ -79,57 +105,14 @@ namespace {
         testInstance->assertEqual(expected, actualCudaFour);
     }
 
-    std::vector<float> generateDataWithReverseOrder(uint32_t size) {
-        std::vector<float> data(size);
-        for (uint32_t i = 0; i < size; ++i) {
-            data[i] = (size - 1.0f) - i;
-        }
-        return data;
-    }
-
-    void testReverseOrder(
+    void testDifferentSizesHelper(
         std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes,
+        std::vector<float> (*dataGenerator)(uint32_t),
         std::shared_ptr<TestInstance> testInstance) {
 
-        for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithReverseOrder(sizes[i]), vulkanTest, testInstance);
-        }
-    }
-
-    std::vector<float> generateDataWithRepeatedOrder(uint32_t size) {
-        std::vector<float> data(size);
-        for (uint32_t i = 0; i < size; ++i) {
-            data[i] = -1.23;
-        }
-        return data;
-    }
-
-    void testRepeatedOrder(
-        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-
-        for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithRepeatedOrder(sizes[i]), vulkanTest, testInstance);
-        }
-    }
-
-    std::vector<float> generateDataWithRandomOrder(uint32_t size) {
-        std::vector<float> data(size);
-        for (uint32_t i = 0; i < size; ++i) {
-            data[i] = MyMath::randomFloatBetweenZeroAndOne() * 100.0f;
-        }
-        return data;
-    }
-
-    void testRandomOrder(
-        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        const std::vector<uint32_t>& sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-
-        for (int i = 0; i < sizes.size(); ++i) {
-            testHelper(generateDataWithRandomOrder(sizes[i]), vulkanTest, testInstance);
+        for (uint32_t size : kSizes) {
+            std::cout << "\nsize = " << size << "\n";
+            testHelper(dataGenerator(size), vulkanTest, testInstance);
         }
     }
 } // end namespace anonymous
@@ -141,15 +124,17 @@ InsertionSortTest::InsertionSortTest(
     VkCommandPool commandPool)
     : m_vulkanTest(std::make_shared<InsertionSortVulkanTest>(physicalDevice, logicalDevice, queue, commandPool, kMaxNumberOfElements)) {}
 
-void InsertionSortTest::run(std::shared_ptr<TestInstance> testInstance) {
+void InsertionSortTest::run(std::shared_ptr<TestRunner> testRunner) {
 
     std::cout << "\n\033[94mInsertionSortTest started\033[0m\n";
 
-    std::vector<uint32_t> sizes = {kMaxNumberOfElements, 1, 2, 100, 99};
-
-    testInstance->test("testReverseOrder", [this, testInstance, &sizes]() { testReverseOrder(m_vulkanTest, sizes, testInstance); });
-    testInstance->test("testRepeatedOrder", [this, testInstance, &sizes]() { testRepeatedOrder(m_vulkanTest, sizes, testInstance); });
-    //testInstance->test("testRandomOrder", [this, testInstance, sizes]() { testRandomOrder(m_vulkanTest, sizes, testInstance); });
+    testRunner->test("testReverseOrder", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateDataWithReverseOrder, testInstance);
+    });
+    testRunner->test("testRepeatedOrder", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateDataWithRepeatedOrder, testInstance);
+    });
+    //testRunner->test("testRandomOrder", [this, sizes](auto testInstance) { testRandomOrder(m_vulkanTest, sizes, testInstance); });
 
     std::cout << "\n\033[95mInsertionSortTest finished\033[0m\n";
 }

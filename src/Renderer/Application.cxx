@@ -7,7 +7,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
-#include <Test/TestRunner.h>
+#include <Test/TestApplication.h>
 #include <Utils/Timer.h>
 
 #define GLFW_INCLUDE_VULKAN
@@ -63,7 +63,7 @@ Application::~Application() {
 int Application::run() {
 
     {
-        TestRunner(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
+        TestApplication(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
     }
 
     return EXIT_SUCCESS;

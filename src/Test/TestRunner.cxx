@@ -1,34 +1,61 @@
 #include <Test/TestRunner.h>
 
-#include <Test/TestInstance.h>
-#include <Test/InsertionSortTest.h>
-#include <Test/ReduceTest.h>
-#include <Test/ScanTest.h>
+void TestInstance::fail() {
+    std::lock_guard<std::mutex> guard(m_mutex);
+    m_passed = false;
+}
 
-#include <iostream>
-#include <memory>
+bool TestInstance::hasPassed() {
+    std::lock_guard<std::mutex> guard(m_mutex);
+    return m_passed;
+}
 
-TestRunner::TestRunner(
-    VkPhysicalDevice physicalDevice,
-    VkDevice logicalDevice,
-    VkQueue queue,
-    VkCommandPool commandPool)
-    : m_physicalDevice(physicalDevice)
-    , m_logicalDevice(logicalDevice)
-    , m_queue(queue)
-    , m_commandPool(commandPool) {}
+void TestInstance::assertTrue(bool b) {
+    if (!b) {
+        fail();
+        throw std::runtime_error("Expected True");
+    }
+}
 
-void TestRunner::run() {
+void TestRunner::test(
+    const std::string& name,
+    std::function<void(std::shared_ptr<TestInstance> testInstance)> fn) {
 
-    std::cout << "\n\033[94mTest Runner started\033[0m\n";
-
+    std::cout << "\n\033[96m[RUNNING " << name << "]\033[0m\n\n";
     auto testInstance = std::make_shared<TestInstance>();
 
-    InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testInstance);
-    ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testInstance);
-    ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testInstance);
+    try {
+        fn(testInstance);
+    } catch (const std::runtime_error& ex) {
+        std::cout << "Test exception = " << ex.what() << "\n";
+    }
 
-    testInstance->printReport();
+    if (testInstance->hasPassed()) {
+        {
+            std::lock_guard<std::mutex> guard(m_mutex);
+            m_numberPassed += 1;
+        }
+        std::cout << "\n\033[92m[PASSED " << name << "]\033[0m\n\n";
+    } else {
+        {
+            std::lock_guard<std::mutex> guard(m_mutex);
+            m_numberFailed += 1;
+        }
+        std::cout << "\n\033[91m[FAILED " << name << "]\033[0m\n\n";
+    }
+}
 
-    std::cout << "\n\033[95mTest Runner finished\033[0m\n";
+void TestRunner::report() {
+    if (m_numberFailed == 0) {
+        std::cout << "\033[92m";
+    } else {
+        std::cout << "\033[91m";
+    }
+
+    std::cout << "Test Report\n\n";
+
+    std::cout << "Passed = " << m_numberPassed << "\n";
+    std::cout << "Failed = " << m_numberFailed << "\n";
+
+    std::cout << "\033[0m";
 }

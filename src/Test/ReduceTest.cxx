@@ -66,10 +66,6 @@ namespace {
         expectEqual(expected, actualVulkan, testInstance);
         expectEqual(expected, actualCuda, testInstance);
     }
-
-    void testBasic(std::shared_ptr<ReduceVulkanTest> vulkanTest, std::shared_ptr<TestInstance> testInstance) {
-        testHelper(generateCollisions(kMaxNumberOfElements), vulkanTest, testInstance);
-    }
 } // end namespace anonymous
 
 ReduceTest::ReduceTest(
@@ -81,11 +77,13 @@ ReduceTest::ReduceTest(
 
 ReduceTest::~ReduceTest() {}
 
-void ReduceTest::run(std::shared_ptr<TestInstance> testInstance) {
+void ReduceTest::run(std::shared_ptr<TestRunner> testRunner) {
 
     std::cout << "\n\033[94mReduceTest started\033[0m\n";
 
-    testInstance->test("testReduceBasic", [this, testInstance]() { testBasic(m_vulkanTest, testInstance); });
+    testRunner->test("testReduceBasic", [this](auto testInstance) {
+        testHelper(generateCollisions(kMaxNumberOfElements), m_vulkanTest, testInstance);
+    });
 
     std::cout << "\n\033[95mReduceTest finished\033[0m\n";
 }

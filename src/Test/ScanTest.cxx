@@ -9,18 +9,7 @@ namespace {
 
     constexpr uint32_t kMaxNumberOfElements = 1024 * 1024 * 64;
 
-    std::vector<int> serialScan(const std::vector<int>& data) {
-        Timer timer("Scan Serial");
-        std::vector<int> result(data.size());
-
-        int count = 0;
-        for (int i = 0; i < data.size(); ++i) {
-            count += data[i];
-            result[i] = count;
-        }
-
-        return result;
-    }
+    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 2, 99, 100};
 
     std::vector<int> generateAllOnes(uint32_t size) {
         std::vector<int> data(size);
@@ -54,6 +43,19 @@ namespace {
         return data;
     }
 
+    std::vector<int> serialScan(const std::vector<int>& data) {
+        Timer timer("Scan Serial");
+        std::vector<int> result(data.size());
+
+        int count = 0;
+        for (int i = 0; i < data.size(); ++i) {
+            count += data[i];
+            result[i] = count;
+        }
+
+        return result;
+    }
+
     void testHelper(
         const std::vector<int>& data,
         std::shared_ptr<ScanVulkanTest> vulkanTest,
@@ -70,48 +72,14 @@ namespace {
 
     void testDifferentSizesHelper(
         std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<uint32_t> sizes,
         std::vector<int> (*dataGenerator)(uint32_t),
         std::shared_ptr<TestInstance> testInstance) {
 
-        for (uint32_t size : sizes) {
+        for (uint32_t size : kSizes) {
             std::cout << "\nsize = " << size << "\n";
-            auto data = dataGenerator(size);
-            testHelper(data, vulkanTest, testInstance);
+            testHelper(dataGenerator(size), vulkanTest, testInstance);
         }
     }
-
-    void testAllOnes(
-        std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<uint32_t> sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-
-        testDifferentSizesHelper(vulkanTest, sizes, generateAllOnes, testInstance);
-    }
-
-    void testAlternatingZeroAndOnes(
-        std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<uint32_t> sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-
-        testDifferentSizesHelper(vulkanTest, sizes, generateAlternatingZeroAndOnes, testInstance);
-    }
-
-    void testDecreasing(
-        std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<uint32_t> sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-
-        testDifferentSizesHelper(vulkanTest, sizes, generateDecreasing, testInstance);
-    }
-
-    void testHasNegatives(
-        std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<uint32_t> sizes,
-        std::shared_ptr<TestInstance> testInstance) {
-        testDifferentSizesHelper(vulkanTest, sizes, generateHasNegatives, testInstance);
-    }
-
 } // namespace anonymous
 
 ScanTest::ScanTest(
@@ -132,15 +100,24 @@ ScanTest::~ScanTest() {
 
 }
 
-void ScanTest::run(std::shared_ptr<TestInstance> testInstance) {
+void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
     std::cout << "\n\033[94mScanTest started\033[0m\n";
 
-    std::vector<uint32_t> sizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 2, 99, 100};
+    testRunner->test("testAllOnes", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateAllOnes, testInstance);
+    });
 
-    testInstance->test("testAllOnes", [this, &sizes, testInstance]() { testAllOnes(m_vulkanTest, sizes, testInstance); });
-    testInstance->test("testAlternatingZeroAndOnes", [this, &sizes, testInstance]() { testAlternatingZeroAndOnes(m_vulkanTest, sizes, testInstance); });
-    testInstance->test("testDecreasing", [this, &sizes, testInstance]() { testDecreasing(m_vulkanTest, sizes, testInstance); });
-    testInstance->test("testHasNegatives", [this, &sizes, testInstance]() { testHasNegatives(m_vulkanTest, sizes, testInstance); });
+    testRunner->test("testAlternatingZeroAndOnes", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateAlternatingZeroAndOnes, testInstance);
+    });
+
+    testRunner->test("testDecreasing", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateDecreasing, testInstance);
+    });
+
+    testRunner->test("testHasNegatives", [this](auto testInstance) {
+        testDifferentSizesHelper(m_vulkanTest, generateHasNegatives, testInstance);
+    });
 
     std::cout << "\n\033[95mScanTest finished\033[0m\n";
 }
