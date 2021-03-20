@@ -26,11 +26,7 @@ void TestApplication::run() {
 
     InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
     ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
-
-    ScanTest scanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool);
-    for (int i = 0; i < 2; ++i) {
-        scanTest.run(testRunner);
-    }
+    ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
 
     testRunner->report();
 

@@ -9,7 +9,7 @@ namespace {
 
     constexpr uint32_t kMaxNumberOfElements = 1024 * 1024 * 64;
 
-    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 2, 99, 100};
+    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 512 * 128, 2, 99, 100};
 
     std::vector<int> generateAllOnes(uint32_t size) {
         std::vector<int> data(size);
