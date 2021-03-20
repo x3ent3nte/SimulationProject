@@ -112,11 +112,11 @@ void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
     });
 
     testRunner->test("testDecreasing", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateDecreasing, testInstance);
+        testDifferentSizesHelper(m_vulkanTest, generateAllOnes, testInstance);
     });
 
     testRunner->test("testHasNegatives", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateHasNegatives, testInstance);
+        testDifferentSizesHelper(m_vulkanTest, generateAlternatingZeroAndOnes, testInstance);
     });
 
     std::cout << "\n\033[95mScanTest finished\033[0m\n";

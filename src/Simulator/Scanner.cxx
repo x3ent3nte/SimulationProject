@@ -83,26 +83,26 @@ void createScanCommandRecursive(
 
         Info recursiveInfo = {info.offsetOffset, info.offsetOffset + xGroups, xGroups};
         createScanCommandRecursive(commandBuffer, recursiveInfo, descriptorSet, pipelineLayout, scanPipeline, addOffsetsPipeline);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        ScannerUtil::Info addOffsetsInfo = {info.dataOffset + ScannerUtil::xDim, info.offsetOffset, info.numberOfElements - ScannerUtil::xDim};
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addOffsetsPipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &addOffsetsInfo);
+        vkCmdDispatch(commandBuffer, xGroups - 1, 1, 1);
     }
-
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        1,
-        &memoryBarrier,
-        0,
-        nullptr,
-        0,
-        nullptr);
-
-    ScannerUtil::Info addOffsetsInfo = {info.dataOffset + ScannerUtil::xDim, info.offsetOffset, info.numberOfElements - ScannerUtil::xDim};
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addOffsetsPipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &addOffsetsInfo);
-    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 }
 
 } // namespace ScannerUtil
