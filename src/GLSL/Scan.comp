@@ -9,15 +9,11 @@ layout (std430, binding = 0) buffer bufferData {
     int data[];
 };
 
-struct Info {
+layout (push_constant) uniform InfoConstant {
     uint dataOffset;
     uint offsetOffset;
     uint numberOfElements;
-};
-
-layout (std430, binding = 1) buffer bufferOffset {
-    Info info;
-};
+} info;
 
 shared int sharedData[X_DIM];
 

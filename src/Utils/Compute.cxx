@@ -6,8 +6,6 @@
 
 VkDescriptorSetLayout Compute::createDescriptorSetLayout(VkDevice logicalDevice, size_t numberOfBuffers) {
 
-    VkDescriptorSetLayout descriptorSetLayout;
-
     std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings(numberOfBuffers);
 
     for (int i = 0; i < numberOfBuffers; ++i) {
@@ -22,10 +20,10 @@ VkDescriptorSetLayout Compute::createDescriptorSetLayout(VkDevice logicalDevice,
     descriptorSetLayoutCreateInfo.bindingCount = descriptorSetLayoutBindings.size();
     descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
 
+    VkDescriptorSetLayout descriptorSetLayout;
     if (vkCreateDescriptorSetLayout(logicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute descriptor set layout");
     }
-
     return descriptorSetLayout;
 }
 
@@ -98,6 +96,31 @@ VkPipelineLayout Compute::createPipelineLayout(VkDevice logicalDevice, VkDescrip
     pipelineLayoutCreateInfo.setLayoutCount = 1;
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
 
+    if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create pipeline layout");
+    }
+
+    return pipelineLayout;
+}
+
+VkPipelineLayout Compute::createPipelineLayoutWithPushConstant(
+    VkDevice logicalDevice,
+    VkDescriptorSetLayout descriptorSetLayout,
+    uint32_t size) {
+
+    VkPushConstantRange pushConstant = {};
+    pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    pushConstant.offset = 0;
+    pushConstant.size = size;
+
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstant;
+
+    VkPipelineLayout pipelineLayout;
     if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create pipeline layout");
     }

@@ -11,12 +11,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_infoBuffer;
-    VkBuffer m_infoBufferHostVisible;
-
     VkDeviceMemory m_dataDeviceMemory;
-    VkDeviceMemory m_infoDeviceMemory;
-    VkDeviceMemory m_infoDeviceMemoryHostVisible;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;

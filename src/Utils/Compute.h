@@ -25,6 +25,11 @@ namespace Compute {
 
     VkPipelineLayout createPipelineLayout(VkDevice logicalDevice, VkDescriptorSetLayout descriptorSetLayout);
 
+    VkPipelineLayout createPipelineLayoutWithPushConstant(
+        VkDevice logicalDevice,
+        VkDescriptorSetLayout descriptorSetLayout,
+        uint32_t size);
+
     VkPipeline createPipeline(
         const std::string& shaderPath,
         VkDevice logicalDevice,
