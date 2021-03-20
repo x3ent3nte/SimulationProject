@@ -62,13 +62,14 @@ void createScanCommandRecursive(
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &info);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
-    VkMemoryBarrier memoryBarrier = {};
-    memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-    memoryBarrier.pNext = nullptr;
-    memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-
     if (xGroups > 1) {
+
+        VkMemoryBarrier memoryBarrier = {};
+        memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        memoryBarrier.pNext = nullptr;
+        memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+        memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
         vkCmdPipelineBarrier(
             commandBuffer,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
