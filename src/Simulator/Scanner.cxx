@@ -17,6 +17,10 @@ struct Info {
     uint32_t numberOfElements;
 };
 
+uint32_t numberOfGroups(uint32_t current) {
+    return ceil(((float) current) / ((float) xDim));
+}
+
 VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice) {
     return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
 }
@@ -43,47 +47,43 @@ VkDescriptorSet createDescriptorSet(
         bufferAndSizes);
 }
 
-VkCommandBuffer createCommandBuffer(
-    VkDevice logicalDevice,
-    VkCommandPool commandPool,
-    VkPipeline pipeline,
-    VkPipelineLayout pipelineLayout,
+void createScanCommandRecursive(
+    VkCommandBuffer commandBuffer,
+    ScannerUtil::Info info,
     VkDescriptorSet descriptorSet,
-    VkBuffer dataBuffer,
-    Info info) {
+    VkPipelineLayout pipelineLayout,
+    VkPipeline scanPipeline,
+    VkPipeline addOffsetsPipeline) {
 
-    VkCommandBuffer commandBuffer;
+    const uint32_t xGroups = numberOfGroups(info.numberOfElements);
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = commandPool;
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create compute command buffer");
-    }
-
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to begin compute command buffer");
-    }
-
-    /*
-    VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0;
-    copyRegion.dstOffset = 0;
-    copyRegion.size = sizeof(ScannerUtil::Info);
-    vkCmdCopyBuffer(commandBuffer, infoBufferHostVisible, infoBuffer, 1, &copyRegion);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, scanPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &info);
+    vkCmdDispatch(commandBuffer, xGroups, 1, 1);
 
     VkMemoryBarrier memoryBarrier = {};
     memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
     memoryBarrier.pNext = nullptr;
     memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+
+    if (xGroups > 1) {
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        Info recursiveInfo = {info.offsetOffset, info.offsetOffset + xGroups, xGroups};
+        createScanCommandRecursive(commandBuffer, recursiveInfo, descriptorSet, pipelineLayout, scanPipeline, addOffsetsPipeline);
+    }
 
     vkCmdPipelineBarrier(
         commandBuffer,
@@ -96,20 +96,13 @@ VkCommandBuffer createCommandBuffer(
         nullptr,
         0,
         nullptr);
-    */
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
-    uint32_t xGroups = ceil(((float) info.numberOfElements) / ((float) ScannerUtil::xDim));
+    ScannerUtil::Info addOffsetsInfo = {info.dataOffset + ScannerUtil::xDim, info.offsetOffset, info.numberOfElements - ScannerUtil::xDim};
 
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, addOffsetsPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &info);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Info), &addOffsetsInfo);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);
-
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to end compute command buffer");
-    }
-
-    return commandBuffer;
 }
 
 } // namespace ScannerUtil
@@ -156,6 +149,9 @@ Scanner::Scanner(
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+    m_currentNumberOfElements = numberOfElements;
+    createScanCommand(m_currentNumberOfElements);
+
     if (vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &m_fence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute fence");
     }
@@ -172,50 +168,52 @@ Scanner::~Scanner() {
     vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_addOffsetsPipeline, nullptr);
 
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Scanner::addOffsets(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements) {
+void Scanner::createScanCommand(uint32_t numberOfElements) {
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = m_commandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
 
-    VkCommandBuffer commandBuffer = ScannerUtil::createCommandBuffer(
-        m_logicalDevice,
-        m_commandPool,
-        m_addOffsetsPipeline,
-        m_pipelineLayout,
-        m_descriptorSet,
-        m_dataBuffer,
-        {dataOffset, offsetOffset, numberOfElements});
-
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort command buffer");
+    if (vkAllocateCommandBuffers(m_logicalDevice, &commandBufferAllocateInfo, &m_commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create compute command buffer");
     }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &commandBuffer);
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    if (vkBeginCommandBuffer(m_commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin compute command buffer");
+    }
+
+    ScannerUtil::Info info = {0, numberOfElements, numberOfElements};
+    ScannerUtil::createScanCommandRecursive(m_commandBuffer, info, m_descriptorSet, m_pipelineLayout, m_pipeline, m_addOffsetsPipeline);
+
+    if (vkEndCommandBuffer(m_commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end compute command buffer");
+    }
 }
 
-void Scanner::runScanCommand(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements) {
+void Scanner::createScanCommandIfNecessary(uint32_t numberOfElements) {
+    if (m_currentNumberOfElements != numberOfElements) {
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+        createScanCommand(numberOfElements);
+        m_currentNumberOfElements = numberOfElements;
+    }
+}
 
-    VkCommandBuffer commandBuffer = ScannerUtil::createCommandBuffer(
-        m_logicalDevice,
-        m_commandPool,
-        m_pipeline,
-        m_pipelineLayout,
-        m_descriptorSet,
-        m_dataBuffer,
-        {dataOffset, offsetOffset, numberOfElements});
+void Scanner::runScanCommand() {
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &commandBuffer;
+    submitInfoOne.pCommandBuffers = &m_commandBuffer;
 
     vkResetFences(m_logicalDevice, 1, &m_fence);
 
@@ -223,19 +221,11 @@ void Scanner::runScanCommand(uint32_t dataOffset, uint32_t offsetOffset, uint32_
         throw std::runtime_error("Failed to submit insertion sort command buffer");
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
-
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &commandBuffer);
-
-    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) ScannerUtil::xDim));
-
-    if (xGroups > 1) {
-        runScanCommand(dataOffset + numberOfElements, offsetOffset + xGroups, xGroups);
-        addOffsets(dataOffset + ScannerUtil::xDim, offsetOffset, numberOfElements - ScannerUtil::xDim);
-    }
 }
 
 void Scanner::run(uint32_t numberOfElements) {
     if (numberOfElements > 1) {
-        runScanCommand(0, numberOfElements, numberOfElements);
+        createScanCommandIfNecessary(numberOfElements);
+        runScanCommand();
     }
 }

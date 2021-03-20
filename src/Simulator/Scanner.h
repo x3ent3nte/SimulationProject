@@ -22,13 +22,16 @@ private:
 
     VkDescriptorSet m_descriptorSet;
 
+    VkCommandBuffer m_commandBuffer;
+    uint32_t m_currentNumberOfElements;
+
     VkFence m_fence;
 
-    void setInfo(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
+    void createScanCommand(uint32_t numberOfElements);
 
-    void addOffsets(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
+    void createScanCommandIfNecessary(uint32_t numberOfElements);
 
-    void runScanCommand(uint32_t dataOffset, uint32_t offsetOffset, uint32_t numberOfElements);
+    void runScanCommand();
 
 public:
 
