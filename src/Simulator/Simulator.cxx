@@ -362,7 +362,7 @@ void Simulator::runSimulatorTask() {
         numFrames++;
         prevTime = currentTime;
     }
-    std::cout << "Number of frames simulated= " << numFrames << "\n";
+    std::cout << "Number of frames simulated = " << numFrames << "\n";
 }
 
 void Simulator::simulate() {
