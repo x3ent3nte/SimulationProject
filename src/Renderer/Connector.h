@@ -21,7 +21,13 @@ public:
 
     std::mutex m_mutex;
 
-    Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue);
+    Connector(
+        VkPhysicalDevice physicalDevice,
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkQueue queue,
+        uint32_t numberOfElements);
+
     virtual ~Connector();
 
     size_t takeNewestBufferIndex();

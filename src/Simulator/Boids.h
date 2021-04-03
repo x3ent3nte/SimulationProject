@@ -48,6 +48,8 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
 
+    uint32_t extractNumberOfElements();
+
 public:
 
     Boids(
@@ -60,7 +62,7 @@ public:
 
     virtual ~Boids();
 
-    void run(float timeDelta, uint32_t numberOfElements);
+    uint32_t run(float timeDelta, uint32_t numberOfElements);
 };
 
 #endif

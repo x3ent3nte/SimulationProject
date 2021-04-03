@@ -6,7 +6,12 @@
 #include <Simulator/Agent.h>
 #include <Utils/MyMath.h>
 
-Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkCommandPool commandPool, VkQueue queue) {
+Connector::Connector(
+    VkPhysicalDevice physicalDevice,
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkQueue queue,
+    uint32_t numberOfElements) {
 
     size_t numBuffers = 3;
 
@@ -15,16 +20,16 @@ Connector::Connector(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, Vk
     m_buffers.resize(numBuffers);
     m_bufferMemories.resize(numBuffers);
 
-    std::vector<AgentPositionAndRotation> initialPositions(Constants::kNumberOfAgents);
+    std::vector<AgentPositionAndRotation> initialPositions(numberOfElements);
 
-    for (size_t i = 0; i < Constants::kNumberOfAgents; ++i) {
+    for (size_t i = 0; i < numberOfElements; ++i) {
         initialPositions[i] = AgentPositionAndRotation{glm::vec3(0.0f), glm::vec4(0.0f)};
     }
 
     for (size_t i = 0; i < numBuffers; ++i) {
         Buffer::createBufferWithData(
             initialPositions.data(),
-            Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
+            numberOfElements * sizeof(AgentPositionAndRotation),
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             physicalDevice,
             logicalDevice,

@@ -353,7 +353,8 @@ void Simulator::runSimulatorTask() {
 
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
-        m_boids->run(timeDelta, m_currentNumberOfElements);
+        uint32_t newNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
+        std::cout << "New number of elements = " << newNumberOfElements << "\n";
 
         simulateNextStep(m_computeCommandBuffers[bufferIndex], timeDelta);
         m_connector->updateBufferIndex(bufferIndex);

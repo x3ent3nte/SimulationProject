@@ -10,7 +10,7 @@ namespace Buffer {
         VkCommandPool commandPool,
         VkBuffer srcBuffer,
         VkBuffer dstBuffer,
-        size_t size);
+        uint32_t size);
 
     void copyBuffer(
         VkDevice logicalDevice,
@@ -19,6 +19,16 @@ namespace Buffer {
         VkBuffer& srcBuffer,
         VkBuffer& dstBuffer,
         VkDeviceSize size);
+
+    void copyBuffer(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkQueue queue,
+        VkBuffer& srcBuffer,
+        VkBuffer& dstBuffer,
+        VkDeviceSize size,
+        uint32_t srcOffset,
+        uint32_t dstOffset);
 
     void createBuffer(
         VkPhysicalDevice physicalDevice,

@@ -5,12 +5,13 @@
 
 #include <stdexcept>
 
+// Record command buffer copy, so ideally should be reused
 VkCommandBuffer Buffer::recordCopyCommand(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
-    size_t size) {
+    uint32_t size) {
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -37,6 +38,29 @@ VkCommandBuffer Buffer::recordCopyCommand(
     return commandBuffer;
 }
 
+// Perform one time copy at specified offsets
+void Buffer::copyBuffer(
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkQueue queue,
+    VkBuffer& srcBuffer,
+    VkBuffer& dstBuffer,
+    VkDeviceSize size,
+    uint32_t srcOffset,
+    uint32_t dstOffset) {
+
+    VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(logicalDevice, commandPool);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    Command::endSingleTimeCommands(commandBuffer, queue, logicalDevice, commandPool);
+}
+
+// Perform one time copy
 void Buffer::copyBuffer(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
@@ -45,15 +69,15 @@ void Buffer::copyBuffer(
     VkBuffer& dstBuffer,
     VkDeviceSize size) {
 
-    VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(logicalDevice, commandPool);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0;
-    copyRegion.dstOffset = 0;
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    Command::endSingleTimeCommands(commandBuffer, queue, logicalDevice, commandPool);
+    copyBuffer(
+        logicalDevice,
+        commandPool,
+        queue,
+        srcBuffer,
+        dstBuffer,
+        size,
+        0,
+        0);
 }
 
 void Buffer::createBuffer(
@@ -134,6 +158,7 @@ void Buffer::createBufferWithData(
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
 }
 
+// Copy device to host. Creates temporary buffers each time, so not very optimal
 void Buffer::copyDeviceBufferToHost(
     void* data,
     VkDeviceSize bufferSize,
@@ -166,6 +191,7 @@ void Buffer::copyDeviceBufferToHost(
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
 }
 
+// Copy host to device. Creates temporary buffers each time, so not very optimal
 void Buffer::copyHostToDeviceBuffer(
     void* data,
     VkDeviceSize bufferSize,
@@ -198,6 +224,7 @@ void Buffer::copyHostToDeviceBuffer(
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
 }
 
+// Used by image renderer
 void Buffer::copyBufferToImage(
     VkDevice logicalDevice,
     VkCommandPool commandPool,

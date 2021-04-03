@@ -3,9 +3,11 @@
 #include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>
+#include <iostream>
 
 namespace BoidsUtil {
     size_t xDim = 512;
@@ -339,7 +341,28 @@ void Boids::createCommandBuffer(uint32_t numberOfElements) {
         numberOfElements);
 }
 
-void Boids::run(float timeDelta, uint32_t numberOfElements) {
+uint32_t Boids::extractNumberOfElements() {
+    Timer timer("Boids::extractNumberOfElements");
+
+    Buffer::copyBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_queue,
+        m_scanner->m_dataBuffer,
+        m_numberOfElementsBufferHostVisible,
+        sizeof(uint32_t),
+        (m_currentNumberOfElements - 1) * sizeof(uint32_t),
+        0);
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t numberOfElements;
+    memcpy(&numberOfElements, dataMap, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible);
+    return numberOfElements;
+}
+
+uint32_t Boids::run(float timeDelta, uint32_t numberOfElements) {
     updateNumberOfElementsIfNecessary(numberOfElements);
 
     void* dataMap;
@@ -359,4 +382,6 @@ void Boids::run(float timeDelta, uint32_t numberOfElements) {
         throw std::runtime_error("Failed to submit mapAgentToX command buffer");
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+
+    return extractNumberOfElements();
 }
