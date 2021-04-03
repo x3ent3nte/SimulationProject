@@ -9,17 +9,20 @@
 
 class Connector {
 
-public:
+private:
 
     VkDevice m_logicalDevice;
 
     std::deque<size_t> m_bufferIndexQueue;
     size_t m_newestBufferIndex;
 
-    std::vector<VkBuffer> m_buffers;
     std::vector<VkDeviceMemory> m_bufferMemories;
 
     std::mutex m_mutex;
+
+public:
+
+    std::vector<VkBuffer> m_buffers;
 
     Connector(
         VkPhysicalDevice physicalDevice,

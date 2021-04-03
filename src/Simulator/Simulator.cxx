@@ -349,13 +349,13 @@ void Simulator::runSimulatorTask() {
         timeDelta = fmin(timeDelta, 0.01);
         //std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
-        size_t bufferIndex = m_connector->takeOldBufferIndex();
 
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
-        uint32_t newNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
-        std::cout << "New number of elements = " << newNumberOfElements << "\n";
+        m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
+        std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
+        size_t bufferIndex = m_connector->takeOldBufferIndex();
         simulateNextStep(m_computeCommandBuffers[bufferIndex], timeDelta);
         m_connector->updateBufferIndex(bufferIndex);
 
