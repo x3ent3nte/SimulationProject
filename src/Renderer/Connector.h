@@ -18,7 +18,7 @@ private:
 
 public:
 
-    int m_id;
+    const int m_id;
     uint32_t m_numberOfElements;
     VkBuffer m_buffer;
 
@@ -42,19 +42,13 @@ private:
 
     VkDevice m_logicalDevice;
 
-    std::deque<std::shared_ptr<Connection>> m_connections;
     int m_newestConnectionId;
-
-    std::deque<size_t> m_bufferIndexQueue;
-    size_t m_newestBufferIndex;
-
-    std::vector<VkDeviceMemory> m_bufferMemories;
 
     std::mutex m_mutex;
 
 public:
 
-    std::vector<VkBuffer> m_buffers;
+    std::deque<std::shared_ptr<Connection>> m_connections;
 
     Connector(
         VkPhysicalDevice physicalDevice,
@@ -64,12 +58,6 @@ public:
         uint32_t numberOfElements);
 
     virtual ~Connector();
-
-    size_t takeNewestBufferIndex();
-    size_t takeOldBufferIndex();
-
-    void updateBufferIndex(size_t index);
-    void restoreBufferIndex(size_t index);
 
     std::shared_ptr<Connection> takeNewestConnection();
     std::shared_ptr<Connection> takeOldConnection();

@@ -61,6 +61,7 @@ private:
     std::shared_ptr<Boids> m_boids;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
+    void updateConnector(float timeDelta);
     void runSimulatorTask();
 
 public:

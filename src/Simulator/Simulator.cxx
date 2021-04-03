@@ -155,7 +155,7 @@ Simulator::Simulator(
     m_isActive = false;
     m_connector = connector;
 
-    const size_t numBuffers = m_connector->m_buffers.size();
+    const size_t numBuffers = m_connector->m_connections.size();
 
     m_computeDescriptorPools.resize(numBuffers);
     m_computeDescriptorSets.resize(numBuffers);
@@ -239,7 +239,7 @@ Simulator::Simulator(
             m_computeDescriptorSetLayout,
             m_computeDescriptorPools[i],
             m_agentsBuffer,
-            m_connector->m_buffers[i],
+            m_connector->m_connections[i]->m_buffer,
             m_timeDeltaBuffer,
             m_numberOfElementsBuffer,
             numberOfElements);
@@ -336,6 +336,13 @@ void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta)
     vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
 }
 
+void Simulator::updateConnector(float timeDelta) {
+    auto connection = m_connector->takeOldConnection();
+    connection->m_numberOfElements = m_currentNumberOfElements;
+    simulateNextStep(m_computeCommandBuffers[connection->m_id], timeDelta);
+    m_connector->restoreNewestConnection(connection);
+}
+
 void Simulator::runSimulatorTask() {
     Timer timer("Vulkan Simulator");
     uint64_t numFrames = 0;
@@ -355,9 +362,7 @@ void Simulator::runSimulatorTask() {
         m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
         std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
-        size_t bufferIndex = m_connector->takeOldBufferIndex();
-        simulateNextStep(m_computeCommandBuffers[bufferIndex], timeDelta);
-        m_connector->updateBufferIndex(bufferIndex);
+        updateConnector(timeDelta);
 
         numFrames++;
         prevTime = currentTime;

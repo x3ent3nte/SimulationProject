@@ -270,7 +270,7 @@ private:
     }
 
     size_t calculateCopyCommandBufferIndex(size_t connectorIndex, size_t imageIndex) {
-        size_t numConnectorBuffers = m_connector->m_buffers.size();
+        size_t numConnectorBuffers = m_connector->m_connections.size();
         size_t numImages = m_commandBuffers.size();
 
         return (numImages * connectorIndex) + imageIndex;
@@ -296,7 +296,7 @@ private:
         copyRegion.srcOffset = 0;
         copyRegion.dstOffset = 0;
         copyRegion.size = Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation);
-        vkCmdCopyBuffer(commandBuffer, m_connector->m_buffers[connectorIndex], m_instanceBuffers[imageIndex], 1, &copyRegion);
+        vkCmdCopyBuffer(commandBuffer, m_connector->m_connections[connectorIndex]->m_buffer, m_instanceBuffers[imageIndex], 1, &copyRegion);
 
         vkEndCommandBuffer(commandBuffer);
 
@@ -304,7 +304,7 @@ private:
     }
 
     void createCopyBuffers() {
-        size_t numConnectorBuffers = m_connector->m_buffers.size();
+        size_t numConnectorBuffers = m_connector->m_connections.size();
         size_t numImages = m_commandBuffers.size();
 
         m_copyCommandBuffers.resize(numConnectorBuffers * numImages);
@@ -601,19 +601,19 @@ private:
 
     void updateAgentPositionsBuffer(size_t imageIndex) {
         //Timer timer("Update Agent Positions Buffer");
-        size_t connectorBufferIndex = m_connector->takeNewestBufferIndex();
+        auto connection = m_connector->takeNewestConnection();
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_copyCommandBuffers[calculateCopyCommandBufferIndex(connectorBufferIndex, imageIndex)];
+        submitInfo.pCommandBuffers = &m_copyCommandBuffers[calculateCopyCommandBufferIndex(connection->m_id, imageIndex)];
         vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
 
         vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
 
         vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
 
-        m_connector->restoreBufferIndex(connectorBufferIndex);
+        m_connector->restoreConnection(connection);
     }
 
 public:
