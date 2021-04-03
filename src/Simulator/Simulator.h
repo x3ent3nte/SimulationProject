@@ -59,7 +59,6 @@ private:
     std::shared_ptr<Collider> m_collider;
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Boids> m_boids;
-    std::shared_ptr<Scanner> m_scanner;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void runSimulatorTask();

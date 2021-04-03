@@ -66,8 +66,6 @@ int Application::run() {
         TestApplication(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
     }
 
-    return EXIT_SUCCESS;
-
     auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue);
     auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector, Constants::kNumberOfAgents);
     simulator->simulate();

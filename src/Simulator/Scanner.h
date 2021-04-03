@@ -47,6 +47,8 @@ public:
     virtual ~Scanner();
 
     void run(uint32_t numberOfElements);
+
+    void recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfElements);
 };
 
 #endif

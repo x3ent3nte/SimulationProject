@@ -25,11 +25,15 @@ layout (std430, binding = 1) buffer bufAgentsOut {
     Agent agentsOut[];
 };
 
-layout (std430, binding = 2) buffer bufferTimeDelta {
+layout (std430, binding = 2) buffer bufReproduction {
+    uint reproduction[];
+};
+
+layout (std430, binding = 3) buffer bufferTimeDelta {
     float timeDelta;
 };
 
-layout (std430, binding = 3) buffer bufferNumberOfElements {
+layout (std430, binding = 4) buffer bufferNumberOfElements {
     uint numberOfElements;
 };
 
@@ -179,4 +183,6 @@ void main() {
     agent.velocity = forward * 40.0f;
 
     agentsOut[index] = agent;
+
+    reproduction[index] = 1;
 }

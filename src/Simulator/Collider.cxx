@@ -273,30 +273,30 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
 float Collider::computeNextStep(float timeDelta) {
     m_agentSorter->run(timeDelta, m_currentNumberOfElements);
     {
-        Timer timer("runCollisionDetection");
+        //Timer timer("runCollisionDetection");
         runCollisionDetection(timeDelta);
     }
     Collision earliestCollision;
     {
-        Timer timer("Reduce Collisions");
+        //Timer timer("Reduce Collisions");
         VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
         earliestCollision = extractEarliestCollision(reduceResult);
     }
 
-    std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two << " time= " << earliestCollision.time << "\n";
+    //std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two << " time= " << earliestCollision.time << "\n";
     if (earliestCollision.time < timeDelta && false) {
         {
-            Timer timer("Advance Time");
+            //Timer timer("Advance Time");
             m_timeAdvancer->run(earliestCollision.time, m_currentNumberOfElements);
         }
         {
-            Timer timer("Impacter");
+            //Timer timer("Impacter");
             m_impacter->run(earliestCollision);
         }
         return earliestCollision.time;
     } else {
         {
-            Timer timer("Advance Time Full");
+            //Timer timer("Advance Time Full");
             m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
         }
         return timeDelta;
@@ -310,13 +310,13 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     int numberOfSteps = 0;
     while (timeDelta > 0.0f) {
         {
-            Timer timer("computeNextStep");
+            //Timer timer("computeNextStep");
             float timeDepleted = computeNextStep(timeDelta);
-            std::cout << "Time depleted= " << timeDepleted << "\n";
+            //std::cout << "Time depleted= " << timeDepleted << "\n";
             timeDelta -= timeDepleted;
         }
         numberOfSteps += 1;
     }
 
-    std::cout << "Number of Collider steps= " << numberOfSteps << "\n\n";
+    //std::cout << "Number of Collider steps= " << numberOfSteps << "\n\n";
 }

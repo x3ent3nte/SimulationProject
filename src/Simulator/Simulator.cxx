@@ -283,13 +283,6 @@ Simulator::Simulator(
         m_computeCommandPool,
         m_agentsBuffer,
         numberOfElements);
-
-    m_scanner = std::make_shared<Scanner>(
-        physicalDevice,
-        m_logicalDevice,
-        m_computeQueue,
-        m_computeCommandPool,
-        numberOfElements);
 }
 
 Simulator::~Simulator() {
@@ -354,7 +347,7 @@ void Simulator::runSimulatorTask() {
         auto currentTime = std::chrono::high_resolution_clock::now();
         float timeDelta = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - prevTime).count();
         timeDelta = fmin(timeDelta, 0.01);
-        std::cout << "Time Delta= " << timeDelta << "\n";
+        //std::cout << "Time Delta= " << timeDelta << "\n";
         //Timer timer("Frame " + std::to_string(numFrames));
         size_t bufferIndex = m_connector->takeOldBufferIndex();
 

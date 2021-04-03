@@ -230,3 +230,8 @@ void Scanner::run(uint32_t numberOfElements) {
         runScanCommand();
     }
 }
+
+void Scanner::recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfElements) {
+    ScannerUtil::Info info = {0, numberOfElements, numberOfElements};
+    ScannerUtil::createScanCommandRecursive(commandBuffer, info, m_descriptorSet, m_pipelineLayout, m_pipeline, m_addOffsetsPipeline);
+}

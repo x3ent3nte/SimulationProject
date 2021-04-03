@@ -7,7 +7,7 @@
 
 namespace {
 
-    constexpr uint32_t kMaxNumberOfElements = 1024 * 1024 * 64;
+    constexpr uint32_t kMaxNumberOfElements = 1024 * 16 * 64;
 
     const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 512 * 128, 2, 99, 100};
 
@@ -66,8 +66,8 @@ namespace {
         auto actualVulkan = vulkanTest->run(data);
         testInstance->assertEqual(expected, actualVulkan);
 
-        //auto actualCuda = ScanCudaTest::run(data);
-        //testInstance->assertEqual(expected, actualCuda);
+        auto actualCuda = ScanCudaTest::run(data);
+        testInstance->assertEqual(expected, actualCuda);
     }
 
     void testDifferentSizesHelper(

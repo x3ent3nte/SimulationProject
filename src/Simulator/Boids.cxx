@@ -9,7 +9,7 @@
 
 namespace BoidsUtil {
     size_t xDim = 512;
-    size_t kNumberOfBindings = 4;
+    size_t kNumberOfBindings = 5;
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice) {
         return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
@@ -25,6 +25,7 @@ namespace BoidsUtil {
         VkDescriptorPool descriptorPool,
         VkBuffer agentsInBuffer,
         VkBuffer agentsOutBuffer,
+        VkBuffer reproductionBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer numberOfElementsBuffer,
         uint32_t numberOfElements) {
@@ -32,6 +33,7 @@ namespace BoidsUtil {
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
             {agentsInBuffer, numberOfElements * sizeof(Agent)},
             {agentsOutBuffer, numberOfElements * sizeof(Agent)},
+            {reproductionBuffer, numberOfElements * sizeof(uint32_t)},
             {timeDeltaBuffer, sizeof(float)},
             {numberOfElementsBuffer, sizeof(uint32_t)}
         };
@@ -57,6 +59,8 @@ namespace BoidsUtil {
         VkBuffer otherAgentsBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer timeDeltaHostVisibleBuffer,
+        std::shared_ptr<Scanner> scanner,
+        std::shared_ptr<Reproducer> reproducer,
         uint32_t numberOfElements) {
 
         VkCommandBuffer commandBuffer;
@@ -66,6 +70,12 @@ namespace BoidsUtil {
         commandBufferAllocateInfo.commandPool = commandPool;
         commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferAllocateInfo.commandBufferCount = 1;
+
+        VkMemoryBarrier memoryBarrier = {};
+        memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        memoryBarrier.pNext = nullptr;
+        memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+        memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
 
         if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create compute command buffer");
@@ -90,8 +100,8 @@ namespace BoidsUtil {
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             0,
-            0,
-            nullptr,
+            1,
+            &memoryBarrier,
             0,
             nullptr,
             0,
@@ -109,20 +119,37 @@ namespace BoidsUtil {
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             0,
-            0,
-            nullptr,
+            1,
+            &memoryBarrier,
             0,
             nullptr,
             0,
             nullptr);
 
+        scanner->recordCommand(commandBuffer, numberOfElements);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        reproducer->recordCommand(commandBuffer, numberOfElements);
+
+        /*
         VkBufferCopy copyAgentsRegion{};
         copyAgentsRegion.srcOffset = 0;
         copyAgentsRegion.dstOffset = 0;
         copyAgentsRegion.size = numberOfElements * sizeof(Agent);
 
         vkCmdCopyBuffer(commandBuffer, otherAgentsBuffer, agentsBuffer, 1, &copyAgentsRegion);
-
+        */
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
         }
@@ -192,6 +219,20 @@ Boids::Boids(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
+    m_scanner = std::make_shared<Scanner>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        numberOfElements);
+
+    m_reproducer = std::make_shared<Reproducer>(
+        logicalDevice,
+        m_otherAgentsBuffer,
+        m_scanner->m_dataBuffer,
+        agentsBuffer,
+        numberOfElements);
+
     m_descriptorSetLayout = BoidsUtil::createDescriptorSetLayout(m_logicalDevice);
     m_descriptorPool = BoidsUtil::createDescriptorPool(m_logicalDevice, 1);
     m_pipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_descriptorSetLayout);
@@ -202,6 +243,7 @@ Boids::Boids(
         m_descriptorPool,
         m_agentsBuffer,
         m_otherAgentsBuffer,
+        m_scanner->m_dataBuffer,
         m_timeDeltaBuffer,
         m_numberOfElementsBuffer,
         numberOfElements);
@@ -292,6 +334,8 @@ void Boids::createCommandBuffer(uint32_t numberOfElements) {
         m_otherAgentsBuffer,
         m_timeDeltaBuffer,
         m_timeDeltaBufferHostVisible,
+        m_scanner,
+        m_reproducer,
         numberOfElements);
 }
 

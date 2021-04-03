@@ -12,3 +12,4 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AdvanceTime.comp -o src/GLSL/spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Impact.comp -o src/GLSL/spv/Impact.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Scan.comp -o src/GLSL/spv/Scan.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanAddOffsets.comp -o src/GLSL/spv/ScanAddOffsets.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Reproduction.comp -o src/GLSL/spv/Reproduction.spv
