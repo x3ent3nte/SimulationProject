@@ -26,7 +26,8 @@ public:
         VkQueue graphicsQueue,
         VkQueue presentQueue,
         VkCommandPool commandPool,
-        std::shared_ptr<Connector> connector);
+        std::shared_ptr<Connector> connector,
+        uint32_t maxNumberOfAgents);
 };
 
 #endif

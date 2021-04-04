@@ -28,6 +28,10 @@
 #include <vector>
 #include <thread>
 
+namespace {
+    constexpr int kMaxFramesInFlight = 2;
+} // namespace anonymous
+
 class DefaultRenderer : public Renderer {
 public:
     DefaultRenderer(
@@ -40,7 +44,9 @@ public:
         VkQueue graphicsQueue,
         VkQueue presentQueue,
         VkCommandPool commandPool,
-        std::shared_ptr<Connector> connector) {
+        std::shared_ptr<Connector> connector,
+        uint32_t maxNumberOfAgents)
+        : m_maxNumberOfAgents(maxNumberOfAgents) {
 
         m_keyboardControl = keyboardControl;
         m_window = window;
@@ -64,6 +70,8 @@ public:
     }
 
 private:
+
+    const uint32_t m_maxNumberOfAgents;
 
     glm::vec3 m_cameraPosition;
     glm::vec3 m_cameraForward;
@@ -276,7 +284,7 @@ private:
         m_instanceBufferMemories.resize(m_swapChainImages.size());
 
         std::vector<AgentPositionAndRotation> instancePositions;
-        instancePositions.resize(Constants::kNumberOfAgents);
+        instancePositions.resize(m_maxNumberOfAgents);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
             instancePositions[i] = AgentPositionAndRotation{
@@ -287,7 +295,7 @@ private:
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
             Buffer::createBufferWithData(
                 instancePositions.data(),
-                Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation),
+                m_maxNumberOfAgents * sizeof(AgentPositionAndRotation),
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,
@@ -405,9 +413,9 @@ private:
     }
 
     void createSyncObjects() {
-        m_imageAvailableSemaphores.resize(Constants::kMaxFramesInFlight);
-        m_renderFinishedSemaphores.resize(Constants::kMaxFramesInFlight);
-        m_inFlightFences.resize(Constants::kMaxFramesInFlight);
+        m_imageAvailableSemaphores.resize(kMaxFramesInFlight);
+        m_renderFinishedSemaphores.resize(kMaxFramesInFlight);
+        m_inFlightFences.resize(kMaxFramesInFlight);
         m_imagesInFlight.resize(m_swapChainImages.size(), VK_NULL_HANDLE);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
@@ -417,7 +425,7 @@ private:
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < Constants::kMaxFramesInFlight; ++i) {
+        for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
             if ((vkCreateSemaphore(m_logicalDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS) ||
                 (vkCreateSemaphore(m_logicalDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS) ||
                 (vkCreateFence(m_logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)) {
@@ -449,7 +457,7 @@ private:
             m_vertexBuffer,
             m_indexBuffer,
             static_cast<uint32_t>(m_indices.size()),
-            Constants::kNumberOfAgents,
+            m_maxNumberOfAgents,
             m_descriptorSets,
             m_graphicsPipeline,
             m_pipelineLayout,
@@ -651,7 +659,7 @@ public:
             throw std::runtime_error("Failed to present swap chain image");
         }
 
-        m_currentFrame = (m_currentFrame + 1) % Constants::kMaxFramesInFlight;
+        m_currentFrame = (m_currentFrame + 1) % kMaxFramesInFlight;
     }
 
 private:
@@ -713,7 +721,7 @@ private:
             vkFreeMemory(m_logicalDevice, m_instanceBufferMemories[i], nullptr);
         }
 
-        for (size_t i = 0; i < Constants::kMaxFramesInFlight; ++i) {
+        for (size_t i = 0; i < kMaxFramesInFlight; ++i) {
             vkDestroySemaphore(m_logicalDevice, m_renderFinishedSemaphores[i], nullptr);
             vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
@@ -732,7 +740,8 @@ std::shared_ptr<Renderer> Renderer::create(
     VkQueue graphicsQueue,
     VkQueue presentQueue,
     VkCommandPool commandPool,
-    std::shared_ptr<Connector> connector) {
+    std::shared_ptr<Connector> connector,
+    uint32_t maxNumberOfAgents) {
 
     return std::make_shared<DefaultRenderer>(
         instance,
@@ -744,5 +753,6 @@ std::shared_ptr<Renderer> Renderer::create(
         graphicsQueue,
         presentQueue,
         commandPool,
-        connector);
+        connector,
+        maxNumberOfAgents);
 }

@@ -17,10 +17,15 @@
 #include <iostream>
 #include <stdexcept>
 
+namespace {
+    constexpr int kWidth = 1600;
+    constexpr int kHeight = 900;
+} // anonymous namespace
+
 Application::Application() {
 
     m_keyboardControl = std::make_shared<KeyboardControl>();
-    m_window = Surface::createWindow(m_keyboardControl);
+    m_window = Surface::createWindow(m_keyboardControl, kWidth, kHeight);
 
     m_instance = Instance::createInstance();
     Instance::setupDebugMessenger(m_instance, m_debugMessenger);
@@ -66,7 +71,7 @@ int Application::run() {
         TestApplication(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
     }
 
-    uint32_t maxNumberOfAgents = Constants::kNumberOfAgents;
+    const uint32_t maxNumberOfAgents = 64 * 512;
 
     auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue, maxNumberOfAgents);
     auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector, maxNumberOfAgents);
@@ -82,7 +87,8 @@ int Application::run() {
         m_graphicsQueue,
         m_presentQueue,
         m_commandPool,
-        connector);
+        connector,
+        maxNumberOfAgents);
 
     m_prevTime = std::chrono::high_resolution_clock::now();
 

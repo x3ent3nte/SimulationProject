@@ -8,16 +8,9 @@
 
 namespace Constants {
 
-    constexpr uint32_t kNumberOfAgents = 64 * 512;
-
-    constexpr uint32_t kWidth = 800;
-    constexpr uint32_t kHeight = 600;
-
     const std::string kFreyjaModelPath = "models/freyja.obj";
     const std::string kModelPath = "models/arwing.obj";
     const std::string kTexturePath = "textures/arwing_texture.png";
-
-    constexpr int kMaxFramesInFlight = 2;
 
     const std::vector<const char*> kValidationLayers = {
         "VK_LAYER_KHRONOS_validation"

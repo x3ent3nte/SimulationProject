@@ -19,7 +19,10 @@ namespace Surface {
         void keyboardActivity(int key, int scancode, int action, int mods);
     };
 
-    std::shared_ptr<Window> createWindow(std::shared_ptr<KeyboardControl> keyboardControl);
+    std::shared_ptr<Window> createWindow(
+        std::shared_ptr<KeyboardControl> keyboardControl,
+        uint32_t width,
+        uint32_t height);
 
     VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow* window);
 }
