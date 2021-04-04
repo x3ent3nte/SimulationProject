@@ -521,10 +521,10 @@ private:
             m_swapChainImageViews);
     }
 
-    void updateUniformBuffer(uint32_t currentImage, float time) {
+    void updateUniformBuffer(uint32_t currentImage, float timeDelta) {
 
         KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
-        float delta = 100.0f * time;
+        float delta = 100.0f * timeDelta;
 
         if (keyboardState.m_keyW) {
             m_cameraPosition += m_cameraForward * delta;
@@ -550,7 +550,7 @@ private:
             m_cameraPosition += m_cameraUp * delta;
         }
 
-        float angleDelta = 5.0f * time;
+        float angleDelta = 5.0f * timeDelta;
 
         if (keyboardState.m_keyQ) {
             m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, -angleDelta);
@@ -582,10 +582,10 @@ private:
             m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, -angleDelta);
         }
 
-        //std::cout << "Camera x: " << m_cameraPosition.x << " y: " << m_cameraPosition.y << " z:" << m_cameraPosition.z << " Time: " << time << "\n";
+        //std::cout << "Camera x: " << m_cameraPosition.x << " y: " << m_cameraPosition.y << " z:" << m_cameraPosition.z << " Time: " << timeDelta << "\n";
 
         UniformBufferObject ubo{};
-        //ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //ubo.model = glm::rotate(glm::mat4(1.0f), timeDelta * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraForward, m_cameraUp);
         ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
@@ -600,7 +600,7 @@ private:
     }
 
     void updateAgentPositionsBuffer(size_t imageIndex) {
-        //Timer timer("Update Agent Positions Buffer");
+        Timer timer("Update Agent Positions Buffer");
         auto connection = m_connector->takeNewestConnection();
 
         VkSubmitInfo submitInfo{};
@@ -616,9 +616,36 @@ private:
         m_connector->restoreConnection(connection);
     }
 
+    void newUpdateAgentPositionsBuffer(size_t imageIndex) {
+        Timer timer("XXXUpdate Agent Positions Buffer");
+
+        auto connection = m_connector->takeNewestConnection();
+
+        VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
+            m_logicalDevice,
+            m_commandPool,
+            connection->m_buffer,
+            m_instanceBuffers[imageIndex],
+            sizeof(AgentPositionAndRotation) * connection->m_numberOfElements);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &copyCommand;
+        vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
+
+        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
+
+        vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
+
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
+
+        m_connector->restoreConnection(connection);
+    }
+
 public:
 
-    void render(float time) override {
+    void render(float timeDelta) override {
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -648,8 +675,8 @@ public:
 
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
-        updateUniformBuffer(imageIndex, time);
-        updateAgentPositionsBuffer(imageIndex);
+        updateUniformBuffer(imageIndex, timeDelta);
+        newUpdateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

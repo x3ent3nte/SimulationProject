@@ -14,7 +14,7 @@ public:
 
     virtual ~Renderer() = default;
 
-    virtual void render(float time) = 0;
+    virtual void render(float timeDelta) = 0;
 
     static std::shared_ptr<Renderer> create(
         VkInstance instance,

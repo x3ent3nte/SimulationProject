@@ -5,13 +5,15 @@
 
 #include <stdexcept>
 
-// Record command buffer copy, so ideally should be reused
+// Record copy command buffer at specified offsets, so ideally should be reused
 VkCommandBuffer Buffer::recordCopyCommand(
     VkDevice logicalDevice,
     VkCommandPool commandPool,
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
-    uint32_t size) {
+    VkDeviceSize size,
+    size_t srcOffset,
+    size_t dstOffset) {
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -28,14 +30,32 @@ VkCommandBuffer Buffer::recordCopyCommand(
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
     VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0;
-    copyRegion.dstOffset = 0;
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
     vkEndCommandBuffer(commandBuffer);
 
     return commandBuffer;
+}
+
+// Record copy command buffer, so ideally should be reused
+VkCommandBuffer Buffer::recordCopyCommand(
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkBuffer srcBuffer,
+    VkBuffer dstBuffer,
+    VkDeviceSize size) {
+
+    return recordCopyCommand(
+        logicalDevice,
+        commandPool,
+        srcBuffer,
+        dstBuffer,
+        size,
+        0,
+        0);
 }
 
 // Perform one time copy at specified offsets
@@ -46,8 +66,8 @@ void Buffer::copyBuffer(
     VkBuffer& srcBuffer,
     VkBuffer& dstBuffer,
     VkDeviceSize size,
-    uint32_t srcOffset,
-    uint32_t dstOffset) {
+    size_t srcOffset,
+    size_t dstOffset) {
 
     VkCommandBuffer commandBuffer = Command::beginSingleTimeCommands(logicalDevice, commandPool);
 
