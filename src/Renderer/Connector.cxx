@@ -12,8 +12,8 @@ Connection::Connection(
     size_t memorySize,
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
-    VkCommandPool commandPool,
-    VkQueue queue)
+    VkQueue queue,
+    VkCommandPool commandPool)
     : m_id(id) {
 
     m_numberOfElements = numberOfElements;
@@ -40,8 +40,8 @@ Connection::~Connection() {
 Connector::Connector(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
-    VkCommandPool commandPool,
     VkQueue queue,
+    VkCommandPool commandPool,
     uint32_t numberOfElements) {
 
     uint32_t numberOfBuffers = 3;
@@ -64,8 +64,8 @@ Connector::Connector(
             initialPositions.size() * sizeof(AgentPositionAndRotation),
             physicalDevice,
             logicalDevice,
-            commandPool,
-            queue);
+            queue,
+            commandPool);
         m_connections.push_back(connection);
     }
 }

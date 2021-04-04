@@ -19,7 +19,7 @@
 
 namespace {
     constexpr int kWidth = 1600;
-    constexpr int kHeight = 900;
+    constexpr int kHeight = 1080;
 } // anonymous namespace
 
 Application::Application() {
@@ -42,13 +42,13 @@ Application::Application() {
     vkGetDeviceQueue(m_logicalDevice, indices.m_presentFamily, 0, &m_presentQueue);
     vkGetDeviceQueue(m_logicalDevice, indices.m_computeFamily, 0, &m_computeQueue);
 
-    m_commandPool = Command::createCommandPool(m_logicalDevice, indices.m_graphicsFamily);
+    m_graphicsCommandPool = Command::createCommandPool(m_logicalDevice, indices.m_graphicsFamily);
     m_computeCommandPool = Command::createCommandPool(m_logicalDevice, indices.m_computeFamily);
 }
 
 Application::~Application() {
 
-    vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
+    vkDestroyCommandPool(m_logicalDevice, m_graphicsCommandPool, nullptr);
     vkDestroyCommandPool(m_logicalDevice, m_computeCommandPool, nullptr);
 
     if(Constants::kEnableValidationLayers) {
@@ -73,7 +73,7 @@ int Application::run() {
 
     const uint32_t maxNumberOfAgents = 64 * 512;
 
-    auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_commandPool, m_graphicsQueue, maxNumberOfAgents);
+    auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_graphicsQueue, m_graphicsCommandPool, maxNumberOfAgents);
     auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector, maxNumberOfAgents);
     simulator->simulate();
 
@@ -86,7 +86,7 @@ int Application::run() {
         m_logicalDevice,
         m_graphicsQueue,
         m_presentQueue,
-        m_commandPool,
+        m_graphicsCommandPool,
         connector,
         maxNumberOfAgents);
 

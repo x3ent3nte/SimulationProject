@@ -29,8 +29,8 @@ public:
         size_t memorySize,
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
-        VkCommandPool commandPool,
-        VkQueue queue);
+        VkQueue queue,
+        VkCommandPool commandPool);
 
     virtual ~Connection();
 
@@ -53,8 +53,8 @@ public:
     Connector(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
-        VkCommandPool commandPool,
         VkQueue queue,
+        VkCommandPool commandPool,
         uint32_t numberOfElements);
 
     virtual ~Connector();

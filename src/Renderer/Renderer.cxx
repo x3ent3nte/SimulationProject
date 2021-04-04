@@ -107,7 +107,7 @@ private:
     std::vector<VkFramebuffer> m_swapChainFrameBuffers;
 
     VkCommandPool m_commandPool;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    std::vector<VkCommandBuffer> m_renderCommandBuffers;
 
     VkFence m_copyCompletedFence;
 
@@ -446,24 +446,6 @@ private:
             m_swapChainFrameBuffers);
     }
 
-    void createCommandBuffers() {
-        Command::createCommandBuffers(
-            m_swapChainFrameBuffers,
-            m_commandPool,
-            m_logicalDevice,
-            m_renderPass,
-            m_swapChainExtent,
-            m_instanceBuffers,
-            m_vertexBuffer,
-            m_indexBuffer,
-            static_cast<uint32_t>(m_indices.size()),
-            m_maxNumberOfAgents,
-            m_descriptorSets,
-            m_graphicsPipeline,
-            m_pipelineLayout,
-            m_commandBuffers);
-    }
-
     void createSwapChain() {
         SwapChain::createSwapChain(
             m_physicalDevice,
@@ -555,17 +537,18 @@ private:
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
     }
 
-    void updateAgentPositionsBuffer(size_t imageIndex) {
+    uint32_t updateAgentPositionsBuffer(size_t imageIndex) {
         Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
+        uint32_t numberOfElements = connection->m_numberOfElements;
 
         VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
             m_logicalDevice,
             m_commandPool,
             connection->m_buffer,
             m_instanceBuffers[imageIndex],
-            sizeof(AgentPositionAndRotation) * connection->m_numberOfElements);
+            sizeof(AgentPositionAndRotation) * numberOfElements);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -580,11 +563,85 @@ private:
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
 
         m_connector->restoreConnection(connection);
+
+        return numberOfElements;
+    }
+
+    VkCommandBuffer createRenderCommand(size_t imageIndex, uint32_t numberOfInstances) {
+
+        VkCommandBuffer commandBuffer;
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate command buffers");
+        }
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to begin recording command buffer");
+        }
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = m_renderPass;
+        renderPassInfo.framebuffer = m_swapChainFrameBuffers[imageIndex];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = m_swapChainExtent;
+
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = {0.005f, 0.0f, 0.005f, 1.0f};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+
+        VkBuffer vertexBuffers[2] = {m_vertexBuffer, m_instanceBuffers[imageIndex]};
+        VkDeviceSize offsets[] = {0, 0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+            0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, m_indices.size(), numberOfInstances, 0, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to record command buffer");
+        }
+
+        return commandBuffer;
+    }
+
+    void createCommandBuffers() {
+
+        m_renderCommandBuffers = std::vector<VkCommandBuffer>();
+
+        for (int i = 0; i < m_swapChainFrameBuffers.size(); ++i) {
+            m_renderCommandBuffers.push_back(createRenderCommand(i, 0));
+        }
     }
 
 public:
 
     void render(float timeDelta) override {
+
+        Timer timer("XXXXXX Render XXXXXX");
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -615,7 +672,7 @@ public:
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
         updateUniformBuffer(imageIndex, timeDelta);
-        updateAgentPositionsBuffer(imageIndex);
+        uint32_t numberOfElements = updateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -626,8 +683,11 @@ public:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[imageIndex]);
+        m_renderCommandBuffers[imageIndex] = createRenderCommand(imageIndex, numberOfElements);
+
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_commandBuffers[imageIndex];
+        submitInfo.pCommandBuffers = &m_renderCommandBuffers[imageIndex];
 
         VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
@@ -677,7 +737,7 @@ private:
             vkDestroyFramebuffer(m_logicalDevice, frameBuffer, nullptr);
         }
 
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_renderCommandBuffers.size()), m_renderCommandBuffers.data());
 
         vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);

@@ -28,7 +28,7 @@ private:
     VkQueue m_presentQueue;
     VkQueue m_computeQueue;
 
-    VkCommandPool m_commandPool;
+    VkCommandPool m_graphicsCommandPool;
     VkCommandPool m_computeCommandPool;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_prevTime;

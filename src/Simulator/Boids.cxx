@@ -144,14 +144,6 @@ namespace BoidsUtil {
 
         reproducer->recordCommand(commandBuffer, numberOfElements);
 
-        /*
-        VkBufferCopy copyAgentsRegion{};
-        copyAgentsRegion.srcOffset = 0;
-        copyAgentsRegion.dstOffset = 0;
-        copyAgentsRegion.size = numberOfElements * sizeof(Agent);
-
-        vkCmdCopyBuffer(commandBuffer, otherAgentsBuffer, agentsBuffer, 1, &copyAgentsRegion);
-        */
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
         }
@@ -301,6 +293,8 @@ void Boids::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     if (m_currentNumberOfElements == numberOfElements) {
         return;
     }
+
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
 
     createCommandBuffer(numberOfElements);
 
