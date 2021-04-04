@@ -101,7 +101,6 @@ private:
     VkCommandPool m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
-    std::vector<VkCommandBuffer> m_copyCommandBuffers;
     VkFence m_copyCompletedFence;
 
     VkDescriptorPool m_descriptorPool;
@@ -266,60 +265,9 @@ private:
         createCommandBuffers();
         createSyncObjects();
 
-        createCopyBuffers();
-    }
-
-    size_t calculateCopyCommandBufferIndex(size_t connectorIndex, size_t imageIndex) {
-        size_t numConnectorBuffers = m_connector->m_connections.size();
-        size_t numImages = m_commandBuffers.size();
-
-        return (numImages * connectorIndex) + imageIndex;
-    }
-
-    VkCommandBuffer createCopyCommandBuffer(size_t connectorIndex, size_t imageIndex) {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = m_commandPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = Constants::kNumberOfAgents * sizeof(AgentPositionAndRotation);
-        vkCmdCopyBuffer(commandBuffer, m_connector->m_connections[connectorIndex]->m_buffer, m_instanceBuffers[imageIndex], 1, &copyRegion);
-
-        vkEndCommandBuffer(commandBuffer);
-
-        return commandBuffer;
-    }
-
-    void createCopyBuffers() {
-        size_t numConnectorBuffers = m_connector->m_connections.size();
-        size_t numImages = m_commandBuffers.size();
-
-        m_copyCommandBuffers.resize(numConnectorBuffers * numImages);
-
-        for (size_t connectorIndex = 0; connectorIndex < numConnectorBuffers; ++connectorIndex) {
-            for (size_t imageIndex = 0; imageIndex < numImages; ++imageIndex) {
-                size_t index = calculateCopyCommandBufferIndex(connectorIndex, imageIndex);
-                m_copyCommandBuffers[index] = createCopyCommandBuffer(connectorIndex, imageIndex);
-            }
-        }
-
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
         vkCreateFence(m_logicalDevice, &fenceInfo, nullptr, &m_copyCompletedFence);
     }
 
@@ -600,23 +548,6 @@ private:
     }
 
     void updateAgentPositionsBuffer(size_t imageIndex) {
-        Timer timer("Update Agent Positions Buffer");
-        auto connection = m_connector->takeNewestConnection();
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_copyCommandBuffers[calculateCopyCommandBufferIndex(connection->m_id, imageIndex)];
-        vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
-
-        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
-
-        vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
-
-        m_connector->restoreConnection(connection);
-    }
-
-    void newUpdateAgentPositionsBuffer(size_t imageIndex) {
         Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
@@ -676,7 +607,7 @@ public:
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
         updateUniformBuffer(imageIndex, timeDelta);
-        newUpdateAgentPositionsBuffer(imageIndex);
+        updateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
