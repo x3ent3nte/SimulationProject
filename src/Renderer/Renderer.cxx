@@ -543,24 +543,26 @@ private:
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
 
-        VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
-            m_logicalDevice,
-            m_commandPool,
-            connection->m_buffer,
-            m_instanceBuffers[imageIndex],
-            sizeof(AgentPositionAndRotation) * numberOfElements);
+        if (numberOfElements > 0) {
+            VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
+                m_logicalDevice,
+                m_commandPool,
+                connection->m_buffer,
+                m_instanceBuffers[imageIndex],
+                sizeof(AgentPositionAndRotation) * numberOfElements);
 
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &copyCommand;
-        vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &copyCommand;
+            vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
 
-        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
+            vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
 
-        vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
+            vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
 
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
+            vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
+        }
 
         m_connector->restoreConnection(connection);
 

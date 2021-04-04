@@ -7,27 +7,23 @@
 
 Connection::Connection(
     int id,
-    void* initialState,
-    size_t numberOfElements,
-    size_t memorySize,
+    VkDeviceSize memorySize,
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
     VkCommandPool commandPool)
     : m_id(id) {
 
-    m_numberOfElements = numberOfElements;
+    m_numberOfElements = 0;
 
     m_logicalDevice = logicalDevice;
 
-    Buffer::createBufferWithData(
-        initialState,
-        memorySize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        commandPool,
-        queue,
+        memorySize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_buffer,
         m_deviceMemory);
 }
@@ -48,20 +44,12 @@ Connector::Connector(
 
     m_logicalDevice = logicalDevice;
 
-    std::vector<AgentPositionAndRotation> initialPositions(numberOfElements);
-
-    for (size_t i = 0; i < numberOfElements; ++i) {
-        initialPositions[i] = AgentPositionAndRotation{glm::vec3(0.0f), glm::vec4(0.0f)};
-    }
-
     m_newestConnectionId = 0;
 
     for (int i = 0; i < numberOfBuffers; ++i) {
         auto connection = std::make_shared<Connection>(
             i,
-            initialPositions.data(),
-            initialPositions.size(),
-            initialPositions.size() * sizeof(AgentPositionAndRotation),
+            numberOfElements * sizeof(AgentPositionAndRotation),
             physicalDevice,
             logicalDevice,
             queue,

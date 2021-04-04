@@ -24,9 +24,7 @@ public:
 
     Connection(
         int id,
-        void* initialState,
-        size_t numberOfElements,
-        size_t memorySize,
+        VkDeviceSize memorySize,
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,
