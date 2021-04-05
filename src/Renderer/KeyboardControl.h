@@ -3,7 +3,7 @@
 
 #include <mutex>
 
-class KeyboardState {
+class InputState {
 
 private:
 
@@ -31,13 +31,13 @@ public:
 class KeyboardControl {
 
 private:
-    KeyboardState m_keyboardState;
+    InputState m_inputState;
 
     std::mutex m_mutex;
 
 public:
 
-    KeyboardState getKeyboardState();
+    InputState getInputState();
 
     void keyActivity(int key, int scancode, int action, int mods);
 };
