@@ -3,19 +3,29 @@
 
 #include <mutex>
 
-struct KeyboardState {
-    bool m_keyW = false;
-    bool m_keyA = false;
-    bool m_keyS = false;
-    bool m_keyD = false;
-    bool m_keyQ = false;
-    bool m_keyE = false;
-    bool m_keyZ = false;
-    bool m_keyX = false;
-    bool m_keyUp = false;
-    bool m_keyLeft = false;
-    bool m_keyDown = false;
-    bool m_keyRight = false;
+class KeyboardState {
+
+private:
+
+    uint32_t m_state = 0;
+
+public:
+
+    bool isForward();
+    bool isBack();
+    bool isLeft();
+    bool isRight();
+    bool isUp();
+    bool isDown();
+    bool isPitchUp();
+    bool isPitchDown();
+    bool isYawLeft();
+    bool isYawRight();
+    bool isRollLeft();
+    bool isRollRight();
+
+    bool isBitSet(uint32_t bitMask);
+    void setBitValue(bool set, uint32_t bitMask);
 };
 
 class KeyboardControl {

@@ -464,58 +464,58 @@ private:
         KeyboardState keyboardState = m_keyboardControl->getKeyboardState();
         float delta = 100.0f * timeDelta;
 
-        if (keyboardState.m_keyW) {
+        if (keyboardState.isForward()) {
             m_cameraPosition += m_cameraForward * delta;
         }
 
-        if (keyboardState.m_keyS) {
+        if (keyboardState.isBack()) {
             m_cameraPosition -= m_cameraForward * delta;
         }
 
-        if (keyboardState.m_keyA) {
+        if (keyboardState.isLeft()) {
             m_cameraPosition -= m_cameraRight * delta;
         }
 
-        if (keyboardState.m_keyD) {
+        if (keyboardState.isRight()) {
             m_cameraPosition += m_cameraRight * delta;
         }
 
-        if (keyboardState.m_keyZ) {
+        if (keyboardState.isDown()) {
             m_cameraPosition -= m_cameraUp * delta;
         }
 
-        if (keyboardState.m_keyX) {
+        if (keyboardState.isUp()) {
             m_cameraPosition += m_cameraUp * delta;
         }
 
         float angleDelta = 5.0f * timeDelta;
 
-        if (keyboardState.m_keyQ) {
+        if (keyboardState.isRollLeft()) {
             m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, -angleDelta);
             m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, -angleDelta);
         }
 
-        if (keyboardState.m_keyE) {
+        if (keyboardState.isRollRight()) {
             m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, angleDelta);
             m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, angleDelta);
         }
 
-        if (keyboardState.m_keyUp) {
+        if (keyboardState.isPitchDown()) {
             m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, -angleDelta);
             m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, -angleDelta);
         }
 
-        if (keyboardState.m_keyDown) {
+        if (keyboardState.isPitchUp()) {
             m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, angleDelta);
             m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, angleDelta);
         }
 
-        if (keyboardState.m_keyLeft) {
+        if (keyboardState.isYawLeft()) {
             m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, angleDelta);
             m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, angleDelta);
         }
 
-        if (keyboardState.m_keyRight) {
+        if (keyboardState.isYawRight()) {
             m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, -angleDelta);
             m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, -angleDelta);
         }
