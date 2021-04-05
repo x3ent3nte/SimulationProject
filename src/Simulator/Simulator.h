@@ -7,6 +7,7 @@
 #include <Simulator/Collider.h>
 #include <Simulator/Boids.h>
 #include <Simulator/Scanner.h>
+#include <Simulator/InputTerminal.h>
 
 #include <vulkan/vulkan.h>
 
@@ -22,6 +23,7 @@ private:
     std::thread m_simulateTask;
     std::atomic<bool> m_isActive;
     std::shared_ptr<Connector> m_connector;
+    std::shared_ptr<InputTerminal> m_inputTerminal;
 
     VkDevice m_logicalDevice;
 
@@ -72,6 +74,7 @@ public:
         VkQueue computeQueue,
         VkCommandPool computeCommandPool,
         std::shared_ptr<Connector> connector,
+        std::shared_ptr<InputTerminal> inputTerminal,
         uint32_t numberOfElements);
 
     virtual ~Simulator();

@@ -144,6 +144,7 @@ Simulator::Simulator(
     VkQueue computeQueue,
     VkCommandPool computeCommandPool,
     std::shared_ptr<Connector> connector,
+    std::shared_ptr<InputTerminal> inputTerminal,
     uint32_t numberOfElements) {
 
     m_logicalDevice = logicalDevice;
@@ -154,6 +155,7 @@ Simulator::Simulator(
 
     m_isActive = false;
     m_connector = connector;
+    m_inputTerminal = inputTerminal;
 
     const size_t numBuffers = m_connector->m_connections.size();
 
@@ -359,6 +361,8 @@ void Simulator::runSimulatorTask() {
 
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
+
+        auto inputStates = m_inputTerminal->readInputStates();
         m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
         std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 

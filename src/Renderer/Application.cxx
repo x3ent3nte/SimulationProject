@@ -7,6 +7,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
+#include <Simulator/InputTerminal.h>
 #include <Test/TestApplication.h>
 #include <Utils/Timer.h>
 
@@ -73,8 +74,18 @@ int Application::run() {
 
     const uint32_t maxNumberOfAgents = 64 * 512;
 
+    auto inputTerminal = std::make_shared<InputTerminal>();
+    inputTerminal->addPlayer(m_keyboardControl);
+
     auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_graphicsQueue, m_graphicsCommandPool, maxNumberOfAgents);
-    auto simulator = std::make_shared<Simulator>(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool, connector, maxNumberOfAgents);
+    auto simulator = std::make_shared<Simulator>(
+        m_physicalDevice,
+        m_logicalDevice,
+        m_computeQueue,
+        m_computeCommandPool,
+        connector,
+        inputTerminal,
+        maxNumberOfAgents);
     simulator->simulate();
 
     std::shared_ptr<Renderer> renderer = Renderer::create(

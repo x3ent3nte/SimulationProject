@@ -45,7 +45,7 @@ void InputState::setBitValue(bool set, uint32_t bitMask) {
 }
 
 
-InputState KeyboardControl::getInputState() {
+InputState KeyboardControl::readInputState() {
     std::lock_guard<std::mutex> guard(m_mutex);
     return m_inputState;
 }

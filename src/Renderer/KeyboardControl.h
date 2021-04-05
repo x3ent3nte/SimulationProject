@@ -3,13 +3,9 @@
 
 #include <mutex>
 
-class InputState {
-
-private:
+struct InputState {
 
     uint32_t m_state = 0;
-
-public:
 
     bool isForward();
     bool isBack();
@@ -37,7 +33,7 @@ private:
 
 public:
 
-    InputState getInputState();
+    InputState readInputState();
 
     void keyActivity(int key, int scancode, int action, int mods);
 };

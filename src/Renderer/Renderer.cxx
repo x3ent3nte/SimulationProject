@@ -461,7 +461,7 @@ private:
 
     void updateUniformBuffer(uint32_t currentImage, float timeDelta) {
 
-        InputState inputState = m_keyboardControl->getInputState();
+        InputState inputState = m_keyboardControl->readInputState();
         float delta = 100.0f * timeDelta;
 
         if (inputState.isForward()) {

@@ -5,6 +5,7 @@
 
 #include <Simulator/Scanner.h>
 #include <Simulator/Reproducer.h>
+#include <Renderer/KeyboardControl.h>
 
 #include <memory>
 
