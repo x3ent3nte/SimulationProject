@@ -75,7 +75,8 @@ public:
         VkCommandPool computeCommandPool,
         std::shared_ptr<Connector> connector,
         std::shared_ptr<InputTerminal> inputTerminal,
-        uint32_t numberOfElements);
+        uint32_t numberOfElements,
+        uint32_t maxNumberOfPlayers);
 
     virtual ~Simulator();
 

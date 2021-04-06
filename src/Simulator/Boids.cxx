@@ -11,7 +11,7 @@
 
 namespace BoidsUtil {
     size_t xDim = 512;
-    size_t kNumberOfBindings = 5;
+    size_t kNumberOfBindings = 6;
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice) {
         return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
@@ -30,14 +30,17 @@ namespace BoidsUtil {
         VkBuffer reproductionBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer numberOfElementsBuffer,
-        uint32_t numberOfElements) {
+        VkBuffer playerInputStatesBuffer,
+        uint32_t numberOfElements,
+        uint32_t maxNumberOfPlayers) {
 
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
             {agentsInBuffer, numberOfElements * sizeof(Agent)},
             {agentsOutBuffer, numberOfElements * sizeof(Agent)},
             {reproductionBuffer, numberOfElements * sizeof(uint32_t)},
             {timeDeltaBuffer, sizeof(float)},
-            {numberOfElementsBuffer, sizeof(uint32_t)}
+            {numberOfElementsBuffer, sizeof(uint32_t)},
+            {playerInputStatesBuffer, maxNumberOfPlayers * sizeof(uint32_t)}
         };
 
         return Compute::createDescriptorSet(
@@ -159,12 +162,14 @@ Boids::Boids(
     VkQueue queue,
     VkCommandPool commandPool,
     VkBuffer agentsBuffer,
-    uint32_t numberOfElements)
+    uint32_t numberOfElements,
+    uint32_t maxNumberOfPlayers)
     : m_logicalDevice(logicalDevice)
     , m_queue(queue)
     , m_commandPool(commandPool)
     , m_agentsBuffer(agentsBuffer)
-    , m_currentNumberOfElements(numberOfElements) {
+    , m_currentNumberOfElements(numberOfElements)
+    , m_maxNumberOfPlayers(maxNumberOfPlayers) {
 
     Buffer::createBuffer(
         physicalDevice,
@@ -213,6 +218,24 @@ Boids::Boids(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        m_maxNumberOfPlayers * sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        m_playerInputStatesBuffer,
+        m_playerInputStatesDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        m_maxNumberOfPlayers * sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_playerInputStatesHostVisibleBuffer,
+        m_playerInputStatesHostVisibleDeviceMemory);
+
     m_scanner = std::make_shared<Scanner>(
         physicalDevice,
         m_logicalDevice,
@@ -240,7 +263,9 @@ Boids::Boids(
         m_scanner->m_dataBuffer,
         m_timeDeltaBuffer,
         m_numberOfElementsBuffer,
-        numberOfElements);
+        m_playerInputStatesBuffer,
+        numberOfElements,
+        m_maxNumberOfPlayers);
 
     createCommandBuffer(numberOfElements);
 
@@ -275,6 +300,12 @@ Boids::~Boids() {
 
     vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_playerInputStatesDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerInputStatesBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_playerInputStatesHostVisibleDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerInputStatesHostVisibleBuffer, nullptr);
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
@@ -367,8 +398,39 @@ uint32_t Boids::extractNumberOfElements() {
     return numberOfElements;
 }
 
-uint32_t Boids::run(float timeDelta, uint32_t numberOfElements) {
+void Boids::copyPlayerInputStates(std::vector<uint32_t>& playerInputStates) {
+    Timer timer("Boids::copyPlayerInputStates");
+    const size_t numberOfPlayers = playerInputStates.size();
+    const size_t memorySize = numberOfPlayers * sizeof(uint32_t);
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_playerInputStatesHostVisibleDeviceMemory, 0, memorySize, 0, &dataMap);
+    memcpy(dataMap, playerInputStates.data(), memorySize);
+    vkUnmapMemory(m_logicalDevice, m_playerInputStatesHostVisibleDeviceMemory);
+
+    VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
+        m_logicalDevice,
+        m_commandPool,
+        m_playerInputStatesHostVisibleBuffer,
+        m_playerInputStatesBuffer,
+        memorySize);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &copyCommand;
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    vkQueueSubmit(m_queue, 1, &submitInfo, m_fence);
+
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
+}
+
+uint32_t Boids::run(float timeDelta, uint32_t numberOfElements, std::vector<uint32_t>& playerInputStates) {
     updateNumberOfElementsIfNecessary(numberOfElements);
+    copyPlayerInputStates(playerInputStates);
 
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);

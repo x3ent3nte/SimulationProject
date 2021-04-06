@@ -17,6 +17,7 @@
 #include <set>
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
 
 namespace {
     constexpr int kWidth = 1600;
@@ -73,6 +74,7 @@ int Application::run() {
     }
 
     const uint32_t maxNumberOfAgents = 64 * 512;
+    const uint32_t maxNumberOfPlayers = 1;
 
     auto inputTerminal = std::make_shared<InputTerminal>();
     inputTerminal->addPlayer(m_keyboardControl);
@@ -85,7 +87,8 @@ int Application::run() {
         m_computeCommandPool,
         connector,
         inputTerminal,
-        maxNumberOfAgents);
+        maxNumberOfAgents,
+        maxNumberOfPlayers);
     simulator->simulate();
 
     std::shared_ptr<Renderer> renderer = Renderer::create(
@@ -112,6 +115,7 @@ int Application::run() {
             glfwPollEvents();
             //Timer timer("Render Frame " + numFramesRendered);
             renderer->render(time);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
             numFramesRendered += 1;
 
@@ -122,9 +126,9 @@ int Application::run() {
         return EXIT_FAILURE;
     }
 
-    std::cout << "Number of Frames Rendered= " << numFramesRendered << "\n";
-
     simulator->stopSimulation(m_physicalDevice);
+
+    std::cout << "Number of Frames Rendered = " << numFramesRendered << "\n";
 
     vkDeviceWaitIdle(m_logicalDevice);
 

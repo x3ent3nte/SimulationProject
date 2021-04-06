@@ -37,6 +37,10 @@ layout (std430, binding = 4) buffer bufferNumberOfElements {
     uint numberOfElements;
 };
 
+layout (std430, binding = 5) buffer bufferPlayerInputStates {
+    uint playerInputStates[];
+};
+
 struct Steering {
     vec3 alignment;
     vec3 cohesion;

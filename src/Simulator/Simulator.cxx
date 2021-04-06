@@ -145,7 +145,8 @@ Simulator::Simulator(
     VkCommandPool computeCommandPool,
     std::shared_ptr<Connector> connector,
     std::shared_ptr<InputTerminal> inputTerminal,
-    uint32_t numberOfElements) {
+    uint32_t numberOfElements,
+    uint32_t maxNumberOfPlayers) {
 
     m_logicalDevice = logicalDevice;
     m_computeQueue = computeQueue;
@@ -284,7 +285,8 @@ Simulator::Simulator(
         m_computeQueue,
         m_computeCommandPool,
         m_agentsBuffer,
-        numberOfElements);
+        numberOfElements,
+        maxNumberOfPlayers);
 }
 
 Simulator::~Simulator() {
@@ -362,8 +364,13 @@ void Simulator::runSimulatorTask() {
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
 
-        auto inputStates = m_inputTerminal->readInputStates();
-        m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements);
+        const std::vector<InputState> inputStates = m_inputTerminal->readInputStates();
+        std::vector<uint32_t> inputStatesInt(inputStates.size());
+        for (int i = 0; i < inputStates.size(); ++i) {
+            inputStatesInt[i] = inputStates[i].m_state;
+        }
+
+        m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements, inputStatesInt);
         std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
         updateConnector(timeDelta);
