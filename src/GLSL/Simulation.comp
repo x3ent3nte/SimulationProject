@@ -8,6 +8,7 @@
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
+    int playerId;
     vec3 position;
     vec3 velocity;
     vec3 acceleration;

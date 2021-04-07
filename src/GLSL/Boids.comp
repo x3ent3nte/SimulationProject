@@ -8,6 +8,7 @@
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
+    int playerId;
     vec3 position;
     vec3 velocity;
     vec3 acceleration;
@@ -162,6 +163,55 @@ vec4 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
     return createQuaternionFromAxisAndTheta(targetRight, theta);
 }
 
+const int kForwardBit = 0;
+const int kBackBit = 1;
+const int kLeftBit = 2;
+const int kRightBit = 3;
+const int kUpBit = 4;
+const int kDownBit = 5;
+const int kPitchUpBit = 6;
+const int kPitchDownBit = 7;
+const int kYawLeftBit = 8;
+const int kYawRightBit = 9;
+const int kRollLeftBit = 10;
+const int kRollRightBit = 11;
+
+const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+const vec3 canonicalUp = vec3(1.0f, 0.0f, 0.0f);
+const vec3 canonicalRight = vec3(0.0f, 1.0f, 0.0f);
+
+uint computeInputValue(uint inputState, uint bitPos) {
+    uint bitMask = 1 << bitPos;
+    uint anded = inputState & bitMask;
+    return anded >> bitPos;
+}
+
+void processPlayerAgent(inout Agent agent) {
+    const uint inputState = playerInputStates[agent.playerId];
+
+    const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+    const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
+    const vec3 right = cross(forward, up);
+
+    const float accFloat = 40.0f;
+    const float rotationalAccFloat = timeDelta * 30.0f;
+
+    vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
+    acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));
+    acceleration += right * accFloat * (computeInputValue(inputState, kRightBit) - computeInputValue(inputState, kLeftBit));
+
+    const uint pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
+    const uint yawInput = computeInputValue(inputState, kYawRightBit) - computeInputValue(inputState, kYawLeftBit);
+    const uint rollInput = computeInputValue(inputState, kRollRightBit) - computeInputValue(inputState, kRollLeftBit);
+
+    vec4 rotationalAcceleration = createQuaternionFromAxisAndTheta(right, rotationalAccFloat * pitchInput);
+    rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(up, rotationalAccFloat * yawInput), rotationalAcceleration));
+    rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(forward, rotationalAccFloat * rollInput), rotationalAcceleration));
+
+    agent.velocity += acceleration;
+    agent.rotationalVelocity = normalize(hamiltonProduct(rotationalAcceleration, agent.rotationalVelocity));
+}
+
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
@@ -171,20 +221,24 @@ void main() {
 
     Agent agent = agentsIn[index];
 
-    Steering steering = calculateSteering(agent, index);
-
     const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
     vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
-    vec3 steeringVector = safeNormalize(
-        (2 * steering.alignment) +
-        (10 * steering.cohesion) +
-        (4 * steering.separation));
-    vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
+    if (agent.playerId < 0) {
+        Steering steering = calculateSteering(agent, index);
 
-    agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
+        vec3 steeringVector = safeNormalize(
+            (2 * steering.alignment) +
+            (10 * steering.cohesion) +
+            (4 * steering.separation));
+        vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
 
-    agent.velocity = forward * 40.0f;
+        agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
+
+        agent.velocity = forward * 40.0f;
+    } else {
+        processPlayerAgent(agent);
+    }
 
     agentsOut[index] = agent;
 

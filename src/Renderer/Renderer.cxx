@@ -198,8 +198,8 @@ private:
 
     void initVulkan() {
         m_cameraPosition = glm::vec3(2.0f, 0.0f, 1.0f);
-        m_cameraForward = glm::vec3(-1.0f, 0.0f, 0.0f);
-        m_cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);
+        m_cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
+        m_cameraUp = glm::vec3(1.0f, 0.0f, 0.0f);
         m_cameraRight = glm::vec3(0.0f, 1.0f, 0.0f);
 
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
@@ -473,11 +473,11 @@ private:
         }
 
         if (inputState.isLeft()) {
-            m_cameraPosition -= m_cameraRight * delta;
+            m_cameraPosition += m_cameraRight * delta;
         }
 
         if (inputState.isRight()) {
-            m_cameraPosition += m_cameraRight * delta;
+            m_cameraPosition -= m_cameraRight * delta;
         }
 
         if (inputState.isDown()) {
@@ -501,13 +501,13 @@ private:
         }
 
         if (inputState.isPitchDown()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, -angleDelta);
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, -angleDelta);
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, angleDelta);
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, angleDelta);
         }
 
         if (inputState.isPitchUp()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, angleDelta);
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, angleDelta);
+            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, -angleDelta);
+            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, -angleDelta);
         }
 
         if (inputState.isYawLeft()) {
