@@ -8,6 +8,7 @@
 #include <Simulator/Boids.h>
 #include <Simulator/Scanner.h>
 #include <Simulator/InputTerminal.h>
+//#include <Simulator/SimulationStateWriter.h>
 
 #include <vulkan/vulkan.h>
 
@@ -61,6 +62,7 @@ private:
     std::shared_ptr<Collider> m_collider;
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Boids> m_boids;
+    //std::shared_ptr<SimulationStateWriter> m_simulationStateWriter;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void updateConnector(float timeDelta);
