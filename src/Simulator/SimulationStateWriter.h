@@ -1,28 +1,16 @@
 #ifndef SIMULATION_STATE_WRITER_H
 #define SIMULATION_STATE_WRITER_H
 
-#include <Simulator/Agent.h>
-
 #include <vulkan/vulkan.h>
 
 #include <vector>
-
-class SimulationStateWriterFunction {
-
-private:
-
-public:
-
-};
+#include <memory>
 
 class SimulationStateWriter {
 
-private:
+public:
 
     VkDevice m_logicalDevice;
-
-    VkQueue m_queue;
-    VkCommandPool m_commandPool;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
@@ -30,13 +18,34 @@ private:
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_pipeline;
 
-public:
-
     SimulationStateWriter(
         VkDevice logicalDevice,
         size_t descriptorPoolSize);
 
     virtual ~SimulationStateWriter();
+};
+
+class SimulationStateWriterFunction {
+
+private:
+
+    const std::shared_ptr<SimulationStateWriter> m_simulationStateWriter;
+
+    VkDescriptorSet m_descriptorSet;
+
+public:
+
+    SimulationStateWriterFunction::SimulationStateWriterFunction(
+        std::shared_ptr<SimulationStateWriter> simulationStateWriter,
+        VkBuffer agentsBuffer,
+        VkBuffer agentPositionAndRotationsBuffer,
+        VkBuffer playerPositionAndRotationsBuffer,
+        uint32_t maxNumberOfAgents,
+        uint32_t maxNumberOfPlayers);
+
+    virtual ~SimulationStateWriterFunction();
+
+    void recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfAgents);
 };
 
 #endif
