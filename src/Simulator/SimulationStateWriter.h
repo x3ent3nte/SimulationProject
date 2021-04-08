@@ -1,6 +1,8 @@
 #ifndef SIMULATION_STATE_WRITER_H
 #define SIMULATION_STATE_WRITER_H
 
+#include <Simulator/Agent.h>
+
 #include <vulkan/vulkan.h>
 
 #include <vector>

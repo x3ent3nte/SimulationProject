@@ -290,7 +290,7 @@ Simulator::Simulator(
         numberOfElements,
         maxNumberOfPlayers);
 
-    //m_simulationStateWriter = std::make_shared<SimulationStateWriter>(m_logicalDevice, m_connector->m_connections.size());
+    m_simulationStateWriter = std::make_shared<SimulationStateWriter>(m_logicalDevice, m_connector->m_connections.size());
 }
 
 Simulator::~Simulator() {

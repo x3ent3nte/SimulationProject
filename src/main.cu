@@ -235,7 +235,7 @@ void cudaSimulator() {
 int main() {
     srand(time(NULL));
 
-    return Application().run();
+    return Application::create()->run();
 
     //cudaSimulator();
     //reducePlayground();
