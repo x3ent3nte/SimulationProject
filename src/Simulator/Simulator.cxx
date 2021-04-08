@@ -233,6 +233,24 @@ Simulator::Simulator(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        maxNumberOfPlayers * sizeof(AgentPositionAndRotation),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        m_playerPositionAndRotationsBuffer,
+        m_playerPositionAndRotationsDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        maxNumberOfPlayers * sizeof(AgentPositionAndRotation),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_playerPositionAndRotationsHostVisibleBuffer,
+        m_playerPositionAndRotationsHostVisibleDeviceMemory);
+
     m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
 
     for (size_t i = 0; i < numBuffers; ++i) {
@@ -290,7 +308,17 @@ Simulator::Simulator(
         numberOfElements,
         maxNumberOfPlayers);
 
-    m_simulationStateWriter = std::make_shared<SimulationStateWriter>(m_logicalDevice, m_connector->m_connections.size());
+    auto simulationStateWriter = std::make_shared<SimulationStateWriter>(m_logicalDevice, m_connector->m_connections.size());
+    for (size_t i = 0; i < numBuffers; ++i) {
+        m_simulationStateWriterFunctions.push_back(
+            std::make_shared<SimulationStateWriterFunction>(
+                simulationStateWriter,
+                m_agentsBuffer,
+                m_connector->m_connections[i]->m_buffer,
+                m_playerPositionAndRotationsBuffer,
+                numberOfElements,
+                maxNumberOfPlayers));
+    }
 }
 
 Simulator::~Simulator() {

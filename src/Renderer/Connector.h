@@ -44,9 +44,11 @@ private:
 
     std::mutex m_mutex;
 
+    std::deque<std::shared_ptr<Connection>> m_connectionsQueue;
+
 public:
 
-    std::deque<std::shared_ptr<Connection>> m_connections;
+    std::vector<std::shared_ptr<Connection>> m_connections;
 
     Connector(
         VkPhysicalDevice physicalDevice,

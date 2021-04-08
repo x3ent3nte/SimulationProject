@@ -40,13 +40,13 @@ Connector::Connector(
     VkCommandPool commandPool,
     uint32_t numberOfElements) {
 
-    uint32_t numberOfBuffers = 3;
-
     m_logicalDevice = logicalDevice;
 
     m_newestConnectionId = 0;
 
-    for (int i = 0; i < numberOfBuffers; ++i) {
+    int numberOfConnections = 3;
+
+    for (uint32_t i = 0; i < numberOfConnections; ++i) {
         auto connection = std::make_shared<Connection>(
             i,
             numberOfElements * sizeof(AgentPositionAndRotation),
@@ -54,6 +54,7 @@ Connector::Connector(
             logicalDevice,
             queue,
             commandPool);
+        m_connectionsQueue.push_back(connection);
         m_connections.push_back(connection);
     }
 }
@@ -64,29 +65,29 @@ Connector::~Connector() {
 
 std::shared_ptr<Connection> Connector::takeNewestConnection() {
     std::lock_guard<std::mutex> guard(m_mutex);
-    auto newestConnection = m_connections.front();
-    m_connections.pop_front();
+    auto newestConnection = m_connectionsQueue.front();
+    m_connectionsQueue.pop_front();
     return newestConnection;
 }
 
 std::shared_ptr<Connection> Connector::takeOldConnection() {
     std::lock_guard<std::mutex> guard(m_mutex);
-    auto oldConnection = m_connections.back();
-    m_connections.pop_back();
+    auto oldConnection = m_connectionsQueue.back();
+    m_connectionsQueue.pop_back();
     return oldConnection;
 }
 
 void Connector::restoreNewestConnection(std::shared_ptr<Connection> connection) {
     std::lock_guard<std::mutex> guard(m_mutex);
     m_newestConnectionId = connection->m_id;
-    m_connections.push_front(connection);
+    m_connectionsQueue.push_front(connection);
 }
 
 void Connector::restoreConnection(std::shared_ptr<Connection> connection) {
     std::lock_guard<std::mutex> guard(m_mutex);
     if (m_newestConnectionId == connection->m_id) {
-        m_connections.push_front(connection);
+        m_connectionsQueue.push_front(connection);
     } else {
-        m_connections.push_back(connection);
+        m_connectionsQueue.push_back(connection);
     }
 }

@@ -57,12 +57,18 @@ private:
     VkBuffer m_numberOfElementsBufferHostVisible;
     VkDeviceMemory m_numberOfElementsDeviceMemoryHostVisible;
 
+    VkBuffer m_playerPositionAndRotationsBuffer;
+    VkDeviceMemory m_playerPositionAndRotationsDeviceMemory;
+
+    VkBuffer m_playerPositionAndRotationsHostVisibleBuffer;
+    VkDeviceMemory m_playerPositionAndRotationsHostVisibleDeviceMemory;
+
     uint32_t m_currentNumberOfElements;
 
     std::shared_ptr<Collider> m_collider;
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Boids> m_boids;
-    std::shared_ptr<SimulationStateWriter> m_simulationStateWriter;
+    std::vector<std::shared_ptr<SimulationStateWriterFunction>> m_simulationStateWriterFunctions;
 
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void updateConnector(float timeDelta);
