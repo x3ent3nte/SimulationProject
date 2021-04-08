@@ -337,6 +337,12 @@ Simulator::~Simulator() {
     vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
 
+    vkFreeMemory(m_logicalDevice, m_playerPositionAndRotationsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerPositionAndRotationsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerPositionAndRotationsHostVisibleBuffer, nullptr);
+
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_computeDescriptorSetLayout, nullptr);
 
     for (size_t i = 0; i < m_computePipelines.size(); ++i) {
