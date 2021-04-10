@@ -357,7 +357,7 @@ Simulator::~Simulator() {
 }
 
 void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta) {
-
+    Timer timer("Simulator::simulateNextStep");
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
     float timeDeltaCopy = timeDelta;
@@ -376,6 +376,88 @@ void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta)
     }
 
     vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+}
+
+void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
+    Timer timer("Simulator::runSimulatorStateWriterFunction");
+
+    auto connection = m_connector->takeOldConnection();
+    auto sswf = m_simulationStateWriterFunctions[connection->m_id];
+
+    VkCommandBuffer commandBuffer;
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = m_computeCommandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(m_logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create compute command buffer");
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin compute command buffer");
+    }
+
+    sswf->recordCommand(commandBuffer, m_currentNumberOfElements);
+
+    VkMemoryBarrier memoryBarrier = {};
+    memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    memoryBarrier.pNext = nullptr;
+    memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+    memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &memoryBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    size_t playerMemorySize = numberOfPlayers * sizeof(AgentPositionAndRotation);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = playerMemorySize;
+    vkCmdCopyBuffer(commandBuffer, m_playerPositionAndRotationsBuffer, m_playerPositionAndRotationsHostVisibleBuffer, 1, &copyRegion);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end compute command buffer");
+    }
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_computeFence);
+
+    if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit compute command buffer");
+    }
+
+    vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory, 0, playerMemorySize, 0, &dataMap);
+
+    connection->m_players.resize(numberOfPlayers);
+    memcpy(connection->m_players.data(), dataMap, playerMemorySize);
+    vkUnmapMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory);
+
+    connection->m_numberOfElements = m_currentNumberOfElements;
+    m_connector->restoreNewestConnection(connection);
 }
 
 void Simulator::updateConnector(float timeDelta) {
@@ -411,7 +493,8 @@ void Simulator::runSimulatorTask() {
         m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements, inputStatesInt);
         std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
-        updateConnector(timeDelta);
+        //updateConnector(timeDelta);
+        runSimulatorStateWriterFunction(inputStatesInt.size());
 
         numFrames++;
         prevTime = currentTime;

@@ -1,6 +1,8 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
+#include <Simulator/Agent.h>
+
 #include <vulkan/vulkan.h>
 
 #include <deque>
@@ -19,6 +21,9 @@ private:
 public:
 
     const int m_id;
+
+    std::vector<AgentPositionAndRotation> m_players;
+
     uint32_t m_numberOfElements;
     VkBuffer m_buffer;
 

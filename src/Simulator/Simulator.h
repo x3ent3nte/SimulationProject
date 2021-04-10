@@ -73,6 +73,7 @@ private:
     void simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta);
     void updateConnector(float timeDelta);
     void runSimulatorTask();
+    void runSimulatorStateWriterFunction(uint32_t numberOfPlayers);
 
 public:
 
