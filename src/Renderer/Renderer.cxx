@@ -544,18 +544,21 @@ private:
     void updateUniformBufferWithPlayer(uint32_t currentImage, const AgentPositionAndRotation& player) {
 
         glm::vec3 playerForward = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 0.0f, -1.0f), player.rotation);
-        glm::vec3 playerUp = MyMath::rotatePointByQuaternion(glm::vec3(1.0f, 0.0f, 0.0f), player.rotation);
+        glm::vec3 playerUp = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 1.0f, 0.0f), player.rotation);
 
         std::cout << "Player forward ";
         printVec3(playerForward);
         std::cout << "Player up ";
         printVec3(playerUp);
 
+        glm::vec3 eye = (player.position - (14.0f * playerForward)) + (4.0f * playerUp);
+        glm::vec3 target = player.position + (playerForward * 8.0f);
+
         UniformBufferObject ubo{};
         ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::lookAt(player.position, player.position + playerForward, playerUp);
+        ubo.view = glm::lookAt(eye, target, playerUp);
         ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
-        ubo.cameraPosition = player.position;
+        ubo.cameraPosition = eye;
 
         ubo.proj[1][1] *= -1;
 
