@@ -537,11 +537,44 @@ private:
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
     }
 
-    uint32_t updateAgentPositionsBuffer(size_t imageIndex) {
+    void printVec3(glm::vec3 v) {
+        std::cout << "x " << v.x << " y " << v.y << " z " << v.z << "\n";
+    }
+
+    void updateUniformBufferWithPlayer(uint32_t currentImage, const AgentPositionAndRotation& player) {
+
+        glm::vec3 playerForward = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 0.0f, -1.0f), player.rotation);
+        glm::vec3 playerUp = MyMath::rotatePointByQuaternion(glm::vec3(1.0f, 0.0f, 0.0f), player.rotation);
+
+        std::cout << "Player forward ";
+        printVec3(playerForward);
+        std::cout << "Player up ";
+        printVec3(playerUp);
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::mat4(1.0f);
+        ubo.view = glm::lookAt(player.position, player.position + playerForward, playerUp);
+        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
+        ubo.cameraPosition = player.position;
+
+        ubo.proj[1][1] *= -1;
+
+        void* data;
+        vkMapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage], 0, sizeof(UniformBufferObject), 0, &data);
+        memcpy(data, &ubo, sizeof(UniformBufferObject));
+        vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
+    }
+
+    std::pair<uint32_t, AgentPositionAndRotation> updateAgentPositionsBuffer(size_t imageIndex) {
         Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
+        AgentPositionAndRotation player;
+        if (connection->m_players.size() > 0) {
+            player = connection->m_players[0];
+            std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
+        }
 
         if (numberOfElements > 0) {
             VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
@@ -566,7 +599,7 @@ private:
 
         m_connector->restoreConnection(connection);
 
-        return numberOfElements;
+        return {numberOfElements, player};
     }
 
     VkCommandBuffer createRenderCommand(size_t imageIndex, uint32_t numberOfInstances) {
@@ -673,8 +706,9 @@ public:
 
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
-        updateUniformBuffer(imageIndex, timeDelta);
-        uint32_t numberOfElements = updateAgentPositionsBuffer(imageIndex);
+        //updateUniformBuffer(imageIndex, timeDelta);
+        auto numberOfElementsAndPlayerInfo = updateAgentPositionsBuffer(imageIndex);
+        updateUniformBufferWithPlayer(imageIndex, numberOfElementsAndPlayerInfo.second);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -686,7 +720,7 @@ public:
         submitInfo.pWaitDstStageMask = waitStages;
 
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[imageIndex]);
-        m_renderCommandBuffers[imageIndex] = createRenderCommand(imageIndex, numberOfElements);
+        m_renderCommandBuffers[imageIndex] = createRenderCommand(imageIndex, numberOfElementsAndPlayerInfo.first);
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_renderCommandBuffers[imageIndex];
