@@ -193,16 +193,16 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = 40.0f;
+    const float accFloat = timeDelta * 12000.0f;
     const float rotationalAccFloat = timeDelta * 30.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
     acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));
     acceleration += right * accFloat * (computeInputValue(inputState, kRightBit) - computeInputValue(inputState, kLeftBit));
 
-    const uint pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
-    const uint yawInput = computeInputValue(inputState, kYawRightBit) - computeInputValue(inputState, kYawLeftBit);
-    const uint rollInput = computeInputValue(inputState, kRollRightBit) - computeInputValue(inputState, kRollLeftBit);
+    const int pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
+    const int yawInput = computeInputValue(inputState, kYawLeftBit) - computeInputValue(inputState, kYawRightBit);
+    const int rollInput = computeInputValue(inputState, kRollRightBit) - computeInputValue(inputState, kRollLeftBit);
 
     vec4 rotationalAcceleration = createQuaternionFromAxisAndTheta(right, rotationalAccFloat * pitchInput);
     rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(up, rotationalAccFloat * yawInput), rotationalAcceleration));
