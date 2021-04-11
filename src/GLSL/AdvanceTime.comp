@@ -37,6 +37,11 @@ vec4 hamiltonProduct(vec4 a, vec4 b) {
     return vec4(i, j, k, r);
 }
 
+vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
+    float thetaHalved = theta / 2;
+    return vec4(axis * sin(thetaHalved), cos(thetaHalved));
+}
+
 vec4 rotationalVelocityMultipliedByTime(vec4 rotationalVelocity, float timeDelta) {
     float thetaHalved = acos(rotationalVelocity.w);
     float sinThetaHalved = sin(thetaHalved);
@@ -61,6 +66,12 @@ void main() {
     agent.rotation = normalize(hamiltonProduct(
         rotationalVelocityMultipliedByTime(agent.rotationalVelocity, timeDelta),
         agent.rotation));
+    /*agent.rotation = normalize(
+        hamiltonProduct(
+            createQuaternionFromAxisAndTheta(
+                agent.rotationalVelocity.xyz,
+                agent.rotationalVelocity.w),
+            agent.rotation));*/
 
     agents[index] = agent;
 }
