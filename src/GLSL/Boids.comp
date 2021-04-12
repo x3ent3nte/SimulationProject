@@ -66,6 +66,18 @@ float cosineSimilarity(vec3 a, vec3 b) {
     return dot(a, b) / magMult;
 }
 
+const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
+const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
+
+vec3 axisAndThetaToEuler(vec3 axis, float theta) {
+    float forwardSim = cosineSimilarity(axis, canonicalForward);
+    float upSim = cosineSimilarity(axis, canonicalUp);
+    float rightSim = cosineSimilarity(axis, canonicalRight);
+
+    return safeNormalize(vec3(rightSim, upSim, forwardSim)) * theta;
+}
+
 vec4 hamiltonProduct(vec4 a, vec4 b) {
     float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
     float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
@@ -154,13 +166,14 @@ Steering calculateSteering(Agent agent, uint index) {
         safeNormalize(sumSeparation / numBoids));
 }
 
-vec4 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
+vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
     float cosSim = cosineSimilarity(current, desired);
     float angleBetween = acos(cosSim);
 
     float theta = min(angleBetween, timeDelta * 30.0f);
     vec3 targetRight = cross(current, desired);
-    return createQuaternionFromAxisAndTheta(targetRight, theta);
+    //return createQuaternionFromAxisAndTheta(targetRight, theta);
+    return axisAndThetaToEuler(targetRight, theta);
 }
 
 const int kForwardBit = 0;
@@ -176,22 +189,10 @@ const int kYawRightBit = 9;
 const int kRollLeftBit = 10;
 const int kRollRightBit = 11;
 
-const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
-const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
-const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
-
 int computeInputValue(uint inputState, uint bitPos) {
     uint bitMask = 1 << bitPos;
     uint anded = inputState & bitMask;
     return int(anded >> bitPos);
-}
-
-vec3 axisAndThetaToEuler(vec3 axis, float theta) {
-    float forwardSim = cosineSimilarity(axis, canonicalForward);
-    float upSim = cosineSimilarity(axis, canonicalUp);
-    float rightSim = cosineSimilarity(axis, canonicalRight);
-
-    return safeNormalize(vec3(rightSim, upSim, forwardSim)) * theta;
 }
 
 void processPlayerAgent(inout Agent agent) {
@@ -201,7 +202,7 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = timeDelta * 4000.0f;
+    const float accFloat = timeDelta * 2000.0f;
     const float rotationalAccFloat = timeDelta * 5.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
@@ -244,9 +245,11 @@ void main() {
             (2 * steering.alignment) +
             (10 * steering.cohesion) +
             (4 * steering.separation));
-        vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
 
-        agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));
+        /*vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
+        agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));*/
+
+        agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector);
 
         agent.velocity = forward * 40.0f;
     } else {
