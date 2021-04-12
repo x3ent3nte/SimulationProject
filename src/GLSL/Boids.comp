@@ -86,16 +86,6 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
     return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
 }
 
-vec4 createAxisAndThetaFromQuaterion(vec4 q) {
-    float thetaHalved = acos(q.w);
-    float sinThetaHalved = sin(thetaHalved);
-    vec3 axis = vec3(1.0f, 0.0f, 0.0f);
-    if (sinThetaHalved != 0.0f) {
-        axis = q.xyz / sinThetaHalved;
-    }
-    return vec4(axis, thetaHalved * 2.0f);
-}
-
 vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
     float thetaHalved = theta / 2;
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
@@ -196,21 +186,12 @@ int computeInputValue(uint inputState, uint bitPos) {
     return int(anded >> bitPos);
 }
 
-vec4 addAccToRotationalVelocity(vec4 acc, vec4 current) {
-    if (acc.w == 0) {
-        return current;
-    }
-    //float denom = (abs(current.w) + abs(acc.w)) / 90.0f;
-    float denom = 3.14f / 2.0f;
-    vec4 currentAdjusted = vec4(current.xyz, current.w / denom);
-    vec4 accAdjusted = vec4(acc.xyz, acc.w / denom);
+vec3 axisAndThetaToEuler(vec3 axis, float theta) {
+    float forwardSim = cosineSimilarity(axis, canonicalForward);
+    float upSim = cosineSimilarity(axis, canonicalUp);
+    float rightSim = cosineSimilarity(axis, canonicalRight);
 
-    vec4 currentQuaternion = createQuaternionFromAxisAndTheta(currentAdjusted.xyz, currentAdjusted.w);
-    vec4 accQuaternion = createQuaternionFromAxisAndTheta(accAdjusted.xyz, accAdjusted.w);
-
-    vec4 combinedQuaterion = normalize(hamiltonProduct(accQuaternion, currentQuaternion));
-    vec4 axisAndTheta = createAxisAndThetaFromQuaterion(combinedQuaterion);
-    return vec4(axisAndTheta.xyz, axisAndTheta * denom);
+    return safeNormalize(vec3(rightSim, upSim, forwardSim)) * theta;
 }
 
 void processPlayerAgent(inout Agent agent) {
@@ -220,8 +201,8 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = timeDelta * 7000.0f;
-    const float rotationalAccFloat = timeDelta * 30.0f;
+    const float accFloat = timeDelta * 4000.0f;
+    const float rotationalAccFloat = timeDelta * 5.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
     acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));
@@ -231,18 +212,15 @@ void processPlayerAgent(inout Agent agent) {
     const int yawInput = computeInputValue(inputState, kYawLeftBit) - computeInputValue(inputState, kYawRightBit);
     const int rollInput = computeInputValue(inputState, kRollRightBit) - computeInputValue(inputState, kRollLeftBit);
 
-
-    vec4 rotationalAcceleration = createQuaternionFromAxisAndTheta(right, rotationalAccFloat * pitchInput);
+    /*vec4 rotationalAcceleration = createQuaternionFromAxisAndTheta(right, rotationalAccFloat * pitchInput);
     rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(up, rotationalAccFloat * yawInput), rotationalAcceleration));
     rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(forward, rotationalAccFloat * rollInput), rotationalAcceleration));
+    agent.rotationalVelocity = normalize(hamiltonProduct(rotationalAcceleration, agent.rotationalVelocity));*/
 
-    agent.rotationalVelocity = normalize(hamiltonProduct(rotationalAcceleration, agent.rotationalVelocity));
-
-    /*vec4 newRA = addAccToRotationalVelocity(vec4(right, rotationalAccFloat * pitchInput), agent.rotationalVelocity);
-    newRA = addAccToRotationalVelocity(vec4(up, rotationalAccFloat * yawInput), newRA);
-    newRA = addAccToRotationalVelocity(vec4(forward, rotationalAccFloat * rollInput), newRA);
-
-    agent.rotationalVelocity = newRA;*/
+    vec3 euler = axisAndThetaToEuler(right, rotationalAccFloat * pitchInput);
+    euler += axisAndThetaToEuler(up, rotationalAccFloat * yawInput);
+    euler += axisAndThetaToEuler(forward, rotationalAccFloat * rollInput);
+    agent.rotationalVelocity.xyz += euler;
 
     agent.velocity += acceleration;
 }

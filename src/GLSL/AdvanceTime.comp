@@ -54,6 +54,16 @@ vec4 rotationalVelocityMultipliedByTime(vec4 rotationalVelocity, float timeDelta
     return vec4(axis * sin(newThetaHalved), cos(newThetaHalved));
 }
 
+const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
+const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
+
+vec4 eulerToQuaternion(vec4 euler) {
+    vec4 q = createQuaternionFromAxisAndTheta(canonicalRight, euler.x);
+    q = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(canonicalUp, euler.y), q));
+    return normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(canonicalForward, euler.z), q));
+}
+
 void main() {
 
     uint index = gl_GlobalInvocationID.x;
@@ -63,15 +73,11 @@ void main() {
     Agent agent = agents[index];
 
     agent.position += agent.velocity * timeDelta;
-    agent.rotation = normalize(hamiltonProduct(
+    /*agent.rotation = normalize(hamiltonProduct(
         rotationalVelocityMultipliedByTime(agent.rotationalVelocity, timeDelta),
-        agent.rotation));
-    /*agent.rotation = normalize(
-        hamiltonProduct(
-            createQuaternionFromAxisAndTheta(
-                agent.rotationalVelocity.xyz,
-                agent.rotationalVelocity.w),
-            agent.rotation));*/
+        agent.rotation));*/
+
+    agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity * timeDelta), agent.rotation));
 
     agents[index] = agent;
 }
