@@ -4,6 +4,9 @@
 #include <Renderer/MyGLM.h>
 
 namespace MyMath {
+
+    constexpr float PI = 3.14159265358979323846264338327950288;
+
     float cosineSimilarity(glm::vec3 a, glm::vec3 b);
 
     glm::vec4 hamiltonProduct(glm::vec4 a, glm::vec4 b);

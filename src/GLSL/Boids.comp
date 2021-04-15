@@ -203,7 +203,7 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 right = cross(forward, up);
 
     const float accFloat = timeDelta * 2000.0f;
-    const float rotationalAccFloat = timeDelta * 5.0f;
+    const float rotationalAccFloat = timeDelta * 25.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
     acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));
