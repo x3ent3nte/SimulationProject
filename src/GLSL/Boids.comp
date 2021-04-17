@@ -188,6 +188,7 @@ const int kYawLeftBit = 8;
 const int kYawRightBit = 9;
 const int kRollLeftBit = 10;
 const int kRollRightBit = 11;
+const int kStabalizeRotationBit = 12;
 
 int computeInputValue(uint inputState, uint bitPos) {
     uint bitMask = 1 << bitPos;
@@ -221,6 +222,15 @@ void processPlayerAgent(inout Agent agent) {
     vec3 euler = axisAndThetaToEuler(right, rotationalAccFloat * pitchInput);
     euler += axisAndThetaToEuler(up, rotationalAccFloat * yawInput);
     euler += axisAndThetaToEuler(forward, rotationalAccFloat * rollInput);
+
+    if (computeInputValue(inputState, kStabalizeRotationBit) == 1) {
+        float rotationalVelocityMag = length(agent.rotationalVelocity.xyz);
+        if (rotationalVelocityMag > 0) {
+            float stabalizeAcc = min(rotationalAccFloat, rotationalVelocityMag);
+            euler += -stabalizeAcc * (agent.rotationalVelocity.xyz / rotationalVelocityMag);
+        }
+    }
+
     agent.rotationalVelocity.xyz += euler;
 
     agent.velocity += acceleration;

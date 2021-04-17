@@ -16,6 +16,7 @@ namespace {
     constexpr int kYawRightBit = 512;
     constexpr int kRollLeftBit = 1024;
     constexpr int kRollRightBit = 2048;
+    constexpr int kStabalizeRotationBit = 4096;
 
 } // namespace anonymous
 
@@ -31,6 +32,7 @@ bool InputState::isYawLeft() { return isBitSet(kYawLeftBit); }
 bool InputState::isYawRight() { return isBitSet(kYawRightBit); }
 bool InputState::isRollLeft() { return isBitSet(kRollLeftBit); }
 bool InputState::isRollRight() { return isBitSet(kRollRightBit); }
+bool InputState::isStabalizeRotation() { return isBitSet(kStabalizeRotationBit); }
 
 bool InputState::isBitSet(uint32_t bitMask) {
     return m_state & bitMask;
@@ -78,5 +80,7 @@ void KeyboardControl::keyActivity(int key, int scancode, int action, int mods) {
         case 264: { m_inputState.setBitValue(valueToSet, kPitchUpBit); break; }
 
         case 262: { m_inputState.setBitValue(valueToSet, kYawRightBit); break; }
+
+        case 67: { m_inputState.setBitValue(valueToSet, kStabalizeRotationBit); break; }
     }
 }

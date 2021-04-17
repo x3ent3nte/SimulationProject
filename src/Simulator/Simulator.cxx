@@ -183,6 +183,8 @@ Simulator::Simulator(
     }
 
     agents[0].playerId = 0;
+    agents[0].rotation = MyMath::createQuaternionFromAxisAndTheta(MyMath::randomVec3InSphere(1.0f), 0);
+    //agents[0].rotationalVelocity = glm::vec4{MyMath::PI, 0.0f, MyMath::PI, 0.0f};
 
     Buffer::createBufferWithData(
         agents.data(),
