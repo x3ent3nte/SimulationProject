@@ -251,7 +251,14 @@ void processPlayerAgent(inout Agent agent) {
         vec4 rotationEuler = quaternionToAxisAndTheta(agent.rotation);
         vec3 diffEuler = vec3(0.0f, 0.0f, 0.0f) - rotationEuler.xyz;
 
-        vec4 qDelta = quaternionBetween(agent.rotation, axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f));
+        vec4 deltaQuaternion = quaternionBetween(agent.rotation, axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f));
+        vec4 deltaAxisAndTheta = quaternionToAxisAndTheta(deltaQuaternion);
+        vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
+        float deltaEulerMag = length(deltaEuler);
+        if (deltaEulerMag > 0) {
+            float stabalizeAcc = min(rotationalAccFloat, deltaEulerMag);
+            euler += stabalizeAcc * (deltaEuler / deltaEulerMag);
+        }
     }
 
     agent.rotationalVelocity.xyz += euler;
