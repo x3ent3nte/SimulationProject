@@ -102,13 +102,13 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
     return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
 }
 
-vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
+vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
     float thetaHalved = theta / 2;
     return vec4(sin(thetaHalved) * axis, cos(thetaHalved));
 }
 
 vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
-    return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
+    return rotatePointByQuaternion(p, axisAndThetaToQuaternion(axis, theta));
 }
 
 void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
@@ -125,7 +125,7 @@ void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
     } else {
         float theta = min(angleBetween, 0.05);
         vec3 targetRight = cross(initialForward, targetDelta);
-        vec4 changeInRotation = createQuaternionFromAxisAndTheta(targetRight, theta);
+        vec4 changeInRotation = axisAndThetaToQuaternion(targetRight, theta);
 
         agent.rotation = normalize(hamiltonProduct(changeInRotation, agent.rotation));
         forward = rotatePointByQuaternion(canonicalForward, agent.rotation);

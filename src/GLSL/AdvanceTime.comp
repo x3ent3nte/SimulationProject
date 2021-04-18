@@ -37,7 +37,7 @@ vec4 hamiltonProduct(vec4 a, vec4 b) {
     return vec4(i, j, k, r);
 }
 
-vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
+vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
     float thetaHalved = theta / 2;
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
@@ -59,9 +59,9 @@ const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
 const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
 
 vec4 eulerToQuaternion(vec4 euler) {
-    vec4 q = createQuaternionFromAxisAndTheta(canonicalRight, euler.x);
-    q = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(canonicalUp, euler.y), q));
-    return normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(canonicalForward, euler.z), q));
+    vec4 q = axisAndThetaToQuaternion(canonicalRight, euler.x);
+    q = normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalUp, euler.y), q));
+    return normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalForward, euler.z), q));
 }
 
 void main() {

@@ -29,13 +29,13 @@ glm::vec3 MyMath::rotatePointByQuaternion(glm::vec3 p, glm::vec4 q) {
     return glm::vec3(hamiltonProduct(hamiltonProduct(q, p4), qi));
 }
 
-glm::vec4 MyMath::createQuaternionFromAxisAndTheta(glm::vec3 axis, float theta) {
+glm::vec4 MyMath::axisAndThetaToQuaternion(glm::vec3 axis, float theta) {
     float thetaHalved = theta / 2;
     return glm::vec4(sin(thetaHalved) * axis, cos(thetaHalved));
 }
 
 glm::vec3 MyMath::rotatePointByAxisAndTheta(glm::vec3 p, glm::vec3 axis, float theta) {
-    return rotatePointByQuaternion(p, createQuaternionFromAxisAndTheta(axis, theta));
+    return rotatePointByQuaternion(p, axisAndThetaToQuaternion(axis, theta));
 }
 
 float MyMath::randomFloatBetweenZeroAndOne() {

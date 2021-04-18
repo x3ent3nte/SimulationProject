@@ -15,7 +15,7 @@ namespace MyMath {
 
     glm::vec3 rotatePointByQuaternion(glm::vec3 p, glm::vec4 q);
 
-    glm::vec4 createQuaternionFromAxisAndTheta(glm::vec3 axis, float theta);
+    glm::vec4 axisAndThetaToQuaternion(glm::vec3 axis, float theta);
 
     glm::vec3 rotatePointByAxisAndTheta(glm::vec3 p, glm::vec3 axis, float theta);
 

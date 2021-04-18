@@ -289,7 +289,7 @@ private:
         for (size_t i = 0; i < instancePositions.size(); ++i) {
             instancePositions[i] = AgentPositionAndRotation{
                 MyMath::randomVec3InSphere(512.0f),
-                MyMath::createQuaternionFromAxisAndTheta(glm::vec3(0.0f), 0.0f)};
+                MyMath::axisAndThetaToQuaternion(glm::vec3(0.0f), 0.0f)};
         }
 
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {

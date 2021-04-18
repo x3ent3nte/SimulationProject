@@ -46,5 +46,13 @@ void main() {
         address = addresses[globalIndex - 1];
     }
 
-    agentsOut[address] = agentsIn[globalIndex];
+    Agent agent = agentsIn[globalIndex];
+
+    uint numberToSpawn = addresses[globalIndex] - address;
+
+    for (uint i = 1; i < numberToSpawn; ++i) {
+        agentsOut[address + i] = agent;
+    }
+
+    agentsOut[address] = agent;
 }

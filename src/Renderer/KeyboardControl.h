@@ -19,6 +19,7 @@ struct InputState {
     bool isYawRight();
     bool isRollLeft();
     bool isRollRight();
+    bool isStabalizeRotationalVelocity();
     bool isStabalizeRotation();
 
     bool isBitSet(uint32_t bitMask);

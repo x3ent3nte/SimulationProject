@@ -78,6 +78,16 @@ vec3 axisAndThetaToEuler(vec3 axis, float theta) {
     return safeNormalize(vec3(rightSim, upSim, forwardSim)) * theta;
 }
 
+vec4 quaternionToAxisAndTheta(vec4 q) {
+    float thetaHalved = acos(q.w);
+    float sinThetaHalved = sin(thetaHalved);
+    vec3 axis = vec3(0.0f, 0.0f, 0.0f);
+    if (sinThetaHalved != 0.0f) {
+        axis = q.xyz / sinThetaHalved;
+    }
+    return vec4(axis, thetaHalved * 2.0f);
+}
+
 vec4 hamiltonProduct(vec4 a, vec4 b) {
     float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
     float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
@@ -91,6 +101,10 @@ vec4 inverseQuaternion(vec4 q) {
     return vec4(-q.x, -q.y, -q.z, q.w);
 }
 
+vec4 quaternionBetween(vec4 pre, vec4 post) {
+    return hamiltonProduct(post, inverseQuaternion(pre));
+}
+
 vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
     vec4 p4 = vec4(p, 0.0f);
     vec4 qi = inverseQuaternion(q);
@@ -98,7 +112,7 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
     return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
 }
 
-vec4 createQuaternionFromAxisAndTheta(vec3 axis, float theta) {
+vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
     float thetaHalved = theta / 2;
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
@@ -172,7 +186,7 @@ vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
 
     float theta = min(angleBetween, timeDelta * 30.0f);
     vec3 targetRight = cross(current, desired);
-    //return createQuaternionFromAxisAndTheta(targetRight, theta);
+    //return axisAndThetaToQuaternion(targetRight, theta);
     return axisAndThetaToEuler(targetRight, theta);
 }
 
@@ -188,7 +202,8 @@ const int kYawLeftBit = 8;
 const int kYawRightBit = 9;
 const int kRollLeftBit = 10;
 const int kRollRightBit = 11;
-const int kStabalizeRotationBit = 12;
+const int kStabalizeRotationalVelocityBit = 12;
+const int kStabalizeRotationBit = 13;
 
 int computeInputValue(uint inputState, uint bitPos) {
     uint bitMask = 1 << bitPos;
@@ -214,21 +229,28 @@ void processPlayerAgent(inout Agent agent) {
     const int yawInput = computeInputValue(inputState, kYawLeftBit) - computeInputValue(inputState, kYawRightBit);
     const int rollInput = computeInputValue(inputState, kRollRightBit) - computeInputValue(inputState, kRollLeftBit);
 
-    /*vec4 rotationalAcceleration = createQuaternionFromAxisAndTheta(right, rotationalAccFloat * pitchInput);
-    rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(up, rotationalAccFloat * yawInput), rotationalAcceleration));
-    rotationalAcceleration = normalize(hamiltonProduct(createQuaternionFromAxisAndTheta(forward, rotationalAccFloat * rollInput), rotationalAcceleration));
+    /*vec4 rotationalAcceleration = axisAndThetaToQuaternion(right, rotationalAccFloat * pitchInput);
+    rotationalAcceleration = normalize(hamiltonProduct(axisAndThetaToQuaternion(up, rotationalAccFloat * yawInput), rotationalAcceleration));
+    rotationalAcceleration = normalize(hamiltonProduct(axisAndThetaToQuaternion(forward, rotationalAccFloat * rollInput), rotationalAcceleration));
     agent.rotationalVelocity = normalize(hamiltonProduct(rotationalAcceleration, agent.rotationalVelocity));*/
 
     vec3 euler = axisAndThetaToEuler(right, rotationalAccFloat * pitchInput);
     euler += axisAndThetaToEuler(up, rotationalAccFloat * yawInput);
     euler += axisAndThetaToEuler(forward, rotationalAccFloat * rollInput);
 
-    if (computeInputValue(inputState, kStabalizeRotationBit) == 1) {
+    if (computeInputValue(inputState, kStabalizeRotationalVelocityBit) == 1) {
         float rotationalVelocityMag = length(agent.rotationalVelocity.xyz);
         if (rotationalVelocityMag > 0) {
             float stabalizeAcc = min(rotationalAccFloat, rotationalVelocityMag);
             euler += -stabalizeAcc * (agent.rotationalVelocity.xyz / rotationalVelocityMag);
         }
+    }
+
+    if (computeInputValue(inputState, kStabalizeRotationBit) == 1) {
+        vec4 rotationEuler = quaternionToAxisAndTheta(agent.rotation);
+        vec3 diffEuler = vec3(0.0f, 0.0f, 0.0f) - rotationEuler.xyz;
+
+        vec4 qDelta = quaternionBetween(agent.rotation, axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f));
     }
 
     agent.rotationalVelocity.xyz += euler;
