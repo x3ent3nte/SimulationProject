@@ -21,6 +21,7 @@ struct InputState {
     bool isRollRight();
     bool isStabalizeRotationalVelocity();
     bool isStabalizeRotation();
+    bool isSpawn();
 
     bool isBitSet(uint32_t bitMask);
     void setBitValue(bool set, uint32_t bitMask);

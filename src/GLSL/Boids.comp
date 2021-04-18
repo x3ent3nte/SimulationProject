@@ -204,6 +204,7 @@ const int kRollLeftBit = 10;
 const int kRollRightBit = 11;
 const int kStabalizeRotationalVelocityBit = 12;
 const int kStabalizeRotationBit = 13;
+const int kSpawnBit = 14;
 
 int computeInputValue(uint inputState, uint bitPos) {
     uint bitMask = 1 << bitPos;
@@ -270,6 +271,8 @@ void main() {
     const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
     vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
+    uint reproductionFactor = 1;
+
     if (agent.playerId < 0) {
         Steering steering = calculateSteering(agent, index);
 
@@ -286,9 +289,12 @@ void main() {
         agent.velocity = forward * 40.0f;
     } else {
         processPlayerAgent(agent);
+        if (computeInputValue(playerInputStates[agent.playerId], kSpawnBit) == 1) {
+            reproductionFactor = 2;
+        }
     }
 
     agentsOut[index] = agent;
 
-    reproduction[index] = 1;
+    reproduction[index] = reproductionFactor;
 }

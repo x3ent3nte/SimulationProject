@@ -152,7 +152,7 @@ Simulator::Simulator(
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
-    m_currentNumberOfElements = numberOfElements;
+    m_currentNumberOfElements = numberOfElements / 4;
 
     m_isActive = false;
     m_connector = connector;

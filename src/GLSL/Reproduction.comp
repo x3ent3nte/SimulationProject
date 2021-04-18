@@ -50,8 +50,10 @@ void main() {
 
     uint numberToSpawn = addresses[globalIndex] - address;
 
+    Agent agentSpawn = agent;
+    agentSpawn.playerId = -1;
     for (uint i = 1; i < numberToSpawn; ++i) {
-        agentsOut[address + i] = agent;
+        agentsOut[address + i] = agentSpawn;
     }
 
     agentsOut[address] = agent;
