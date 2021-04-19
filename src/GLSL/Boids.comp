@@ -5,6 +5,8 @@
 
 #define DETECTION_RADIUS 45
 
+#define PI 3.14159265358979323846264338327950288
+
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
@@ -259,6 +261,11 @@ void processPlayerAgent(inout Agent agent) {
 
         vec4 deltaQuaternion = quaternionBetween(agent.rotation, axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f));
         vec4 deltaAxisAndTheta = quaternionToAxisAndTheta(deltaQuaternion);
+
+        if (deltaAxisAndTheta.w > PI) {
+            deltaAxisAndTheta.w = PI - deltaAxisAndTheta.w;
+        }
+
         vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
         float deltaEulerMag = length(deltaEuler);
 
