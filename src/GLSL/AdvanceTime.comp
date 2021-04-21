@@ -58,7 +58,7 @@ const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
 const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
 const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
 
-vec4 eulerToQuaternion(vec4 euler) {
+vec4 eulerToQuaternion(vec3 euler) {
     vec4 q = axisAndThetaToQuaternion(canonicalRight, euler.x);
     q = normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalUp, euler.y), q));
     return normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalForward, euler.z), q));
@@ -77,7 +77,7 @@ void main() {
         rotationalVelocityMultipliedByTime(agent.rotationalVelocity, timeDelta),
         agent.rotation));*/
 
-    agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity * timeDelta), agent.rotation));
+    agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity.xyz * timeDelta), agent.rotation));
 
     agents[index] = agent;
 }
