@@ -19,6 +19,7 @@ namespace {
     constexpr int kStabalizeRotationalVelocityBit = 4096;
     constexpr int kStabalizeRotationBit = 8192;
     constexpr int kSpawnBit = 16384;
+    constexpr int kBrakeBit = 32768;
 
 } // namespace anonymous
 
@@ -37,6 +38,7 @@ bool InputState::isRollRight() { return isBitSet(kRollRightBit); }
 bool InputState::isStabalizeRotationalVelocity() { return isBitSet(kStabalizeRotationalVelocityBit); }
 bool InputState::isStabalizeRotation() { return isBitSet(kStabalizeRotationBit); }
 bool InputState::isSpawn() { return isBitSet(kSpawnBit); }
+bool InputState::isBrake() { return isBitSet(kBrakeBit); }
 
 bool InputState::isBitSet(uint32_t bitMask) {
     return m_state & bitMask;
@@ -90,5 +92,7 @@ void KeyboardControl::keyActivity(int key, int scancode, int action, int mods) {
         case 86: { m_inputState.setBitValue(valueToSet, kStabalizeRotationBit); break; }
 
         case 82: { m_inputState.setBitValue(valueToSet, kSpawnBit); break; }
+
+        case 70: { m_inputState.setBitValue(valueToSet, kBrakeBit); break; }
     }
 }

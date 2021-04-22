@@ -217,6 +217,7 @@ const int kRollRightBit = 11;
 const int kStabalizeRotationalVelocityBit = 12;
 const int kStabalizeRotationBit = 13;
 const int kSpawnBit = 14;
+const int kBrakeBit = 15;
 
 int computeInputValue(uint inputState, uint bitPos) {
     uint bitMask = 1 << bitPos;
@@ -258,6 +259,15 @@ void processPlayerAgent(inout Agent agent) {
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
     acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));
     acceleration += right * accFloat * (computeInputValue(inputState, kRightBit) - computeInputValue(inputState, kLeftBit));
+
+    if (computeInputValue(inputState, kBrakeBit) == 1) {
+        float velocityMag = length(agent.velocity);
+        if (velocityMag > 0.0f) {
+            float stabalizationAcc = min(accFloat, velocityMag);
+            vec3 velocityNorm = agent.velocity / velocityMag;
+            acceleration += velocityNorm * -stabalizationAcc;
+        }
+    }
 
     const int pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
     const int yawInput = computeInputValue(inputState, kYawLeftBit) - computeInputValue(inputState, kYawRightBit);
