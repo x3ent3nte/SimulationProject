@@ -197,14 +197,56 @@ Steering calculateSteering(Agent agent, uint index) {
         safeNormalize(sumSeparation / numBoids));
 }
 
-vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
+vec3 calculateRotationalAcceleration(vec4 targetQuaternion, vec4 rotationQuaternion, vec3 rotationlVelocity) {
+    vec3 euler = vec3(0.0f, 0.0f, 0.0f);
+
+    const vec4 deltaQuaternion = quaternionBetween(rotationQuaternion, targetQuaternion);
+    vec4 deltaAxisAndTheta = quaternionToAxisAndTheta(deltaQuaternion);
+
+    if (deltaAxisAndTheta.w > PI) {
+        deltaAxisAndTheta.w = PI - deltaAxisAndTheta.w;
+    }
+
+    const float maxRotationalAcceleration = 25.0f;
+
+    const vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
+    const float deltaEulerMag = length(deltaEuler);
+    if (deltaEulerMag > 0) {
+        const vec3 rotationalVelocityProjection = projection(rotationlVelocity, deltaEuler);
+        const float rotationalVelocityProjectionMag = length(rotationalVelocityProjection);
+        const float timeToTarget = deltaEulerMag / rotationalVelocityProjectionMag;
+        const float timeToDecelerate = rotationalVelocityProjectionMag / maxRotationalAcceleration;
+
+        const float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
+        const float timeDecelerating = timeDelta - timeAccelerating;
+
+        const vec3 deltaEulerNorm = deltaEuler / deltaEulerMag;
+        const vec3 acceleration = maxRotationalAcceleration * timeAccelerating * deltaEulerNorm;
+        const vec3 deceleration = maxRotationalAcceleration * timeDecelerating * -deltaEulerNorm;
+
+        euler += acceleration + deceleration;
+
+        // Stabalize rejection
+        const vec3 rotationalVelocityRejection = rotationlVelocity - rotationalVelocityProjection;
+        const float rotationalVelocityRejectionMag = length(rotationalVelocityRejection);
+        if (rotationalVelocityRejectionMag > 0) {
+            const float stabalizeRejectionAcc = min(maxRotationalAcceleration * timeDelta, rotationalVelocityRejectionMag);
+            euler += -stabalizeRejectionAcc * (rotationalVelocityRejection / rotationalVelocityRejectionMag);
+        }
+    }
+    return euler;
+}
+
+vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired, vec4 rotation, vec3 rotationalVelocity) {
     const float cosSim = cosineSimilarity(current, desired);
     const float angleBetween = acos(cosSim);
 
     const float theta = min(angleBetween, timeDelta * 30.0f);
     const vec3 targetRight = cross(current, desired);
     //return axisAndThetaToQuaternion(targetRight, theta);
-    return axisAndThetaToEuler(targetRight, theta);
+    //return axisAndThetaToEuler(targetRight, theta);
+    vec4 targetQuaternion = normalize(hamiltonProduct(axisAndThetaToQuaternion(targetRight, theta), rotation));
+    return calculateRotationalAcceleration(targetQuaternion, rotation, rotationalVelocity);
 }
 
 const int kForwardBit = 0;
@@ -276,44 +318,10 @@ void processPlayerAgent(inout Agent agent) {
 
     if (computeInputValue(inputState, kStabalizeRotationBit) == 1) {
 
-        const vec4 targetQuaternion = axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f);
-        const vec4 deltaQuaternion = quaternionBetween(agent.rotation, targetQuaternion);
-        vec4 deltaAxisAndTheta = quaternionToAxisAndTheta(deltaQuaternion);
-
-        if (deltaAxisAndTheta.w > PI) {
-            deltaAxisAndTheta.w = PI - deltaAxisAndTheta.w;
-        }
-
-        const float maxRotationalAcceleration = 25.0f;
-
-        const vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
-        const float deltaEulerMag = length(deltaEuler);
-        if (deltaEulerMag > 0) {
-            const vec3 rotationalVelocityProjection = projection(agent.rotationalVelocity.xyz, deltaEuler);
-            const float rotationalVelocityProjectionMag = length(rotationalVelocityProjection);
-            const float timeToTarget = deltaEulerMag / rotationalVelocityProjectionMag;
-            const float timeToDecelerate = rotationalVelocityProjectionMag / maxRotationalAcceleration;
-
-            const float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
-            const float timeDecelerating = timeDelta - timeAccelerating;
-
-            const vec3 deltaEulerNorm = deltaEuler / deltaEulerMag;
-            const vec3 acceleration = maxRotationalAcceleration * timeAccelerating * deltaEulerNorm;
-            const vec3 deceleration = maxRotationalAcceleration * timeDecelerating * -deltaEulerNorm;
-
-            euler += acceleration + deceleration;
-
-            //const float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
-            //euler += stabalizeAcceleration * (deltaEuler / deltaEulerMag);
-
-            // Stabalize rejection
-            const vec3 rotationalVelocityRejection = agent.rotationalVelocity.xyz - rotationalVelocityProjection;
-            const float rotationalVelocityRejectionMag = length(rotationalVelocityRejection);
-            if (rotationalVelocityRejectionMag > 0) {
-                const float stabalizeRejectionAcc = min(maxRotationalAcceleration * timeDelta, rotationalVelocityRejectionMag);
-                euler += -stabalizeRejectionAcc * (rotationalVelocityRejection / rotationalVelocityRejectionMag);
-            }
-        }
+        euler += calculateRotationalAcceleration(
+            axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f),
+            agent.rotation,
+            agent.rotationalVelocity.xyz);
     }
 
     agent.rotationalVelocity.xyz += euler;
@@ -344,7 +352,7 @@ void main() {
         /*vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
         agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));*/
 
-        agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector);
+        agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity.xyz);
 
         agent.velocity = forward * 40.0f;
     } else {
