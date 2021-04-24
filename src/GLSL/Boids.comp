@@ -68,6 +68,11 @@ float cosineSimilarity(vec3 a, vec3 b) {
     return dot(a, b) / magMult;
 }
 
+vec3 projection(vec3 u, vec3 v) {
+    float magV = length(v);
+    return (dot(u, v) / (magV * magV)) * v;
+}
+
 const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
 const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
 const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
@@ -225,27 +230,6 @@ int computeInputValue(uint inputState, uint bitPos) {
     return int(anded >> bitPos);
 }
 
-float calculateRotationalTimeToTarget(float thetaDistance, float thetaVelocity) {
-
-    if (thetaDistance == 0.0f) {
-        return 0.0f;
-    }
-
-    if (thetaVelocity == 0.0f) {
-        return 99999999999999999.0f;
-    }
-
-    if ((thetaDistance > 0.0f) && (thetaVelocity > 0.0f)) {
-        return thetaDistance / thetaVelocity;
-    }
-
-    if ((thetaDistance < 0.0f) && (thetaVelocity < 0.0f)) {
-        return thetaDistance / thetaVelocity;
-    }
-
-    return thetaDistance / thetaVelocity;
-}
-
 void processPlayerAgent(inout Agent agent) {
     const uint inputState = playerInputStates[agent.playerId];
 
@@ -301,55 +285,21 @@ void processPlayerAgent(inout Agent agent) {
         }
 
         const float maxRotationalAcceleration = 25.0f;
-        vec4 rotationalVelocityAxisAndTheta = eulerToAxisAndTheta(agent.rotationalVelocity.xyz);
-        float timeToTarget = calculateRotationalTimeToTarget(deltaAxisAndTheta.w, rotationalVelocityAxisAndTheta.w);
-        float timeToDecelerate = abs(rotationalVelocityAxisAndTheta.w) / maxRotationalAcceleration;
-
-        float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
-        float timeDecelerating = timeDelta - timeAccelerating;
-
-        vec4 axisAngleAcceleration = vec4(deltaAxisAndTheta.xyz, timeAccelerating * maxRotationalAcceleration);
-        vec4 axisAngleDeceleration = vec4(deltaAxisAndTheta.xyz, -timeDecelerating * maxRotationalAcceleration);
-
-        //euler += axisAndThetaToEuler(axisAngleAcceleration.xyz, axisAngleAcceleration.w) + axisAndThetaToEuler(axisAngleDeceleration.xyz, axisAngleDeceleration.w);
 
         vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
         float deltaEulerMag = length(deltaEuler);
         if (deltaEulerMag > 0) {
             float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
             euler += stabalizeAcceleration * (deltaEuler / deltaEulerMag);
-        }
 
-        /*
-        vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
-        float deltaEulerMag = length(deltaEuler);
-
-        float direction = 1;
-        if (deltaEulerMag > 0) {
-
-            vec3 deltaEulerNorm = deltaEuler / deltaEulerMag;
-
-
-            float eulerMag = length(agent.rotationalVelocity.xyz);
-            if (eulerMag > 0) {
-                vec3 eulerNorm = agent.rotationalVelocity.xyz / eulerMag;
-                float cosSim = cosineSimilarity(eulerNorm, deltaEulerNorm);
-
-                float currentThetaPerSecond = eulerMag * cosSim;
-
-                float timeToTarget = deltaAxisAndTheta.w / rotationalAccFloat;
-                float timeToDecelerate = currentThetaPerSecond / rotationalAccFloat;
-
-                if (timeToTarget < timeToDecelerate) {
-                    //direction = -1;
-                }
+            vec3 deltaEulerProjection = projection(agent.rotationalVelocity.xyz, deltaEuler);
+            vec3 deltaEulerRejection = agent.rotationalVelocity.xyz - deltaEulerProjection;
+            float deltaEulerRejectionMag = length(deltaEulerRejection);
+            if (deltaEulerRejectionMag > 0) {
+                float stabalizeAcc = min(maxRotationalAcceleration * timeDelta, deltaEulerRejectionMag);
+                euler += -stabalizeAcc * (deltaEulerRejection / deltaEulerRejectionMag);
             }
-
-
-            float stabalizeAcc = min(rotationalAccFloat, deltaEulerMag);
-            euler += stabalizeAcc * deltaEulerNorm * direction;
-        }*/
-
+        }
     }
 
     agent.rotationalVelocity.xyz += euler;
