@@ -290,8 +290,21 @@ void processPlayerAgent(inout Agent agent) {
         const float deltaEulerMag = length(deltaEuler);
         if (deltaEulerMag > 0) {
             const vec3 rotationalVelocityProjection = projection(agent.rotationalVelocity.xyz, deltaEuler);
-            const float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
-            euler += stabalizeAcceleration * (deltaEuler / deltaEulerMag);
+            const float rotationalVelocityProjectionMag = length(rotationalVelocityProjection);
+            const float timeToTarget = deltaEulerMag / rotationalVelocityProjectionMag;
+            const float timeToDecelerate = rotationalVelocityProjectionMag / maxRotationalAcceleration;
+
+            const float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
+            const float timeDecelerating = timeDelta - timeAccelerating;
+
+            const vec3 deltaEulerNorm = deltaEuler / deltaEulerMag;
+            const vec3 acceleration = maxRotationalAcceleration * timeAccelerating * deltaEulerNorm;
+            const vec3 deceleration = maxRotationalAcceleration * timeDecelerating * -deltaEulerNorm;
+
+            euler += acceleration + deceleration;
+
+            //const float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
+            //euler += stabalizeAcceleration * (deltaEuler / deltaEulerMag);
 
             // Stabalize rejection
             const vec3 rotationalVelocityRejection = agent.rotationalVelocity.xyz - rotationalVelocityProjection;
