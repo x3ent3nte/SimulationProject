@@ -51,7 +51,7 @@ struct Steering {
 };
 
 vec3 safeNormalize(vec3 v) {
-    float mag = length(v);
+    const float mag = length(v);
     if (mag > 0.0f) {
         return v / mag;
     } else {
@@ -60,7 +60,7 @@ vec3 safeNormalize(vec3 v) {
 }
 
 float cosineSimilarity(vec3 a, vec3 b) {
-    float magMult = length(a) * length(b);
+    const float magMult = length(a) * length(b);
     if (magMult <= 0.0f) {
         return 0.0f;
     }
@@ -69,7 +69,7 @@ float cosineSimilarity(vec3 a, vec3 b) {
 }
 
 vec3 projection(vec3 u, vec3 v) {
-    float magV = length(v);
+    const float magV = length(v);
     return (dot(u, v) / (magV * magV)) * v;
 }
 
@@ -78,16 +78,16 @@ const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
 const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
 
 vec3 axisAndThetaToEuler(vec3 axis, float theta) {
-    float forwardSim = cosineSimilarity(axis, canonicalForward);
-    float upSim = cosineSimilarity(axis, canonicalUp);
-    float rightSim = cosineSimilarity(axis, canonicalRight);
+    const float forwardSim = cosineSimilarity(axis, canonicalForward);
+    const float upSim = cosineSimilarity(axis, canonicalUp);
+    const float rightSim = cosineSimilarity(axis, canonicalRight);
 
     return safeNormalize(vec3(rightSim, upSim, forwardSim)) * theta;
 }
 
 vec4 quaternionToAxisAndTheta(vec4 q) {
-    float thetaHalved = acos(q.w);
-    float sinThetaHalved = sin(thetaHalved);
+    const float thetaHalved = acos(q.w);
+    const float sinThetaHalved = sin(thetaHalved);
     vec3 axis = vec3(0.0f, 0.0f, 0.0f);
     if (sinThetaHalved != 0.0f) {
         axis = q.xyz / sinThetaHalved;
@@ -96,10 +96,10 @@ vec4 quaternionToAxisAndTheta(vec4 q) {
 }
 
 vec4 hamiltonProduct(vec4 a, vec4 b) {
-    float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
-    float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
-    float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
-    float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
+    const float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+    const float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+    const float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
+    const float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
 
     return vec4(i, j, k, r);
 }
@@ -113,14 +113,14 @@ vec4 quaternionBetween(vec4 pre, vec4 post) {
 }
 
 vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
-    vec4 p4 = vec4(p, 0.0f);
-    vec4 qi = inverseQuaternion(q);
+    const vec4 p4 = vec4(p, 0.0f);
+    const vec4 qi = inverseQuaternion(q);
 
     return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
 }
 
 vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
-    float thetaHalved = theta / 2;
+    const float thetaHalved = theta / 2;
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
 
@@ -146,14 +146,14 @@ void checkAgent(
     inout vec3 sumSeparation,
     inout uint numBoids) {
 
-    float distanceBetween = length(otherAgent.position - agent.position);
+    const float distanceBetween = length(otherAgent.position - agent.position);
     if (distanceBetween < DETECTION_RADIUS) {
         vec3 otherAgentForward = calculateForward(otherAgent.rotation);
 
         //sumAlignment += otherAgentForward * (distanceBetween / DETECTION_RADIUS);
         sumAlignment += otherAgentForward;
 
-        float tooCloseRadius = DETECTION_RADIUS / 2;
+        const float tooCloseRadius = DETECTION_RADIUS / 2;
 
         if (distanceBetween < tooCloseRadius) {
             sumSeparation += (agent.position - otherAgent.position) * ((tooCloseRadius - distanceBetween) / tooCloseRadius);
@@ -198,11 +198,11 @@ Steering calculateSteering(Agent agent, uint index) {
 }
 
 vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired) {
-    float cosSim = cosineSimilarity(current, desired);
-    float angleBetween = acos(cosSim);
+    const float cosSim = cosineSimilarity(current, desired);
+    const float angleBetween = acos(cosSim);
 
-    float theta = min(angleBetween, timeDelta * 30.0f);
-    vec3 targetRight = cross(current, desired);
+    const float theta = min(angleBetween, timeDelta * 30.0f);
+    const vec3 targetRight = cross(current, desired);
     //return axisAndThetaToQuaternion(targetRight, theta);
     return axisAndThetaToEuler(targetRight, theta);
 }
@@ -225,8 +225,8 @@ const int kSpawnBit = 14;
 const int kBrakeBit = 15;
 
 int computeInputValue(uint inputState, uint bitPos) {
-    uint bitMask = 1 << bitPos;
-    uint anded = inputState & bitMask;
+    const uint bitMask = 1 << bitPos;
+    const uint anded = inputState & bitMask;
     return int(anded >> bitPos);
 }
 
@@ -245,7 +245,7 @@ void processPlayerAgent(inout Agent agent) {
     acceleration += right * accFloat * (computeInputValue(inputState, kRightBit) - computeInputValue(inputState, kLeftBit));
 
     if (computeInputValue(inputState, kBrakeBit) == 1) {
-        float velocityMag = length(agent.velocity);
+        const float velocityMag = length(agent.velocity);
         if (velocityMag > 0.0f) {
             float stabalizationAcc = min(accFloat, velocityMag);
             vec3 velocityNorm = agent.velocity / velocityMag;
@@ -267,17 +267,17 @@ void processPlayerAgent(inout Agent agent) {
     euler += axisAndThetaToEuler(forward, rotationalAccFloat * rollInput);
 
     if (computeInputValue(inputState, kStabalizeRotationalVelocityBit) == 1) {
-        float rotationalVelocityMag = length(agent.rotationalVelocity.xyz);
+        const float rotationalVelocityMag = length(agent.rotationalVelocity.xyz);
         if (rotationalVelocityMag > 0) {
-            float stabalizeAcc = min(rotationalAccFloat, rotationalVelocityMag);
+            const float stabalizeAcc = min(rotationalAccFloat, rotationalVelocityMag);
             euler += -stabalizeAcc * (agent.rotationalVelocity.xyz / rotationalVelocityMag);
         }
     }
 
     if (computeInputValue(inputState, kStabalizeRotationBit) == 1) {
 
-        vec4 targetQuaternion = axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f);
-        vec4 deltaQuaternion = quaternionBetween(agent.rotation, targetQuaternion);
+        const vec4 targetQuaternion = axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f);
+        const vec4 deltaQuaternion = quaternionBetween(agent.rotation, targetQuaternion);
         vec4 deltaAxisAndTheta = quaternionToAxisAndTheta(deltaQuaternion);
 
         if (deltaAxisAndTheta.w > PI) {
@@ -286,29 +286,29 @@ void processPlayerAgent(inout Agent agent) {
 
         const float maxRotationalAcceleration = 25.0f;
 
-        vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
-        float deltaEulerMag = length(deltaEuler);
+        const vec3 deltaEuler = axisAndThetaToEuler(deltaAxisAndTheta.xyz, deltaAxisAndTheta.w);
+        const float deltaEulerMag = length(deltaEuler);
         if (deltaEulerMag > 0) {
-            float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
+            const vec3 deltaEulerProjection = projection(agent.rotationalVelocity.xyz, deltaEuler);
+            const float stabalizeAcceleration = min(maxRotationalAcceleration * timeDelta, deltaEulerMag);
             euler += stabalizeAcceleration * (deltaEuler / deltaEulerMag);
 
-            vec3 deltaEulerProjection = projection(agent.rotationalVelocity.xyz, deltaEuler);
-            vec3 deltaEulerRejection = agent.rotationalVelocity.xyz - deltaEulerProjection;
-            float deltaEulerRejectionMag = length(deltaEulerRejection);
+            // Stabalize rejection
+            const vec3 deltaEulerRejection = agent.rotationalVelocity.xyz - deltaEulerProjection;
+            const float deltaEulerRejectionMag = length(deltaEulerRejection);
             if (deltaEulerRejectionMag > 0) {
-                float stabalizeAcc = min(maxRotationalAcceleration * timeDelta, deltaEulerRejectionMag);
-                euler += -stabalizeAcc * (deltaEulerRejection / deltaEulerRejectionMag);
+                const float stabalizeRejectionAcc = min(maxRotationalAcceleration * timeDelta, deltaEulerRejectionMag);
+                euler += -stabalizeRejectionAcc * (deltaEulerRejection / deltaEulerRejectionMag);
             }
         }
     }
 
     agent.rotationalVelocity.xyz += euler;
-
     agent.velocity += acceleration;
 }
 
 void main() {
-    uint index = gl_GlobalInvocationID.x;
+    const uint index = gl_GlobalInvocationID.x;
 
     if (index >= numberOfElements) {
         return;
@@ -316,14 +316,14 @@ void main() {
 
     Agent agent = agentsIn[index];
 
-    vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+    const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
 
     uint reproductionFactor = 1;
 
     if (agent.playerId < 0) {
         Steering steering = calculateSteering(agent, index);
 
-        vec3 steeringVector = safeNormalize(
+        const vec3 steeringVector = safeNormalize(
             (2 * steering.alignment) +
             (10 * steering.cohesion) +
             (4 * steering.separation));
