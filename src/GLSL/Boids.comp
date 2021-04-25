@@ -253,7 +253,7 @@ vec3 calculateAcceleration(vec3 target, vec3 position, vec3 velocity) {
 
     vec3 acceleration = vec3(0.0f, 0.0f, 0.0f);
 
-    const float maxAcceleration = 2000.0f;
+    const float maxAcceleration = 15.0f;
     const vec3 delta = target - position;
     const float deltaMag = length(delta);
     if (deltaMag > 0) {
@@ -333,7 +333,7 @@ void processPlayerAgent(inout Agent agent) {
     }
 
     if (computeInputValue(inputState, kZeroPositionBit) == 1) {
-        acceleration += calculateAcceleration(vec3(0.0f, 0.0f, 0.0f), agent.position, agent.velocity);
+        acceleration += calculateAcceleration(vec3(1.0f, 1.0f, 1.0f), agent.position, agent.velocity);
     }
 
     const int pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
@@ -394,8 +394,8 @@ void main() {
         agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));*/
 
         agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity.xyz);
-
-        agent.velocity = forward * 40.0f;
+        const vec3 target = agent.position + (forward * 50.0f);
+        agent.velocity += calculateAcceleration(target, agent.position, agent.velocity);
     } else {
         processPlayerAgent(agent);
         if (computeInputValue(playerInputStates[agent.playerId], kSpawnBit) == 1) {
