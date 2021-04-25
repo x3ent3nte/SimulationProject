@@ -284,7 +284,7 @@ float Collider::computeNextStep(float timeDelta) {
     }
 
     //std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two << " time= " << earliestCollision.time << "\n";
-    if (earliestCollision.time < timeDelta && false) {
+    if (earliestCollision.time < timeDelta) {
         {
             //Timer timer("Advance Time");
             m_timeAdvancer->run(earliestCollision.time, m_currentNumberOfElements);
