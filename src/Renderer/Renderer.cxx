@@ -551,15 +551,20 @@ private:
         std::cout << "Player up ";
         printVec3(playerUp);
 
-        //glm::vec3 eye = (player.position - (14.0f * playerForward)) + (4.0f * playerUp);
-        //glm::vec3 target = player.position + (playerForward * 8.0f);
+        glm::vec3 eye = (player.position - (14.0f * playerForward)) + (4.0f * playerUp);
+        glm::vec3 target = player.position + (playerForward * 8.0f);
+        glm::vec3 up = playerUp;
 
-        glm::vec3 eye = player.position + glm::vec3{0.0f, 0.0f, 10.0f};
-        glm::vec3 target = player.position;
+        bool fixedCameraAngle = false;
+        if (fixedCameraAngle) {
+            eye = player.position + glm::vec3{0.0f, 0.0f, 10.0f};
+            target = player.position;
+            up = glm::vec3(0.0f, 1.0f, 0.0f);
+        }
 
         UniformBufferObject ubo{};
         ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        ubo.view = glm::lookAt(eye, target, up);
         ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
         ubo.cameraPosition = eye;
 
