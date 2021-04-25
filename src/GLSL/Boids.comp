@@ -259,7 +259,13 @@ vec3 calculateAcceleration(vec3 target, vec3 position, vec3 velocity) {
     if (deltaMag > 0) {
         const vec3 velocityProjection = projection(velocity, delta);
         const float velocityProjectionMag = length(velocityProjection);
-        const float timeToTarget = deltaMag / velocityProjectionMag;
+        const float infinity = 1.0f / 0.0f;
+
+        const float cosSim = cosineSimilarity(velocityProjection, delta);
+        float timeToTarget = infinity;
+        if (cosSim > 0.0f) {
+            timeToTarget = deltaMag / velocityProjectionMag;
+        }
         const float timeToDecelerate = velocityProjectionMag / maxAcceleration;
 
         const float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
