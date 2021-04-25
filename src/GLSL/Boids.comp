@@ -249,6 +249,36 @@ vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired, vec4 rotati
     return calculateRotationalAcceleration(targetQuaternion, rotation, rotationalVelocity);
 }
 
+vec3 calculateAcceleration(vec3 target, vec3 position, vec3 velocity) {
+
+    vec3 acceleration = vec3(0.0f, 0.0f, 0.0f);
+
+    const float maxAcceleration = 2000.0f;
+    const vec3 delta = target - position;
+    const float deltaMag = length(delta);
+    if (deltaMag > 0) {
+        const vec3 velocityProjection = projection(velocity, delta);
+        const float velocityProjectionMag = length(velocityProjection);
+        const float timeToTarget = deltaMag / velocityProjectionMag;
+        const float timeToDecelerate = velocityProjectionMag / maxAcceleration;
+
+        const float timeAccelerating = max(0.0f, min(timeDelta, timeToTarget - timeToDecelerate));
+        const float timeDecelerating = timeDelta - timeAccelerating;
+
+        const vec3 deltaNorm = delta / deltaMag;
+        acceleration += (timeAccelerating * maxAcceleration * deltaNorm) + (timeDecelerating * maxAcceleration * -deltaNorm);
+
+        const vec3 velocityRejection = velocity - velocityProjection;
+        const float velocityRejectionMag = length(velocityRejection);
+        if (velocityRejectionMag > 0) {
+            const float rejectionAcc = min(maxAcceleration * timeDelta, velocityRejectionMag);
+            acceleration -= rejectionAcc * (velocityRejection / velocityRejectionMag);
+        }
+    }
+
+    return acceleration;
+}
+
 const int kForwardBit = 0;
 const int kBackBit = 1;
 const int kLeftBit = 2;
@@ -265,6 +295,7 @@ const int kStabalizeRotationalVelocityBit = 12;
 const int kStabalizeRotationBit = 13;
 const int kSpawnBit = 14;
 const int kBrakeBit = 15;
+const int kZeroPositionBit = 16;
 
 int computeInputValue(uint inputState, uint bitPos) {
     const uint bitMask = 1 << bitPos;
@@ -293,6 +324,10 @@ void processPlayerAgent(inout Agent agent) {
             vec3 velocityNorm = agent.velocity / velocityMag;
             acceleration += velocityNorm * -stabalizationAcc;
         }
+    }
+
+    if (computeInputValue(inputState, kZeroPositionBit) == 1) {
+        acceleration += calculateAcceleration(vec3(0.0f, 0.0f, 0.0f), agent.position, agent.velocity);
     }
 
     const int pitchInput = computeInputValue(inputState, kPitchUpBit) - computeInputValue(inputState, kPitchDownBit);
