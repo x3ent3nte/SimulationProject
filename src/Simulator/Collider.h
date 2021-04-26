@@ -57,7 +57,7 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
     void runCollisionDetection(float timeDelta);
-    Collision extractEarliestCollision(VkBuffer reduceResult);
+    Collision extractEarliestCollision(VkBuffer reduceResult, float timeDelta);
     float computeNextStep(float timeDelta);
 
 public:

@@ -367,7 +367,7 @@ void Boids::createCommandBuffer(uint32_t numberOfElements) {
 }
 
 uint32_t Boids::extractNumberOfElements() {
-    Timer timer("Boids::extractNumberOfElements");
+    //Timer timer("Boids::extractNumberOfElements");
 
     VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
         m_logicalDevice,
@@ -399,7 +399,7 @@ uint32_t Boids::extractNumberOfElements() {
 }
 
 void Boids::copyPlayerInputStates(std::vector<uint32_t>& playerInputStates) {
-    Timer timer("Boids::copyPlayerInputStates");
+    //Timer timer("Boids::copyPlayerInputStates");
     const size_t numberOfPlayers = playerInputStates.size();
     const size_t memorySize = numberOfPlayers * sizeof(uint32_t);
 

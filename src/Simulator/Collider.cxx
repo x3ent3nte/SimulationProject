@@ -226,7 +226,7 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
+Collision Collider::extractEarliestCollision(VkBuffer reduceResult, float timeDelta) {
     size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
     VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
         m_logicalDevice,
@@ -247,27 +247,35 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 
-    Collision earliestCollision;
+    //Collision earliestCollision;
+    std::vector<Collision> collisions(m_currentNumberOfElements);
     void* dataMap;
-    vkMapMemory(m_logicalDevice,  m_collisionsHostVisibleDeviceMemory, 0, sizeof(Collision), 0, &dataMap);
-    memcpy(&earliestCollision, dataMap, sizeof(Collision));
+    vkMapMemory(m_logicalDevice,  m_collisionsHostVisibleDeviceMemory, 0, sizeof(Collision) * m_currentNumberOfElements, 0, &dataMap);
+    memcpy(collisions.data(), dataMap, sizeof(Collision) * m_currentNumberOfElements);
     vkUnmapMemory(m_logicalDevice, m_collisionsHostVisibleDeviceMemory);
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCollisionsCommandBuffer);
 
-    return earliestCollision;
-    /*
+    //return earliestCollision;
+
     int numberOfCollisions = 0;
+    Collision earliestCollision = {0, 0, 9999.999f};
     for (int i = 0; i < collisions.size(); ++i) {
         Collision col = collisions[i];
         if (!((col.one == 0) && (col.two == 0))) {
             numberOfCollisions += 1;
         }
         //std::cout << "Collision one= " << col.one << " two= " << col.two << " time= " << col.time << "\n";
+        if (col.time < earliestCollision.time) {
+            earliestCollision = col;
+        }
     }
 
-    std::cout << "Number of collisions= " << numberOfCollisions << "\n";
-    return collisions[0];
-    */
+    //std::cout << "Number of collisions= " << numberOfCollisions << "\n";
+    if (earliestCollision.one != earliestCollision.two) {
+        std::cout << "Earliest Collision one= " << earliestCollision.one << " two= " << earliestCollision.two
+            << " time= " << earliestCollision.time << " timeDelta=" << timeDelta << "\n";
+    }
+    return earliestCollision;
 }
 
 float Collider::computeNextStep(float timeDelta) {
@@ -280,7 +288,7 @@ float Collider::computeNextStep(float timeDelta) {
     {
         //Timer timer("Reduce Collisions");
         VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
-        earliestCollision = extractEarliestCollision(reduceResult);
+        earliestCollision = extractEarliestCollision(reduceResult, timeDelta);
     }
 
     //std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two << " time= " << earliestCollision.time << "\n";

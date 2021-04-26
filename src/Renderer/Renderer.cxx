@@ -546,10 +546,10 @@ private:
         glm::vec3 playerForward = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 0.0f, -1.0f), player.rotation);
         glm::vec3 playerUp = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 1.0f, 0.0f), player.rotation);
 
-        std::cout << "Player forward ";
-        printVec3(playerForward);
-        std::cout << "Player up ";
-        printVec3(playerUp);
+        //std::cout << "Player forward ";
+        //printVec3(playerForward);
+        //std::cout << "Player up ";
+        //printVec3(playerUp);
 
         glm::vec3 eye = (player.position - (14.0f * playerForward)) + (4.0f * playerUp);
         glm::vec3 target = player.position + (playerForward * 8.0f);
@@ -577,14 +577,14 @@ private:
     }
 
     std::pair<uint32_t, AgentPositionAndRotation> updateAgentPositionsBuffer(size_t imageIndex) {
-        Timer timer("XXXUpdate Agent Positions Buffer");
+        //Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
         AgentPositionAndRotation player;
         if (connection->m_players.size() > 0) {
             player = connection->m_players[0];
-            std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
+            //std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
         }
 
         if (numberOfElements > 0) {
@@ -687,7 +687,7 @@ public:
 
     void render(float timeDelta) override {
 
-        Timer timer("XXXXXX Render XXXXXX");
+        //Timer timer("XXXXXX Render XXXXXX");
 
         vkWaitForFences(m_logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 

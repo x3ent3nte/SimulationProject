@@ -263,7 +263,7 @@ void InsertionSorter::run(uint32_t numberOfElements) {
     int numIterations = 0;
 
     {
-        Timer timer("Insertion Sort Vulkan");
+        //Timer timer("Insertion Sort Vulkan");
 
         setNumberOfElements(numberOfElements);
 

@@ -162,7 +162,7 @@ VkBuffer Reducer::run(uint32_t numberOfElements) {
     VkDescriptorSet otherDescriptorSet = m_twoToOne;
 
     {
-        Timer timer("Reduce Vulkan");
+        //Timer timer("Reduce Vulkan");
         while (numberOfElements > 1) {
 
             runReduceCommand(numberOfElements, currentDescriptorSet);

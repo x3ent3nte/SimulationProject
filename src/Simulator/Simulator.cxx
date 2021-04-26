@@ -359,7 +359,7 @@ Simulator::~Simulator() {
 }
 
 void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta) {
-    Timer timer("Simulator::simulateNextStep");
+    //Timer timer("Simulator::simulateNextStep");
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
     float timeDeltaCopy = timeDelta;
@@ -381,7 +381,7 @@ void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta)
 }
 
 void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
-    Timer timer("Simulator::runSimulatorStateWriterFunction");
+    //Timer timer("Simulator::runSimulatorStateWriterFunction");
 
     auto connection = m_connector->takeOldConnection();
     auto sswf = m_simulationStateWriterFunctions[connection->m_id];
@@ -493,7 +493,7 @@ void Simulator::runSimulatorTask() {
         }
 
         m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements, inputStatesInt);
-        std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
+        //std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
         //updateConnector(timeDelta);
         runSimulatorStateWriterFunction(inputStatesInt.size());
