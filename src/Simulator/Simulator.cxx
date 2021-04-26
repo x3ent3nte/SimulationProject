@@ -152,7 +152,7 @@ Simulator::Simulator(
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
-    m_currentNumberOfElements = numberOfElements / 16;
+    m_currentNumberOfElements = numberOfElements / 8;
 
     m_isActive = false;
     m_connector = connector;
@@ -171,7 +171,7 @@ Simulator::Simulator(
 
     std::vector<Agent> agents(numberOfElements);
     for (size_t i = 0; i < numberOfElements; ++i) {
-        glm::vec3 position = MyMath::randomVec3InSphere(256.0f);
+        glm::vec3 position = MyMath::randomVec3InSphere(750.0f);
         glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
@@ -179,7 +179,7 @@ Simulator::Simulator(
             MyMath::randomVec3InSphere(1.0f),
             MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
         glm::vec4 rotationalVelocity = glm::vec4{0.0f, 0.0f, 0.0f, 0.0f};
-        agents[i] = Agent{-1, position, velocity, acceleration, target, rotation, rotationalVelocity, 5.0f};
+        agents[i] = Agent{-1, position, velocity, acceleration, target, rotation, rotationalVelocity, 3.0f};
     }
 
     agents[0].playerId = 0;
