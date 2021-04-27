@@ -226,7 +226,7 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-Collision Collider::extractEarliestCollision(VkBuffer reduceResult, float timeDelta) {
+Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
     size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
     VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
         m_logicalDevice,
@@ -306,5 +306,5 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
         numberOfSteps += 1;
     }
 
-    //std::cout << "Number of Collider steps= " << numberOfSteps << "\n\n";
+    //std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
 }

@@ -103,7 +103,7 @@ VkCommandBuffer InsertionSorterUtil::createCommandBuffer(
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 
     uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * InsertionSorterUtil::xDim));
-    std::cout << "Number of X groups = " << xGroups << "\n";
+    //std::cout << "Number of X groups = " << xGroups << "\n";
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSetOne, 0, nullptr);
     vkCmdDispatch(commandBuffer, xGroups, 1, 1);

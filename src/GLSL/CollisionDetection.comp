@@ -91,7 +91,7 @@ void main() {
         return;
     }
 
-    Collision earliestCollision = Collision(0, 0, timeDelta);
+    Collision earliestCollision = Collision(0, 0, timeDelta + 2);
     Agent agent = agents[index];
 
     float minX = min(agent.position.x, agent.position.x + (agent.velocity.x * timeDelta)) - agent.radius;
@@ -113,10 +113,9 @@ void main() {
             if (impact.exists) {
                 if (isEarlierCollision(impact.sol1, earliestCollision.time)) {
                     earliestCollision = Collision(otherIndex, index, impact.sol1);
-                } else {
-                    if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
-                        earliestCollision = Collision(otherIndex, index, impact.sol2);
-                    }
+                }
+                if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
+                    earliestCollision = Collision(otherIndex, index, impact.sol2);
                 }
             }
         }

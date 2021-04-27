@@ -152,7 +152,7 @@ Simulator::Simulator(
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
-    m_currentNumberOfElements = numberOfElements / 8;
+    m_currentNumberOfElements = numberOfElements / 4;
 
     m_isActive = false;
     m_connector = connector;
@@ -462,13 +462,6 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
     m_connector->restoreNewestConnection(connection);
 }
 
-void Simulator::updateConnector(float timeDelta) {
-    auto connection = m_connector->takeOldConnection();
-    connection->m_numberOfElements = m_currentNumberOfElements;
-    simulateNextStep(m_computeCommandBuffers[connection->m_id], timeDelta);
-    m_connector->restoreNewestConnection(connection);
-}
-
 void Simulator::runSimulatorTask() {
     Timer timer("Vulkan Simulator");
     uint64_t numFrames = 0;
@@ -493,7 +486,7 @@ void Simulator::runSimulatorTask() {
         }
 
         m_currentNumberOfElements = m_boids->run(timeDelta, m_currentNumberOfElements, inputStatesInt);
-        //std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
+        std::cout << "New number of elements = " << m_currentNumberOfElements << "\n";
 
         //updateConnector(timeDelta);
         runSimulatorStateWriterFunction(inputStatesInt.size());
