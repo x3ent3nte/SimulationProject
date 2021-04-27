@@ -267,7 +267,7 @@ float Collider::computeNextStep(float timeDelta) {
     {
         //Timer timer("Reduce Collisions");
         VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
-        earliestCollision = extractEarliestCollision(reduceResult, timeDelta);
+        earliestCollision = extractEarliestCollision(reduceResult);
     }
 
     //std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two
