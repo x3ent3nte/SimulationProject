@@ -58,8 +58,8 @@ QuadraticSolution solveQuadraticEquation(vec3 q) {
     float sqrtB2Minus4AC = sqrt(b2Minus4AC);
     float twoA = 2 * q.x;
 
-    float sol1 = (-q.y + sqrtB2Minus4AC) / twoA;
-    float sol2 = (-q.y - sqrtB2Minus4AC) / twoA;
+    float sol1 = (-q.y - sqrtB2Minus4AC) / twoA;
+    float sol2 = (-q.y + sqrtB2Minus4AC) / twoA;
 
     return QuadraticSolution(true, sol1, sol2);
 }
@@ -113,9 +113,10 @@ void main() {
             if (impact.exists) {
                 if (isEarlierCollision(impact.sol1, earliestCollision.time)) {
                     earliestCollision = Collision(otherIndex, index, impact.sol1);
-                }
-                if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
-                    earliestCollision = Collision(otherIndex, index, impact.sol2);
+                } else {
+                    if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
+                        earliestCollision = Collision(otherIndex, index, impact.sol2);
+                    }
                 }
             }
         }
