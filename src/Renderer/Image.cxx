@@ -227,7 +227,7 @@ uint32_t Image::createTextureImage(
     VkDeviceMemory& textureImageMemory) {
 
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(Constants::kTexturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(Constants::kFreyjaTexturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 

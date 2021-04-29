@@ -9,6 +9,7 @@
 namespace Constants {
 
     const std::string kFreyjaModelPath = "models/freyja.obj";
+    const std::string kFreyjaTexturePath = "textures/freyja_image.png";
     const std::string kModelPath = "models/arwing.obj";
     const std::string kTexturePath = "textures/arwing_texture.png";
 
