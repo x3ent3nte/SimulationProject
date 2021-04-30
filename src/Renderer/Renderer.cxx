@@ -29,7 +29,7 @@
 #include <thread>
 
 namespace {
-    constexpr int kMaxFramesInFlight = 2;
+    constexpr int kMaxFramesInFlight = 3;
 } // namespace anonymous
 
 class DefaultRenderer : public Renderer {
@@ -551,7 +551,7 @@ private:
         //std::cout << "Player up ";
         //printVec3(playerUp);
 
-        glm::vec3 eye = (player.position - (14.0f * playerForward)) + (4.0f * playerUp);
+        glm::vec3 eye = (player.position - (10.0f * playerForward)) + (3.0f * playerUp);
         glm::vec3 target = player.position + (playerForward * 8.0f);
         glm::vec3 up = playerUp;
 
@@ -644,7 +644,7 @@ private:
         renderPassInfo.renderArea.extent = m_swapChainExtent;
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {0.005f, 0.0f, 0.005f, 1.0f};
+        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
         clearValues[1].depthStencil = {1.0f, 0};
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -678,7 +678,7 @@ private:
 
         m_renderCommandBuffers = std::vector<VkCommandBuffer>();
 
-        for (int i = 0; i < m_swapChainFrameBuffers.size(); ++i) {
+        for (int i = 0; i < kMaxFramesInFlight; ++i) {
             m_renderCommandBuffers.push_back(createRenderCommand(i, 0));
         }
     }
@@ -730,11 +730,12 @@ public:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[imageIndex]);
-        m_renderCommandBuffers[imageIndex] = createRenderCommand(imageIndex, numberOfElementsAndPlayerInfo.first);
+        std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
+        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, numberOfElementsAndPlayerInfo.first);
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_renderCommandBuffers[imageIndex];
+        submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
 
         VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
@@ -772,6 +773,7 @@ public:
 private:
 
     void cleanUpSwapChain() {
+        std::cout << "Renderer::cleanUpSwapChain\n";
         vkDestroyImageView(m_logicalDevice, m_colourImageView, nullptr);
         vkDestroyImage(m_logicalDevice, m_colourImage, nullptr);
         vkFreeMemory(m_logicalDevice, m_colourImageMemory, nullptr);
@@ -805,7 +807,7 @@ private:
     }
 
     void cleanUp() {
-
+        std::cout << "Renderer::cleanUp\n";
         cleanUpSwapChain();
 
         vkDestroySampler(m_logicalDevice, m_textureSampler, nullptr);
