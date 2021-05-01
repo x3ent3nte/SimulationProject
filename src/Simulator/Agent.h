@@ -4,6 +4,7 @@
 #include <Renderer/MyGLM.h>
 
 struct Agent {
+    int typeId;
     int playerId;
     glm::vec3 position;
     glm::vec3 velocity;

@@ -10,6 +10,7 @@
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
 struct Agent {
+    int typeId;
     int playerId;
     vec3 position;
     vec3 velocity;
@@ -135,7 +136,7 @@ vec4 eulerToAxisAndTheta(vec3 euler) {
 }
 
 vec3 calculateForward(vec4 rotation) {
-    return rotatePointByQuaternion(vec3(0.0f, 0.0f, -1.0f), rotation);
+    return rotatePointByQuaternion(canonicalForward, rotation);
 }
 
 void checkAgent(
@@ -237,12 +238,12 @@ vec3 calculateRotationalAcceleration(vec4 targetQuaternion, vec4 rotationQuatern
     return euler;
 }
 
-vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 desired, vec4 rotation, vec3 rotationalVelocity) {
-    const float cosSim = cosineSimilarity(current, desired);
+vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 target, vec4 rotation, vec3 rotationalVelocity) {
+    const float cosSim = cosineSimilarity(current, target);
     const float angleBetween = acos(cosSim);
 
     const float theta = min(angleBetween, timeDelta * 30.0f);
-    const vec3 targetRight = cross(current, desired);
+    const vec3 targetRight = cross(current, target);
     //return axisAndThetaToQuaternion(targetRight, theta);
     //return axisAndThetaToEuler(targetRight, theta);
     vec4 targetQuaternion = normalize(hamiltonProduct(axisAndThetaToQuaternion(targetRight, theta), rotation));
@@ -369,16 +370,7 @@ void processPlayerAgent(inout Agent agent) {
     agent.velocity += acceleration;
 }
 
-void main() {
-    const uint index = gl_GlobalInvocationID.x;
-
-    if (index >= numberOfElements) {
-        return;
-    }
-
-    Agent agent = agentsIn[index];
-
-    const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+void processSpaceShip(inout Agent agent, uint index) {
 
     uint reproductionFactor = 1;
 
@@ -390,7 +382,9 @@ void main() {
             (10 * steering.cohesion) +
             (4 * steering.separation));
 
+        const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
         agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity.xyz);
+
         const vec3 target = agent.position + (forward * 50.0f);
         agent.velocity += calculateAcceleration(target, agent.position, agent.velocity);
     } else {
@@ -400,7 +394,19 @@ void main() {
         }
     }
 
-    agentsOut[index] = agent;
-
     reproduction[index] = reproductionFactor;
+}
+
+void main() {
+    const uint index = gl_GlobalInvocationID.x;
+
+    if (index >= numberOfElements) {
+        return;
+    }
+
+    Agent agent = agentsIn[index];
+
+    processSpaceShip(agent, index);
+
+    agentsOut[index] = agent;
 }
