@@ -238,12 +238,12 @@ vec3 calculateRotationalAcceleration(vec4 targetQuaternion, vec4 rotationQuatern
     return euler;
 }
 
-vec3 calculateChangeInRotationalVelocity(vec3 current, vec3 target, vec4 rotation, vec3 rotationalVelocity) {
-    const float cosSim = cosineSimilarity(current, target);
+vec3 calculateChangeInRotationalVelocity(vec3 forward, vec3 target, vec4 rotation, vec3 rotationalVelocity) {
+    const float cosSim = cosineSimilarity(forward, target);
     const float angleBetween = acos(cosSim);
 
     const float theta = min(angleBetween, timeDelta * 30.0f);
-    const vec3 targetRight = cross(current, target);
+    const vec3 targetRight = cross(forward, target);
     //return axisAndThetaToQuaternion(targetRight, theta);
     //return axisAndThetaToEuler(targetRight, theta);
     vec4 targetQuaternion = normalize(hamiltonProduct(axisAndThetaToQuaternion(targetRight, theta), rotation));
