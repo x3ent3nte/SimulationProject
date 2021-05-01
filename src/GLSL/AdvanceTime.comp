@@ -62,7 +62,7 @@ void main() {
     Agent agent = agents[index];
 
     agent.position += agent.velocity * timeDelta;
-    agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity.xyz * timeDelta), agent.rotation));
+    agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity * timeDelta), agent.rotation));
 
     agents[index] = agent;
 }

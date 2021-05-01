@@ -351,10 +351,10 @@ void processPlayerAgent(inout Agent agent) {
     euler += axisAndThetaToEuler(forward, rotationalAccFloat * rollInput);
 
     if (computeInputValue(inputState, kStabalizeRotationalVelocityBit) == 1) {
-        const float rotationalVelocityMag = length(agent.rotationalVelocity.xyz);
+        const float rotationalVelocityMag = length(agent.rotationalVelocity);
         if (rotationalVelocityMag > 0) {
             const float stabalizeAcc = min(rotationalAccFloat, rotationalVelocityMag);
-            euler += -stabalizeAcc * (agent.rotationalVelocity.xyz / rotationalVelocityMag);
+            euler += -stabalizeAcc * (agent.rotationalVelocity / rotationalVelocityMag);
         }
     }
 
@@ -363,10 +363,10 @@ void processPlayerAgent(inout Agent agent) {
         euler += calculateRotationalAcceleration(
             axisAndThetaToQuaternion(vec3(0.0f, 0.0f, 0.0f), 0.0f),
             agent.rotation,
-            agent.rotationalVelocity.xyz);
+            agent.rotationalVelocity);
     }
 
-    agent.rotationalVelocity.xyz += euler;
+    agent.rotationalVelocity += euler;
     agent.velocity += acceleration;
 }
 
@@ -383,7 +383,7 @@ void processSpaceShip(inout Agent agent, uint index) {
             (4 * steering.separation));
 
         const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
-        agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity.xyz);
+        agent.rotationalVelocity += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity);
 
         const vec3 target = agent.position + (forward * 50.0f);
         agent.velocity += calculateAcceleration(target, agent.position, agent.velocity);
