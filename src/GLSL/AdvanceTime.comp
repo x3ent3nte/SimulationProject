@@ -42,18 +42,6 @@ vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
     return vec4(axis * sin(thetaHalved), cos(thetaHalved));
 }
 
-vec4 rotationalVelocityMultipliedByTime(vec4 rotationalVelocity, float timeDelta) {
-    float thetaHalved = acos(rotationalVelocity.w);
-    float sinThetaHalved = sin(thetaHalved);
-    vec3 axis = vec3(1.0f, 0.0f, 0.0f);
-    if (sinThetaHalved != 0.0f) {
-        axis = rotationalVelocity.xyz / sinThetaHalved;
-    }
-    float newThetaHalved = thetaHalved * timeDelta;
-
-    return vec4(axis * sin(newThetaHalved), cos(newThetaHalved));
-}
-
 const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
 const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
 const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
@@ -73,10 +61,6 @@ void main() {
     Agent agent = agents[index];
 
     agent.position += agent.velocity * timeDelta;
-    /*agent.rotation = normalize(hamiltonProduct(
-        rotationalVelocityMultipliedByTime(agent.rotationalVelocity, timeDelta),
-        agent.rotation));*/
-
     agent.rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity.xyz * timeDelta), agent.rotation));
 
     agents[index] = agent;

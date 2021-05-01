@@ -55,5 +55,4 @@ glm::vec3 MyMath::randomVec3InSphere(float radius) {
     float mag = glm::length(v);
     v = (mag == 0) ? glm::vec3(1.0f) : (v / mag);
     return v * (radius * randomFloatBetweenZeroAndOne());
-    //return v * radius;
 }

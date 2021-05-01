@@ -390,9 +390,6 @@ void main() {
             (10 * steering.cohesion) +
             (4 * steering.separation));
 
-        /*vec4 steeringQuaternion = calculateChangeInRotationalVelocity(forward, steeringVector);
-        agent.rotationalVelocity = normalize(hamiltonProduct(steeringQuaternion, agent.rotationalVelocity));*/
-
         agent.rotationalVelocity.xyz += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity.xyz);
         const vec3 target = agent.position + (forward * 50.0f);
         agent.velocity += calculateAcceleration(target, agent.position, agent.velocity);
