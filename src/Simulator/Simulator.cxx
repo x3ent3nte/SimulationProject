@@ -178,8 +178,8 @@ Simulator::Simulator(
         glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
             MyMath::randomVec3InSphere(1.0f),
             MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
-        glm::vec4 rotationalVelocity = glm::vec4{0.0f, 0.0f, 0.0f, 0.0f};
-        agents[i] = Agent{0, -1, position, velocity, acceleration, target, rotation, rotationalVelocity, 3.0f};
+        glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
+        agents[i] = Agent{0, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, 3.0f};
     }
 
     agents[0].playerId = 0;

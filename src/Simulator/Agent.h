@@ -10,8 +10,8 @@ struct Agent {
     glm::vec3 velocity;
     glm::vec3 acceleration;
     glm::vec3 target;
+    glm::vec3 rotationalVelocity;
     glm::vec4 rotation;
-    glm::vec4 rotationalVelocity;
     float radius;
 };
 
