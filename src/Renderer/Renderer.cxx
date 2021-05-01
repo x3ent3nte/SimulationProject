@@ -151,7 +151,7 @@ private:
     VkImageView m_colourImageView;
 
     void recreateSwapChain() {
-        std::cout << "recreateSwapChain called\n";
+        std::cout << "Renderer::recreateSwapChain\n";
 
         int width = 0;
         int height = 0;
@@ -720,6 +720,8 @@ public:
         //updateUniformBuffer(imageIndex, timeDelta);
         auto numberOfElementsAndPlayerInfo = updateAgentPositionsBuffer(imageIndex);
         updateUniformBufferWithPlayer(imageIndex, numberOfElementsAndPlayerInfo.second);
+        auto playerPos = numberOfElementsAndPlayerInfo.second.position;
+        std::cout << "Player position x=" << playerPos.x << " y=" << playerPos.y << " z=" << playerPos.z << "\n";
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

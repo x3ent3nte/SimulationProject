@@ -23,7 +23,7 @@ vec3 safeNormalize(vec3 v) {
 void main() {
     vec3 lightColour = vec3(0.98, 0.98, 0.98);
 
-    float ambientStrength = 0.005f;
+    float ambientStrength = 0.015f;
     vec3 ambient = ambientStrength * lightColour;
 
     vec3 normalizedNormal = safeNormalize(fragNormal);
