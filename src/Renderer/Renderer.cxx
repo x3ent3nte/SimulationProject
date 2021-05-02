@@ -252,7 +252,7 @@ private:
             m_vertexBuffer,
             m_vertexBufferMemory);
 
-       Buffer::createBufferWithData(
+        Buffer::createBufferWithData(
             m_indices.data(),
             sizeof(uint32_t) * m_indices.size(),
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -576,11 +576,18 @@ private:
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
     }
 
-    std::pair<uint32_t, AgentPositionAndRotation> updateAgentPositionsBuffer(size_t imageIndex) {
+    struct RenderInfo {
+        uint32_t numberOfAgents;
+        AgentPositionAndRotation player;
+        std::vector<Connection::TypeIdIndex> typeIdIndexes;
+    };
+
+    RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
         //Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
+        auto typeIdIndexes = connection->m_typeIdIndexes;
         AgentPositionAndRotation player;
         if (connection->m_players.size() > 0) {
             player = connection->m_players[0];
@@ -610,10 +617,13 @@ private:
 
         m_connector->restoreConnection(connection);
 
-        return {numberOfElements, player};
+        return {numberOfElements, player, typeIdIndexes};
     }
 
-    VkCommandBuffer createRenderCommand(size_t imageIndex, uint32_t numberOfInstances) {
+    VkCommandBuffer createRenderCommand(
+        size_t imageIndex,
+        uint32_t numberOfInstances,
+        const std::vector<Connection::TypeIdIndex>& typeIdIndexes) {
 
         VkCommandBuffer commandBuffer;
 
@@ -679,7 +689,7 @@ private:
         m_renderCommandBuffers = std::vector<VkCommandBuffer>();
 
         for (int i = 0; i < kMaxFramesInFlight; ++i) {
-            m_renderCommandBuffers.push_back(createRenderCommand(i, 0));
+            m_renderCommandBuffers.push_back(createRenderCommand(i, 0, {}));
         }
     }
 
@@ -718,9 +728,9 @@ public:
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
         //updateUniformBuffer(imageIndex, timeDelta);
-        auto numberOfElementsAndPlayerInfo = updateAgentPositionsBuffer(imageIndex);
-        updateUniformBufferWithPlayer(imageIndex, numberOfElementsAndPlayerInfo.second);
-        auto playerPos = numberOfElementsAndPlayerInfo.second.position;
+        auto renderInfo = updateAgentPositionsBuffer(imageIndex);
+        updateUniformBufferWithPlayer(imageIndex, renderInfo.player);
+        auto playerPos = renderInfo.player.position;
         std::cout << "Player position x=" << playerPos.x << " y=" << playerPos.y << " z=" << playerPos.z << "\n";
 
         VkSubmitInfo submitInfo{};
@@ -734,7 +744,7 @@ public:
 
         std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
-        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, numberOfElementsAndPlayerInfo.first);
+        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];

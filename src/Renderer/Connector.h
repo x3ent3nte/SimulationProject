@@ -15,14 +15,19 @@ class Connection {
 private:
 
     VkDevice m_logicalDevice;
-
     VkDeviceMemory m_deviceMemory;
 
 public:
 
+    struct TypeIdIndex {
+        int typeId;
+        uint32_t index;
+    };
+
     const int m_id;
 
     std::vector<AgentPositionAndRotation> m_players;
+    std::vector<TypeIdIndex> m_typeIdIndexes;
 
     uint32_t m_numberOfElements;
     VkBuffer m_buffer;
@@ -36,7 +41,6 @@ public:
         VkCommandPool commandPool);
 
     virtual ~Connection();
-
 };
 
 class Connector {
