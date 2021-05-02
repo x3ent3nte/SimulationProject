@@ -1,8 +1,9 @@
 #include <Renderer/Model.h>
 
+#include <Renderer/Vertex.h>
+#include <Renderer/Image.h>
 #include <Utils/Buffer.h>
 #include <Utils/Utils.h>
-#include <Renderer/Vertex.h>
 
 Model::Model(
     const std::string& objectName,
@@ -18,6 +19,8 @@ Model::Model(
     std::vector<uint32_t> indices;
 
     Utils::loadModel(vertices, indices, objectName);
+
+    m_numberOfIndices = indices.size();
 
     Buffer::createBufferWithData(
         vertices.data(),
@@ -48,4 +51,8 @@ Model::~Model() {
 
     vkDestroyBuffer(m_logicalDevice, m_vertexesBuffer, nullptr);
     vkFreeMemory(m_logicalDevice, m_vertexesDeviceMemory, nullptr);
+}
+
+size_t Model::numberOfIndices() const {
+    return m_numberOfIndices;
 }

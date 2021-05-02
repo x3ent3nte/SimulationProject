@@ -19,14 +19,17 @@ public:
 
     virtual ~Model();
 
-private:
-
-    VkDevice m_logicalDevice;
+    size_t numberOfIndices() const;
 
     VkBuffer m_vertexesBuffer;
-    VkDeviceMemory m_vertexesDeviceMemory;
-
     VkBuffer m_indicesBuffer;
+
+private:
+
+    size_t m_numberOfIndices;
+
+    VkDevice m_logicalDevice;
+    VkDeviceMemory m_vertexesDeviceMemory;
     VkDeviceMemory m_indicesDeviceMemory;
 };
 

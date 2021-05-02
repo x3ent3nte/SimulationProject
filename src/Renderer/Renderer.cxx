@@ -17,6 +17,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
+#include <Renderer/Model.h>
 
 #include <Utils/Timer.h>
 
@@ -114,10 +115,7 @@ private:
     VkDescriptorPool m_descriptorPool;
     std::vector<VkDescriptorSet> m_descriptorSets;
 
-    VkBuffer m_vertexBuffer;
-    VkDeviceMemory m_vertexBufferMemory;
-    VkBuffer m_indexBuffer;
-    VkDeviceMemory m_indexBufferMemory;
+    std::vector<std::shared_ptr<Model>> m_models;
 
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
@@ -140,9 +138,6 @@ private:
     VkImage m_depthImage;
     VkDeviceMemory m_depthImageMemory;
     VkImageView m_depthImageView;
-
-    std::vector<Vertex> m_vertices;
-    std::vector<uint32_t> m_indices;
 
     VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -237,31 +232,26 @@ private:
 
         m_textureImageView = Image::createImageView(m_logicalDevice, m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
         m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
-        Utils::loadModel(m_vertices, m_indices, Constants::kFreyjaModelPath);
 
         createInstanceBuffers();
 
-        Buffer::createBufferWithData(
-            m_vertices.data(),
-            sizeof(Vertex) * m_vertices.size(),
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        auto freyjaModel = std::make_shared<Model>(
+            Constants::kFreyjaModelPath,
+            Constants::kFreyjaTexturePath,
             m_physicalDevice,
             m_logicalDevice,
             m_commandPool,
-            m_graphicsQueue,
-            m_vertexBuffer,
-            m_vertexBufferMemory);
+            m_graphicsQueue);
 
-        Buffer::createBufferWithData(
-            m_indices.data(),
-            sizeof(uint32_t) * m_indices.size(),
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        auto arwingModel = std::make_shared<Model>(
+            Constants::kArwingModelPath,
+            Constants::kArwingTexturePath,
             m_physicalDevice,
             m_logicalDevice,
             m_commandPool,
-            m_graphicsQueue,
-            m_indexBuffer,
-            m_indexBufferMemory);
+            m_graphicsQueue);
+
+        m_models = {freyjaModel, arwingModel};
 
         createUniformBuffers();
 
@@ -565,7 +555,7 @@ private:
         UniformBufferObject ubo{};
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(eye, target, up);
-        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
+        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 50000.f);
         ubo.cameraPosition = eye;
 
         ubo.proj[1][1] *= -1;
@@ -664,16 +654,17 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 
-        VkBuffer vertexBuffers[2] = {m_vertexBuffer, m_instanceBuffers[imageIndex]};
+        auto model = m_models[0];
+        VkBuffer vertexBuffers[2] = {model->m_vertexesBuffer, m_instanceBuffers[imageIndex]};
         VkDeviceSize offsets[] = {0, 0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(commandBuffer, model->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
             0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffer, m_indices.size(), numberOfInstances, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, model->numberOfIndices(), numberOfInstances, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -829,12 +820,6 @@ private:
         vkFreeMemory(m_logicalDevice, m_textureImageMemory, nullptr);
 
         vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
-
-        vkDestroyBuffer(m_logicalDevice, m_indexBuffer, nullptr);
-        vkFreeMemory(m_logicalDevice, m_indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(m_logicalDevice, m_vertexBuffer, nullptr);
-        vkFreeMemory(m_logicalDevice, m_vertexBufferMemory, nullptr);
 
         const size_t numberOfBuffers = m_instanceBuffers.size();
         for (size_t i = 0; i < numberOfBuffers; ++i) {
