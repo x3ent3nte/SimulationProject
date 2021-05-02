@@ -4,10 +4,12 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Surface.h>
 #include <Renderer/Connector.h>
+#include <Renderer/Model.h>
 
 #include <vulkan/vulkan.h>
 
 #include <memory>
+#include <vector>
 
 class Renderer {
 public:
@@ -27,6 +29,7 @@ public:
         VkQueue presentQueue,
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
+        const std::vector<std::shared_ptr<Model>>& models,
         uint32_t maxNumberOfAgents);
 };
 

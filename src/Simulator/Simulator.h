@@ -2,6 +2,7 @@
 #define SIMULATOR_H
 
 #include <Renderer/Connector.h>
+#include <Renderer/Model.h>
 #include <Simulator/InsertionSorter.h>
 #include <Simulator/Scanner.h>
 #include <Simulator/Collider.h>
@@ -25,6 +26,8 @@ private:
     std::atomic<bool> m_isActive;
     std::shared_ptr<Connector> m_connector;
     std::shared_ptr<InputTerminal> m_inputTerminal;
+
+    std::vector<std::shared_ptr<Model>> m_models;
 
     VkDevice m_logicalDevice;
 
@@ -83,6 +86,7 @@ public:
         VkCommandPool computeCommandPool,
         std::shared_ptr<Connector> connector,
         std::shared_ptr<InputTerminal> inputTerminal,
+        const std::vector<std::shared_ptr<Model>>& models,
         uint32_t numberOfElements,
         uint32_t maxNumberOfPlayers);
 

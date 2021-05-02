@@ -8,6 +8,7 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
+#include <Renderer/Model.h>
 
 #include <Simulator/InputTerminal.h>
 #include <Simulator/Simulator.h>
@@ -24,6 +25,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
+#include <vector>
 
 namespace {
     constexpr int kWidth = 1600;
@@ -111,6 +113,24 @@ public:
         auto inputTerminal = std::make_shared<InputTerminal>();
         inputTerminal->addPlayer(m_keyboardControl);
 
+        auto freyjaModel = std::make_shared<Model>(
+            Constants::kFreyjaModelPath,
+            Constants::kFreyjaTexturePath,
+            m_physicalDevice,
+            m_logicalDevice,
+            m_graphicsCommandPool,
+            m_graphicsQueue);
+
+        auto arwingModel = std::make_shared<Model>(
+            Constants::kArwingModelPath,
+            Constants::kArwingTexturePath,
+            m_physicalDevice,
+            m_logicalDevice,
+            m_graphicsCommandPool,
+            m_graphicsQueue);
+
+        std::vector<std::shared_ptr<Model>> models = {freyjaModel, arwingModel};
+
         auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_graphicsQueue, m_graphicsCommandPool, maxNumberOfAgents);
         auto simulator = std::make_shared<Simulator>(
             m_physicalDevice,
@@ -119,6 +139,7 @@ public:
             m_computeCommandPool,
             connector,
             inputTerminal,
+            models,
             maxNumberOfAgents,
             maxNumberOfPlayers);
         simulator->simulate();
@@ -134,6 +155,7 @@ public:
             m_presentQueue,
             m_graphicsCommandPool,
             connector,
+            models,
             maxNumberOfAgents);
 
         m_prevTime = std::chrono::high_resolution_clock::now();

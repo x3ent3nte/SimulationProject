@@ -5,6 +5,8 @@
 #include <Utils/Buffer.h>
 #include <Utils/Utils.h>
 
+#include <iostream>
+
 Model::Model(
     const std::string& objectName,
     const std::string& textureName,
@@ -14,17 +16,27 @@ Model::Model(
     VkQueue queue) {
 
     m_logicalDevice = logicalDevice;
+    m_radius = 0.0f;
 
-    std::vector<Vertex> vertices;
+    std::vector<Vertex> vertexes;
     std::vector<uint32_t> indices;
 
-    Utils::loadModel(vertices, indices, objectName);
+    Utils::loadModel(vertexes, indices, objectName);
+
+    for (const Vertex& vertex : vertexes) {
+        float mag = glm::length(vertex.pos);
+        if (mag > m_radius) {
+            m_radius = mag;
+        }
+    }
+
+    std::cout << "Model " << objectName << " radius = " << m_radius << "\n";
 
     m_numberOfIndices = indices.size();
 
     Buffer::createBufferWithData(
-        vertices.data(),
-        sizeof(Vertex) * vertices.size(),
+        vertexes.data(),
+        sizeof(Vertex) * vertexes.size(),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         physicalDevice,
         m_logicalDevice,
@@ -55,4 +67,8 @@ Model::~Model() {
 
 size_t Model::numberOfIndices() const {
     return m_numberOfIndices;
+}
+
+float Model::radius() const {
+    return m_radius;
 }

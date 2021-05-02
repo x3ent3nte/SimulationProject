@@ -17,7 +17,6 @@
 #include <Renderer/KeyboardControl.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
-#include <Renderer/Model.h>
 
 #include <Utils/Timer.h>
 
@@ -46,8 +45,10 @@ public:
         VkQueue presentQueue,
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
+        const std::vector<std::shared_ptr<Model>>& models,
         uint32_t maxNumberOfAgents)
-        : m_maxNumberOfAgents(maxNumberOfAgents) {
+        : m_maxNumberOfAgents(maxNumberOfAgents)
+        , m_models(models) {
 
         m_keyboardControl = keyboardControl;
         m_window = window;
@@ -234,25 +235,6 @@ private:
         m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
 
         createInstanceBuffers();
-
-        auto freyjaModel = std::make_shared<Model>(
-            Constants::kFreyjaModelPath,
-            Constants::kFreyjaTexturePath,
-            m_physicalDevice,
-            m_logicalDevice,
-            m_commandPool,
-            m_graphicsQueue);
-
-        auto arwingModel = std::make_shared<Model>(
-            Constants::kArwingModelPath,
-            Constants::kArwingTexturePath,
-            m_physicalDevice,
-            m_logicalDevice,
-            m_commandPool,
-            m_graphicsQueue);
-
-        m_models = {freyjaModel, arwingModel};
-
         createUniformBuffers();
 
         m_descriptorPool = Descriptors::createDescriptorPool(
@@ -847,6 +829,7 @@ std::shared_ptr<Renderer> Renderer::create(
     VkQueue presentQueue,
     VkCommandPool commandPool,
     std::shared_ptr<Connector> connector,
+    const std::vector<std::shared_ptr<Model>>& models,
     uint32_t maxNumberOfAgents) {
 
     return std::make_shared<DefaultRenderer>(
@@ -860,5 +843,6 @@ std::shared_ptr<Renderer> Renderer::create(
         presentQueue,
         commandPool,
         connector,
+        models,
         maxNumberOfAgents);
 }

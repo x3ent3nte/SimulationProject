@@ -20,6 +20,7 @@ public:
     virtual ~Model();
 
     size_t numberOfIndices() const;
+    float radius() const;
 
     VkBuffer m_vertexesBuffer;
     VkBuffer m_indicesBuffer;
@@ -27,6 +28,7 @@ public:
 private:
 
     size_t m_numberOfIndices;
+    float m_radius;
 
     VkDevice m_logicalDevice;
     VkDeviceMemory m_vertexesDeviceMemory;
