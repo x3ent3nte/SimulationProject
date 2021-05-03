@@ -150,7 +150,6 @@ void Image::createImage(
     uint32_t mipLevels,
     VkSampleCountFlagBits numSamples,
     VkFormat format,
-    VkImageLayout layout,
     VkImageTiling tiling,
     VkImageUsageFlags usage,
     VkMemoryPropertyFlags properties,
@@ -168,7 +167,7 @@ void Image::createImage(
 
     imageInfo.format = format;
     imageInfo.tiling = tiling;
-    imageInfo.initialLayout = layout;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = numSamples;
@@ -263,7 +262,6 @@ uint32_t Image::createTextureImage(
         mipLevels,
         VK_SAMPLE_COUNT_1_BIT,
         VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -289,17 +287,6 @@ uint32_t Image::createTextureImage(
         static_cast<uint32_t>(texWidth),
         static_cast<uint32_t>(texHeight));
 
-    /*Image::transitionImageLayout(
-        logicalDevice,
-        commandPool,
-        queue,
-        textureImage,
-        VK_FORMAT_R8G8B8_SRGB,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        mipLevels);*/
-
-
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
 
@@ -313,6 +300,16 @@ uint32_t Image::createTextureImage(
         texWidth,
         texHeight,
         mipLevels);
+    /*
+    Image::transitionImageLayout(
+        logicalDevice,
+        commandPool,
+        queue,
+        textureImage,
+        VK_FORMAT_R8G8B8_SRGB,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        mipLevels);*/
 
     return mipLevels;
 }
@@ -349,7 +346,6 @@ void Image::transitionImageLayout(
 
     barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
