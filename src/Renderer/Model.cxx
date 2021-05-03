@@ -55,6 +55,17 @@ Model::Model(
         queue,
         m_indicesBuffer,
         m_indicesDeviceMemory);
+
+    m_mipLevels = Image::createTextureImage(
+        physicalDevice,
+        m_logicalDevice,
+        commandPool,
+        queue,
+        m_textureImage,
+        m_textureImageMemory);
+
+    m_textureImageView = Image::createImageView(m_logicalDevice, m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
+    m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
 }
 
 Model::~Model() {
@@ -63,6 +74,11 @@ Model::~Model() {
 
     vkDestroyBuffer(m_logicalDevice, m_vertexesBuffer, nullptr);
     vkFreeMemory(m_logicalDevice, m_vertexesDeviceMemory, nullptr);
+
+    vkDestroyImage(m_logicalDevice, m_textureImage, nullptr);
+    vkFreeMemory(m_logicalDevice, m_textureImageMemory, nullptr);
+    vkDestroyImageView(m_logicalDevice, m_textureImageView, nullptr);
+    vkDestroySampler(m_logicalDevice, m_textureSampler, nullptr);
 }
 
 size_t Model::numberOfIndices() const {
@@ -71,4 +87,8 @@ size_t Model::numberOfIndices() const {
 
 float Model::radius() const {
     return m_radius;
+}
+
+uint32_t Model::mipLevels() const {
+    return m_mipLevels;
 }

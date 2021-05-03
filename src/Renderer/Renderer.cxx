@@ -130,12 +130,6 @@ private:
     std::vector<VkFence> m_imagesInFlight;
     size_t m_currentFrame = 0;
 
-    VkImage m_textureImage;
-    uint32_t m_mipLevels;
-    VkDeviceMemory m_textureImageMemory;
-    VkImageView m_textureImageView;
-    VkSampler m_textureSampler;
-
     VkImage m_depthImage;
     VkDeviceMemory m_depthImageMemory;
     VkImageView m_depthImageView;
@@ -223,17 +217,6 @@ private:
         createDepthResources();
         createFrameBuffers();
 
-        m_mipLevels = Image::createTextureImage(
-            m_physicalDevice,
-            m_logicalDevice,
-            m_commandPool,
-            m_graphicsQueue,
-            m_textureImage,
-            m_textureImageMemory);
-
-        m_textureImageView = Image::createImageView(m_logicalDevice, m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
-        m_textureSampler = Image::createTextureSampler(m_logicalDevice, m_mipLevels);
-
         createInstanceBuffers();
         createUniformBuffers();
 
@@ -279,14 +262,15 @@ private:
     }
 
     void createDescriptorSets() {
+        auto model = m_models[0];
         Descriptors::createDescriptorSets(
             m_logicalDevice,
             static_cast<uint32_t>(m_swapChainImages.size()),
             m_descriptorSetLayout,
             m_descriptorPool,
             m_uniformBuffers,
-            m_textureImageView,
-            m_textureSampler,
+            model->m_textureImageView,
+            model->m_textureSampler,
             m_descriptorSets);
     }
 
@@ -794,12 +778,6 @@ private:
     void cleanUp() {
         std::cout << "Renderer::cleanUp\n";
         cleanUpSwapChain();
-
-        vkDestroySampler(m_logicalDevice, m_textureSampler, nullptr);
-        vkDestroyImageView(m_logicalDevice, m_textureImageView, nullptr);
-
-        vkDestroyImage(m_logicalDevice, m_textureImage, nullptr);
-        vkFreeMemory(m_logicalDevice, m_textureImageMemory, nullptr);
 
         vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
 
