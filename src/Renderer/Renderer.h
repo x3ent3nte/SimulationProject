@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <Renderer/KeyboardControl.h>
 #include <Renderer/Surface.h>
 #include <Renderer/Connector.h>
 #include <Renderer/Model.h>
@@ -22,7 +21,6 @@ public:
         VkInstance instance,
         std::shared_ptr<Surface::Window> window,
         VkSurfaceKHR surface,
-        std::shared_ptr<KeyboardControl> keyboardControl,
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue graphicsQueue,

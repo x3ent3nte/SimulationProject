@@ -148,7 +148,6 @@ public:
             m_instance,
             m_window,
             m_surface,
-            m_keyboardControl,
             m_physicalDevice,
             m_logicalDevice,
             m_graphicsQueue,

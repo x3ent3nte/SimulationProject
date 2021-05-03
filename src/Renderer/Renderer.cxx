@@ -2,19 +2,14 @@
 
 #include <Simulator/Agent.h>
 #include <Utils/Utils.h>
-#include <Renderer/Vertex.h>
-#include <Renderer/Instance.h>
 #include <Renderer/Surface.h>
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/LogicalDevice.h>
-#include <Renderer/Constants.h>
 #include <Renderer/Pipeline.h>
 #include <Renderer/SwapChain.h>
-#include <Renderer/Command.h>
 #include <Utils/Buffer.h>
 #include <Renderer/Descriptors.h>
 #include <Renderer/Image.h>
-#include <Renderer/KeyboardControl.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
 
@@ -38,7 +33,6 @@ public:
         VkInstance instance,
         std::shared_ptr<Surface::Window> window,
         VkSurfaceKHR surface,
-        std::shared_ptr<KeyboardControl> keyboardControl,
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue graphicsQueue,
@@ -50,7 +44,6 @@ public:
         : m_maxNumberOfAgents(maxNumberOfAgents)
         , m_models(models) {
 
-        m_keyboardControl = keyboardControl;
         m_window = window;
 
         m_instance = instance;
@@ -75,12 +68,6 @@ private:
 
     const uint32_t m_maxNumberOfAgents;
 
-    glm::vec3 m_cameraPosition;
-    glm::vec3 m_cameraForward;
-    glm::vec3 m_cameraUp;
-    glm::vec3 m_cameraRight;
-
-    std::shared_ptr<KeyboardControl> m_keyboardControl;
     std::shared_ptr<Surface::Window> m_window;
 
     VkInstance m_instance;
@@ -187,10 +174,6 @@ private:
     }
 
     void initVulkan() {
-        m_cameraPosition = glm::vec3(2.0f, 0.0f, 1.0f);
-        m_cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
-        m_cameraUp = glm::vec3(1.0f, 0.0f, 0.0f);
-        m_cameraRight = glm::vec3(0.0f, 1.0f, 0.0f);
 
         m_msaaSamples = PhysicalDevice::getMaxUsableSampleCount(m_physicalDevice);
 
@@ -415,84 +398,6 @@ private:
             m_swapChainImageViews);
     }
 
-    void updateUniformBuffer(uint32_t currentImage, float timeDelta) {
-
-        InputState inputState = m_keyboardControl->readInputState();
-        float delta = 100.0f * timeDelta;
-
-        if (inputState.isForward()) {
-            m_cameraPosition += m_cameraForward * delta;
-        }
-
-        if (inputState.isBack()) {
-            m_cameraPosition -= m_cameraForward * delta;
-        }
-
-        if (inputState.isLeft()) {
-            m_cameraPosition += m_cameraRight * delta;
-        }
-
-        if (inputState.isRight()) {
-            m_cameraPosition -= m_cameraRight * delta;
-        }
-
-        if (inputState.isDown()) {
-            m_cameraPosition -= m_cameraUp * delta;
-        }
-
-        if (inputState.isUp()) {
-            m_cameraPosition += m_cameraUp * delta;
-        }
-
-        float angleDelta = 5.0f * timeDelta;
-
-        if (inputState.isRollLeft()) {
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, -angleDelta);
-            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, -angleDelta);
-        }
-
-        if (inputState.isRollRight()) {
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraForward, angleDelta);
-            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraForward, angleDelta);
-        }
-
-        if (inputState.isPitchDown()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, angleDelta);
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, angleDelta);
-        }
-
-        if (inputState.isPitchUp()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraRight, -angleDelta);
-            m_cameraUp = MyMath::rotatePointByAxisAndTheta(m_cameraUp, m_cameraRight, -angleDelta);
-        }
-
-        if (inputState.isYawLeft()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, angleDelta);
-            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, angleDelta);
-        }
-
-        if (inputState.isYawRight()) {
-            m_cameraForward = MyMath::rotatePointByAxisAndTheta(m_cameraForward, m_cameraUp, -angleDelta);
-            m_cameraRight = MyMath::rotatePointByAxisAndTheta(m_cameraRight, m_cameraUp, -angleDelta);
-        }
-
-        //std::cout << "Camera x: " << m_cameraPosition.x << " y: " << m_cameraPosition.y << " z:" << m_cameraPosition.z << " Time: " << timeDelta << "\n";
-
-        UniformBufferObject ubo{};
-        //ubo.model = glm::rotate(glm::mat4(1.0f), timeDelta * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraForward, m_cameraUp);
-        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 5000.f);
-        ubo.cameraPosition = m_cameraPosition;
-
-        ubo.proj[1][1] *= -1;
-
-        void* data;
-        vkMapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage], 0, sizeof(UniformBufferObject), 0, &data);
-        memcpy(data, &ubo, sizeof(UniformBufferObject));
-        vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
-    }
-
     void printVec3(glm::vec3 v) {
         std::cout << "x " << v.x << " y " << v.y << " z " << v.z << "\n";
     }
@@ -684,7 +589,6 @@ public:
 
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
-        //updateUniformBuffer(imageIndex, timeDelta);
         auto renderInfo = updateAgentPositionsBuffer(imageIndex);
         updateUniformBufferWithPlayer(imageIndex, renderInfo.player);
         auto playerPos = renderInfo.player.position;
@@ -800,7 +704,6 @@ std::shared_ptr<Renderer> Renderer::create(
     VkInstance instance,
     std::shared_ptr<Surface::Window> window,
     VkSurfaceKHR surface,
-    std::shared_ptr<KeyboardControl> keyboardControl,
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue graphicsQueue,
@@ -814,7 +717,6 @@ std::shared_ptr<Renderer> Renderer::create(
         instance,
         window,
         surface,
-        keyboardControl,
         physicalDevice,
         logicalDevice,
         graphicsQueue,
