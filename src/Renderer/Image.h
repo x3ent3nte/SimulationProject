@@ -13,6 +13,7 @@ namespace Image {
         uint32_t mipLevels,
         VkSampleCountFlagBits numSamples,
         VkFormat format,
+        VkImageLayout layout,
         VkImageTiling tiling,
         VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties,
