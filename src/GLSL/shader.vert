@@ -13,7 +13,7 @@ struct AgentPositionAndRotation {
     vec4 rotation;
 };
 
-layout (std430, binding = 1) buffer agentsBuffer {
+readonly layout (std430, binding = 1) buffer agentsBuffer {
     AgentPositionAndRotation agents[];
 };
 

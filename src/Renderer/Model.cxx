@@ -61,6 +61,7 @@ Model::Model(
         m_logicalDevice,
         commandPool,
         queue,
+        textureName,
         m_textureImage,
         m_textureImageMemory);
 

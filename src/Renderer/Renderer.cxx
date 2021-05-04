@@ -174,7 +174,7 @@ private:
 
         m_descriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size()));
+            static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
 
         createDescriptorSets();
         createCommandBuffers();

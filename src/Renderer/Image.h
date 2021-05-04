@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <string>
+
 namespace Image {
 
     void createImage(
@@ -31,6 +33,7 @@ namespace Image {
         VkDevice logicalDevice,
         VkCommandPool commandPool,
         VkQueue queue,
+        const std::string& textureName,
         VkImage& textureImage,
         VkDeviceMemory& textureImageMemory);
 
