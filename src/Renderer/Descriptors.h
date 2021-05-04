@@ -18,6 +18,8 @@ namespace Descriptors {
         VkDescriptorSetLayout descriptorSetLayout,
         VkDescriptorPool descriptorPool,
         const std::vector<VkBuffer>& uniformBuffers,
+        const std::vector<VkBuffer>& agentBuffers,
+        size_t agentBuffersSize,
         VkImageView textureImageView,
         VkSampler textureSampler,
         std::vector<VkDescriptorSet>& descriptorSets);
