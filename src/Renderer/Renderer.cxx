@@ -41,8 +41,11 @@ public:
         std::shared_ptr<Connector> connector,
         const std::vector<std::shared_ptr<Model>>& models,
         uint32_t maxNumberOfAgents)
-        : m_maxNumberOfAgents(maxNumberOfAgents)
-        , m_models(models) {
+        : m_maxNumberOfAgents(maxNumberOfAgents) {
+
+        for (auto& model: models) {
+            m_models.push_back({model, {}});
+        }
 
         m_window = window;
 
@@ -101,9 +104,13 @@ private:
     VkFence m_copyCompletedFence;
 
     VkDescriptorPool m_descriptorPool;
-    std::vector<VkDescriptorSet> m_descriptorSets;
 
-    std::vector<std::shared_ptr<Model>> m_models;
+    struct ModelAndDescriptorSets {
+        std::shared_ptr<Model> m_model;
+        std::vector<VkDescriptorSet> m_descriptorSets;
+    };
+
+    std::vector<ModelAndDescriptorSets> m_models;
 
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
@@ -205,7 +212,7 @@ private:
 
         m_descriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size()));
+            static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
 
         createDescriptorSets();
         createCommandBuffers();
@@ -245,18 +252,19 @@ private:
     }
 
     void createDescriptorSets() {
-        auto model = m_models[0];
-        Descriptors::createDescriptorSets(
-            m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size()),
-            m_descriptorSetLayout,
-            m_descriptorPool,
-            m_uniformBuffers,
-            m_instanceBuffers,
-            sizeof(AgentPositionAndRotation) * m_maxNumberOfAgents,
-            model->m_textureImageView,
-            model->m_textureSampler,
-            m_descriptorSets);
+        for (ModelAndDescriptorSets& model : m_models) {
+            Descriptors::createDescriptorSets(
+                m_logicalDevice,
+                static_cast<uint32_t>(m_swapChainImages.size()),
+                m_descriptorSetLayout,
+                m_descriptorPool,
+                m_uniformBuffers,
+                m_instanceBuffers,
+                sizeof(AgentPositionAndRotation) * m_maxNumberOfAgents,
+                model.m_model->m_textureImageView,
+                model.m_model->m_textureSampler,
+                model.m_descriptorSets);
+        }
     }
 
     void createColourResources() {
@@ -483,6 +491,25 @@ private:
         return {numberOfElements, player, typeIdIndexes};
     }
 
+    void recordRenderCommandForModel(
+        VkCommandBuffer commandBuffer,
+        const ModelAndDescriptorSets& model,
+        size_t imageIndex,
+        uint32_t startIndex,
+        uint32_t numberOfInstances) {
+
+        VkBuffer vertexBuffers[2] = {model.m_model->m_vertexesBuffer, m_instanceBuffers[imageIndex]};
+        VkDeviceSize offsets[] = {0, 0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, model.m_model->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+            0, 1, &model.m_descriptorSets[imageIndex], 0, nullptr);
+        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &startIndex);
+        vkCmdDrawIndexed(commandBuffer, model.m_model->numberOfIndices(), numberOfInstances, 0, 0, 0);
+    }
+
     VkCommandBuffer createRenderCommand(
         size_t imageIndex,
         uint32_t numberOfInstances,
@@ -527,18 +554,22 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 
-        auto model = m_models[0];
-        VkBuffer vertexBuffers[2] = {model->m_vertexesBuffer, m_instanceBuffers[imageIndex]};
-        VkDeviceSize offsets[] = {0, 0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, model->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-            0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
-        uint32_t zero = 0;
-        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &zero);
-        vkCmdDrawIndexed(commandBuffer, model->numberOfIndices(), numberOfInstances, 0, 0, 0);
+        for (int i = 0; i < typeIdIndexes.size(); ++i) {
+            const int typeId = typeIdIndexes[i].typeId;
+            const uint32_t startIndex = typeIdIndexes[i].index;
+            uint32_t numberOfModelInstances;
+            if (i < (typeIdIndexes.size() - 1)) {
+                numberOfModelInstances = typeIdIndexes[i + 1].index - startIndex;
+            } else {
+                numberOfModelInstances = numberOfInstances - startIndex;
+            }
+            recordRenderCommandForModel(
+                commandBuffer,
+                m_models[typeId],
+                imageIndex,
+                startIndex,
+                numberOfModelInstances);
+        }
 
         vkCmdEndRenderPass(commandBuffer);
 
