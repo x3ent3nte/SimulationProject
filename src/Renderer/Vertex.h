@@ -22,9 +22,9 @@ struct Vertex {
 
     bool operator==(const Vertex& other) const;
 
-    static std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions();
+    static std::array<VkVertexInputBindingDescription, 1> getBindingDescriptions();
 
-    static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions();
+    static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
 };
 
 namespace std {

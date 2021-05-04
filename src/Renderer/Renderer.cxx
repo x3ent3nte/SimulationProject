@@ -241,7 +241,7 @@ private:
             Buffer::createBufferWithData(
                 instancePositions.data(),
                 m_maxNumberOfAgents * sizeof(AgentPositionAndRotation),
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,
                 m_commandPool,
@@ -498,9 +498,9 @@ private:
         uint32_t startIndex,
         uint32_t numberOfInstances) {
 
-        VkBuffer vertexBuffers[2] = {model.m_model->m_vertexesBuffer, m_instanceBuffers[imageIndex]};
-        VkDeviceSize offsets[] = {0, 0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 2, vertexBuffers, offsets);
+        VkBuffer vertexBuffers[1] = {model.m_model->m_vertexesBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(commandBuffer, model.m_model->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
 

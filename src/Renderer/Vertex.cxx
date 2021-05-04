@@ -6,22 +6,18 @@ bool Vertex::operator==(const Vertex& other) const {
     return (pos == other.pos) && (normal == other.normal) && (colour == other.colour) && (texCoord == other.texCoord);
 }
 
-std::array<VkVertexInputBindingDescription, 2> Vertex::getBindingDescriptions() {
-    std::array<VkVertexInputBindingDescription, 2> bindingDescriptions;
+std::array<VkVertexInputBindingDescription, 1> Vertex::getBindingDescriptions() {
+    std::array<VkVertexInputBindingDescription, 1> bindingDescriptions;
 
     bindingDescriptions[0].binding = 0;
     bindingDescriptions[0].stride = sizeof(Vertex);
     bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    bindingDescriptions[1].binding = 1;
-    bindingDescriptions[1].stride = sizeof(AgentPositionAndRotation);
-    bindingDescriptions[1].inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-
     return bindingDescriptions;
 }
 
-std::array<VkVertexInputAttributeDescription, 6> Vertex::getAttributeDescriptions() {
-    std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
+std::array<VkVertexInputAttributeDescription, 4> Vertex::getAttributeDescriptions() {
+    std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
@@ -42,16 +38,6 @@ std::array<VkVertexInputAttributeDescription, 6> Vertex::getAttributeDescription
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[3].offset = offsetof(Vertex, texCoord);
-
-    attributeDescriptions[4].binding = 1;
-    attributeDescriptions[4].location = 4;
-    attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[4].offset = offsetof(AgentPositionAndRotation, position);
-
-    attributeDescriptions[5].binding = 1;
-    attributeDescriptions[5].location = 5;
-    attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    attributeDescriptions[5].offset = offsetof(AgentPositionAndRotation, rotation);
 
     return attributeDescriptions;
 }
