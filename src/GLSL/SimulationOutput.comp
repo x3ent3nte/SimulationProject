@@ -22,19 +22,19 @@ struct AgentPositionAndRotation {
     vec4 rotation;
 };
 
-layout (std430, binding = 0) buffer agentsBuffer {
+readonly layout (std430, binding = 0) buffer agentsBuffer {
     Agent agents[];
 };
 
-layout (std430, binding = 1) buffer agentPositionAndRotationBuffer {
+writeonly layout (std430, binding = 1) buffer agentPositionAndRotationBuffer {
     AgentPositionAndRotation agentPositionAndRotations[];
 };
 
-layout (std430, binding = 2) buffer playerPositionAndRotationBuffer {
+writeonly layout (std430, binding = 2) buffer playerPositionAndRotationBuffer {
     AgentPositionAndRotation playerPositionAndRotations[];
 };
 
-layout (push_constant) uniform InfoBuffer {
+readonly layout (push_constant) uniform InfoBuffer {
     uint numberOfAgents;
 } info;
 

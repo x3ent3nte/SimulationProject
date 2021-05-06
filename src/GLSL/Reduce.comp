@@ -11,15 +11,15 @@ struct Collision {
     float time;
 };
 
-layout (std430, binding = 0) buffer bufferDataIn {
+readonly layout (std430, binding = 0) buffer bufferDataIn {
     Collision dataIn[];
 };
 
-layout (std430, binding = 1) buffer bufferDataOut {
+writeonly layout (std430, binding = 1) buffer bufferDataOut {
     Collision dataOut[];
 };
 
-layout (std430, binding = 2) buffer bufferNumberOfElements {
+readonly layout (std430, binding = 2) buffer bufferNumberOfElements {
     uint numberOfElements;
 };
 

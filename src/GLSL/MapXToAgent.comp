@@ -22,19 +22,19 @@ struct ValueAndIndex {
     uint index;
 };
 
-layout (std430, binding = 0) buffer bufferValueAndIndex {
+readonly layout (std430, binding = 0) buffer bufferValueAndIndex {
     ValueAndIndex valueAndIndexes[];
 };
 
-layout (std430, binding = 1) buffer bufferAgentIn {
+readonly layout (std430, binding = 1) buffer bufferAgentIn {
     Agent agentsIn[];
 };
 
-layout (std430, binding = 2) buffer bufferAgentOut {
+writeonly layout (std430, binding = 2) buffer bufferAgentOut {
     Agent agentsOut[];
 };
 
-layout (std430, binding = 3) buffer bufferNumberOfElements {
+readonly layout (std430, binding = 3) buffer bufferNumberOfElements {
     uint numberOfElements;
 };
 
