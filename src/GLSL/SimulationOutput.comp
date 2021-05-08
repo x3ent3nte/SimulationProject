@@ -18,6 +18,7 @@ struct Agent {
 };
 
 struct AgentPositionAndRotation {
+    int typeId;
     vec3 position;
     vec4 rotation;
 };
@@ -46,7 +47,7 @@ void main() {
     }
 
     Agent agent = agents[index];
-    AgentPositionAndRotation agentPositionAndRotation = AgentPositionAndRotation(agent.position, agent.rotation);
+    AgentPositionAndRotation agentPositionAndRotation = AgentPositionAndRotation(agent.typeId, agent.position, agent.rotation);
 
     agentPositionAndRotations[index] = agentPositionAndRotation;
 

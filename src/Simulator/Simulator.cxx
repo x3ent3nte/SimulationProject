@@ -462,9 +462,6 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
     vkUnmapMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory);
 
     connection->m_numberOfElements = m_currentNumberOfElements;
-    connection->m_typeIdIndexes.clear();
-    connection->m_typeIdIndexes.push_back({0, 0});
-    connection->m_typeIdIndexes.push_back({1, m_currentNumberOfElements / 2});
     m_connector->restoreNewestConnection(connection);
 }
 

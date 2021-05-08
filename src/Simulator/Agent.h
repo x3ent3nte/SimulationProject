@@ -16,6 +16,7 @@ struct Agent {
 };
 
 struct AgentPositionAndRotation {
+    int typeId;
     glm::vec3 position;
     glm::vec4 rotation;
 };

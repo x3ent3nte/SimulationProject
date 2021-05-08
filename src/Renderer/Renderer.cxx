@@ -233,6 +233,7 @@ private:
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
             instancePositions[i] = AgentPositionAndRotation{
+                0,
                 MyMath::randomVec3InSphere(512.0f),
                 MyMath::axisAndThetaToQuaternion(glm::vec3(0.0f), 0.0f)};
         }
@@ -447,10 +448,15 @@ private:
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
     }
 
+    struct TypeIdIndex {
+        int typeId;
+        uint32_t index;
+    };
+
     struct RenderInfo {
         uint32_t numberOfAgents;
         AgentPositionAndRotation player;
-        std::vector<Connection::TypeIdIndex> typeIdIndexes;
+        std::vector<TypeIdIndex> typeIdIndexes;
     };
 
     RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
@@ -458,7 +464,6 @@ private:
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
-        auto typeIdIndexes = connection->m_typeIdIndexes;
         AgentPositionAndRotation player;
         if (connection->m_players.size() > 0) {
             player = connection->m_players[0];
@@ -488,6 +493,10 @@ private:
 
         m_connector->restoreConnection(connection);
 
+        std::vector<TypeIdIndex> typeIdIndexes = {
+            {0, 0},
+            {1, numberOfElements / 2}
+        };
         return {numberOfElements, player, typeIdIndexes};
     }
 
@@ -513,7 +522,7 @@ private:
     VkCommandBuffer createRenderCommand(
         size_t imageIndex,
         uint32_t numberOfInstances,
-        const std::vector<Connection::TypeIdIndex>& typeIdIndexes) {
+        const std::vector<TypeIdIndex>& typeIdIndexes) {
 
         VkCommandBuffer commandBuffer;
 
