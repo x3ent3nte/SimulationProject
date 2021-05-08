@@ -17,7 +17,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    std::shared_ptr<Scanner> m_scanner;
+    std::shared_ptr<Scanner<int32_t>> m_scanner;
 
 public:
 

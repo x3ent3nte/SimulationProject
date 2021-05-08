@@ -51,7 +51,7 @@ private:
 
     VkFence m_fence;
 
-    std::shared_ptr<Scanner> m_scanner;
+    std::shared_ptr<Scanner<int32_t>> m_scanner;
     std::shared_ptr<Reproducer> m_reproducer;
 
 

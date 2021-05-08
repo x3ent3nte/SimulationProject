@@ -64,7 +64,7 @@ namespace BoidsUtil {
         VkBuffer otherAgentsBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer timeDeltaHostVisibleBuffer,
-        std::shared_ptr<Scanner> scanner,
+        std::shared_ptr<Scanner<int32_t>> scanner,
         std::shared_ptr<Reproducer> reproducer,
         uint32_t numberOfElements) {
 
@@ -236,7 +236,7 @@ Boids::Boids(
         m_playerInputStatesHostVisibleBuffer,
         m_playerInputStatesHostVisibleDeviceMemory);
 
-    m_scanner = std::make_shared<Scanner>(
+    m_scanner = std::make_shared<Scanner<int32_t>>(
         physicalDevice,
         m_logicalDevice,
         m_queue,

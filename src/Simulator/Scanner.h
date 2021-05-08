@@ -1,8 +1,11 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
+#include <Renderer/MyGLM.h>
+
 #include <vulkan/vulkan.h>
 
+template<typename T>
 class Scanner {
 
 private:

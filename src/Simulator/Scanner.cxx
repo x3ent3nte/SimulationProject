@@ -29,6 +29,7 @@ VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets) {
     return Compute::createDescriptorPool(logicalDevice, kNumberOfBindings, maxSets);
 }
 
+template <typename T>
 VkDescriptorSet createDescriptorSet(
     VkDevice logicalDevice,
     VkDescriptorSetLayout descriptorSetLayout,
@@ -37,7 +38,7 @@ VkDescriptorSet createDescriptorSet(
     uint32_t numberOfElements) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
-        {dataBuffer, numberOfElements * sizeof(int32_t)}
+        {dataBuffer, numberOfElements * sizeof(T)}
     };
 
     return Compute::createDescriptorSet(
@@ -108,7 +109,8 @@ void createScanCommandRecursive(
 
 } // namespace ScannerUtil
 
-Scanner::Scanner(
+template <typename T>
+Scanner<T>::Scanner(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
@@ -124,7 +126,7 @@ Scanner::Scanner(
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        bufferNumberOfElements * sizeof(int32_t),
+        bufferNumberOfElements * sizeof(T),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_dataBuffer,
@@ -139,7 +141,7 @@ Scanner::Scanner(
     m_pipeline = Compute::createPipeline("src/GLSL/spv/ScanInt.spv", m_logicalDevice, m_pipelineLayout);
     m_addOffsetsPipeline = Compute::createPipeline("src/GLSL/spv/ScanIntAddOffsets.spv", m_logicalDevice, m_pipelineLayout);
 
-    m_descriptorSet = ScannerUtil::createDescriptorSet(
+    m_descriptorSet = ScannerUtil::createDescriptorSet<T>(
         m_logicalDevice,
         m_descriptorSetLayout,
         m_descriptorPool,
@@ -158,7 +160,8 @@ Scanner::Scanner(
     }
 }
 
-Scanner::~Scanner() {
+template <typename T>
+Scanner<T>::~Scanner() {
     vkFreeMemory(m_logicalDevice, m_dataDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_dataBuffer, nullptr);
 
@@ -174,7 +177,8 @@ Scanner::~Scanner() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Scanner::createScanCommand(uint32_t numberOfElements) {
+template <typename T>
+void Scanner<T>::createScanCommand(uint32_t numberOfElements) {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     commandBufferAllocateInfo.commandPool = m_commandPool;
@@ -201,7 +205,8 @@ void Scanner::createScanCommand(uint32_t numberOfElements) {
     }
 }
 
-void Scanner::createScanCommandIfNecessary(uint32_t numberOfElements) {
+template <typename T>
+void Scanner<T>::createScanCommandIfNecessary(uint32_t numberOfElements) {
     if (m_currentNumberOfElements != numberOfElements) {
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
         createScanCommand(numberOfElements);
@@ -209,7 +214,8 @@ void Scanner::createScanCommandIfNecessary(uint32_t numberOfElements) {
     }
 }
 
-void Scanner::runScanCommand() {
+template <typename T>
+void Scanner<T>::runScanCommand() {
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -224,14 +230,18 @@ void Scanner::runScanCommand() {
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
-void Scanner::run(uint32_t numberOfElements) {
+template <typename T>
+void Scanner<T>::run(uint32_t numberOfElements) {
     if (numberOfElements > 1) {
         createScanCommandIfNecessary(numberOfElements);
         runScanCommand();
     }
 }
 
-void Scanner::recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfElements) {
+template <typename T>
+void Scanner<T>::recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfElements) {
     ScannerUtil::Info info = {0, numberOfElements, numberOfElements};
     ScannerUtil::createScanCommandRecursive(commandBuffer, info, m_descriptorSet, m_pipelineLayout, m_pipeline, m_addOffsetsPipeline);
 }
+
+template class Scanner<int32_t>;

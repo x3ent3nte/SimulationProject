@@ -13,7 +13,7 @@ ScanVulkanTest::ScanVulkanTest(
     , m_logicalDevice(logicalDevice)
     , m_queue(queue)
     , m_commandPool(commandPool)
-    , m_scanner(std::make_shared<Scanner>(
+    , m_scanner(std::make_shared<Scanner<int32_t>>(
         m_physicalDevice,
         m_logicalDevice,
         m_queue,
