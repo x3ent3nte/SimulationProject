@@ -9,7 +9,7 @@ layout (binding = 0) uniform UniformBufferObject {
 } ubo;
 
 struct AgentRenderInfo {
-    int typeId;
+    uint typeId;
     vec3 position;
     vec4 rotation;
 };

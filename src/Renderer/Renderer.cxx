@@ -60,7 +60,12 @@ public:
         m_commandPool = commandPool;
 
         m_connector = connector;
-        m_agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>();
+        m_agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>(
+            physicalDevice,
+            m_logicalDevice,
+            m_graphicsQueue,
+            m_commandPool,
+            maxNumberOfAgents);
 
         initVulkan();
     }
@@ -557,7 +562,7 @@ private:
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 
         for (int i = 0; i < typeIdIndexes.size(); ++i) {
-            const int typeId = typeIdIndexes[i].typeId;
+            const uint32_t typeId = typeIdIndexes[i].typeId;
             const uint32_t startIndex = typeIdIndexes[i].index;
             uint32_t numberOfModelInstances;
             if (i < (typeIdIndexes.size() - 1)) {
