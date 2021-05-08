@@ -30,45 +30,69 @@ AgentTypeIdSorter::~AgentTypeIdSorter() {
 
 }
 
-/*
-bool needsSorting() {
+
+bool AgentTypeIdSorter::needsSorting() {
     // TODO
     return true;
 }
 
-glm::vec4 extractOffsets() {
+glm::vec4 AgentTypeIdSorter::extractOffsets() {
     // TODO
-    glm::vec4 extracted = {0,0,0,0};
+    glm::vec4 endValue = {0,0,0,0};
 
-    return {0,};
+    const uint32_t y = endValue.x;
+    const uint32_t z = y + endValue.y;
+    const uint32_t w = z + endValue.z;
+    return {0, y, z, w};
 }
 
-void sortAtRadix(uint32_t radix, uint32_t numberOfElements) {
+void AgentTypeIdSorter::mapRadixToVec4(uint32_t radix, VkBuffer data, uint32_t numberOfElements) {
+
+}
+
+void AgentTypeIdSorter::scatterInfo(uint32_t radix, const glm::uvec4& offsets) {
+
+}
+
+void AgentTypeIdSorter::sortAtRadix(uint32_t radix, uint32_t numberOfElements) {
     mapRadixToVec4(radix, m_scanner->m_dataBuffer, numberOfElements);
     m_scanner->run(numberOfElements);
     glm::vec4 offsets = extractOffsets();
+    scatterInfo(radix, offsets);
 }
 
-void sort() {
+void AgentTypeIdSorter::sort(uint32_t numberOfElements) {
     for (uint32_t i = 0; i < maxLoops; ++i) {
         if (needsSorting()) {
-            sortAtRadix(i);
+            sortAtRadix(i, numberOfElements);
         } else {
             return;
         }
     }
 }
-*/
-std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorter::run(VkBuffer agents, uint32_t numberOfElements) {
 
-    //mapAgentRenderInfoToTypeInfoAndIndex();
+void AgentTypeIdSorter::mapAgentRenderInfoToTypeInfoAndIndex() {
 
-    //sort();
+}
 
-    //scatterAgentRenderInfo();
+void AgentTypeIdSorter::scatterTypeInfoAndIndexToAgentRenderInfo() {
 
+}
+
+std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorter::calculateTypeIdIndexes(uint32_t numberOfElements) {
     return {
         {0, 0},
         {1, numberOfElements / 2}
     };
+}
+
+std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorter::run(VkBuffer agents, uint32_t numberOfElements) {
+
+    mapAgentRenderInfoToTypeInfoAndIndex();
+
+    sort(numberOfElements);
+
+    scatterTypeInfoAndIndexToAgentRenderInfo();
+
+    return calculateTypeIdIndexes(numberOfElements);
 }
