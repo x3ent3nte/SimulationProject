@@ -128,12 +128,12 @@ std::string scanAddOffsetsShaderPath<int32_t>() {
 }
 
 template <>
-std::string scanShaderPath<glm::vec4>() {
+std::string scanShaderPath<glm::uvec4>() {
     return "src/GLSL/spv/ScanVec4.spv";
 }
 
 template<>
-std::string scanAddOffsetsShaderPath<glm::vec4>() {
+std::string scanAddOffsetsShaderPath<glm::uvec4>() {
     return "src/GLSL/spv/ScanVec4AddOffsets.spv";
 }
 
@@ -275,4 +275,4 @@ void Scanner<T>::recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfE
 }
 
 template class Scanner<int32_t>;
-template class Scanner<glm::vec4>;
+template class Scanner<glm::uvec4>;

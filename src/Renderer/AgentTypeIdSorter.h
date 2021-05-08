@@ -16,7 +16,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    std::shared_ptr<Scanner<glm::vec4>> m_scanner;
+    std::shared_ptr<Scanner<glm::uvec4>> m_scanner;
 
 public:
 
