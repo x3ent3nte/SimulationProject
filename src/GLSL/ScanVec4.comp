@@ -1,0 +1,58 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 512
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+layout (std430, binding = 0) buffer bufferData {
+    vec4 data[];
+};
+
+readonly layout (push_constant) uniform InfoConstant {
+    uint dataOffset;
+    uint offsetOffset;
+    uint numberOfElements;
+} info;
+
+shared vec4 sharedData[X_DIM];
+
+void main() {
+    uint globalOffset = gl_WorkGroupID.x * X_DIM;
+    uint localIndex = gl_LocalInvocationID.x;
+    uint globalIndex = globalOffset + localIndex;
+
+    if (globalIndex >= info.numberOfElements) { return; }
+
+    uint localSize = min(X_DIM, info.numberOfElements - globalOffset);
+
+    uint globalAddress = globalIndex + info.dataOffset;
+
+    sharedData[localIndex] = data[globalAddress];
+
+    barrier();
+
+    for (int i = 1; i < localSize; i <<= 1) {
+        int otherIndex = int(localIndex) - i;
+        bool validLeft = otherIndex >= 0;
+
+        vec4 leftValue;
+        if (validLeft) {
+            leftValue = sharedData[otherIndex];
+        }
+
+        barrier();
+
+        if (validLeft) {
+            sharedData[localIndex] += leftValue;
+        }
+
+        barrier();
+    }
+
+    data[globalAddress] = sharedData[localIndex];
+
+    if ((localIndex + 1) == localSize) {
+        data[gl_WorkGroupID.x + info.offsetOffset] = sharedData[localIndex];
+    }
+}

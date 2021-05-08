@@ -136,8 +136,8 @@ Scanner::Scanner(
         m_logicalDevice,
         m_descriptorSetLayout,
         sizeof(ScannerUtil::Info));
-    m_pipeline = Compute::createPipeline("src/GLSL/spv/Scan.spv", m_logicalDevice, m_pipelineLayout);
-    m_addOffsetsPipeline = Compute::createPipeline("src/GLSL/spv/ScanAddOffsets.spv", m_logicalDevice, m_pipelineLayout);
+    m_pipeline = Compute::createPipeline("src/GLSL/spv/ScanInt.spv", m_logicalDevice, m_pipelineLayout);
+    m_addOffsetsPipeline = Compute::createPipeline("src/GLSL/spv/ScanIntAddOffsets.spv", m_logicalDevice, m_pipelineLayout);
 
     m_descriptorSet = ScannerUtil::createDescriptorSet(
         m_logicalDevice,
