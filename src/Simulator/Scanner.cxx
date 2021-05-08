@@ -107,6 +107,36 @@ void createScanCommandRecursive(
     }
 }
 
+template <typename T>
+std::string scanShaderPath() {
+    throw std::runtime_error("No Scan shader file for that type");
+}
+
+template <typename T>
+std::string scanAddOffsetsShaderPath() {
+    throw std::runtime_error("No Scan Add Offsets shader file for that type");
+}
+
+template<>
+std::string scanShaderPath<int32_t>() {
+    return "src/GLSL/spv/ScanInt.spv";
+}
+
+template<>
+std::string scanAddOffsetsShaderPath<int32_t>() {
+    return "src/GLSL/spv/ScanIntAddOffsets.spv";
+}
+
+template <>
+std::string scanShaderPath<glm::vec4>() {
+    return "src/GLSL/spv/ScanVec4.spv";
+}
+
+template<>
+std::string scanAddOffsetsShaderPath<glm::vec4>() {
+    return "src/GLSL/spv/ScanVec4AddOffsets.spv";
+}
+
 } // namespace ScannerUtil
 
 template <typename T>
@@ -138,8 +168,8 @@ Scanner<T>::Scanner(
         m_logicalDevice,
         m_descriptorSetLayout,
         sizeof(ScannerUtil::Info));
-    m_pipeline = Compute::createPipeline("src/GLSL/spv/ScanInt.spv", m_logicalDevice, m_pipelineLayout);
-    m_addOffsetsPipeline = Compute::createPipeline("src/GLSL/spv/ScanIntAddOffsets.spv", m_logicalDevice, m_pipelineLayout);
+    m_pipeline = Compute::createPipeline(ScannerUtil::scanShaderPath<T>(), m_logicalDevice, m_pipelineLayout);
+    m_addOffsetsPipeline = Compute::createPipeline(ScannerUtil::scanAddOffsetsShaderPath<T>(), m_logicalDevice, m_pipelineLayout);
 
     m_descriptorSet = ScannerUtil::createDescriptorSet<T>(
         m_logicalDevice,
@@ -245,3 +275,4 @@ void Scanner<T>::recordCommand(VkCommandBuffer commandBuffer, uint32_t numberOfE
 }
 
 template class Scanner<int32_t>;
+template class Scanner<glm::vec4>;
