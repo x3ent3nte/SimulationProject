@@ -34,16 +34,16 @@ SimulationStateWriter::~SimulationStateWriter() {
 SimulationStateWriterFunction::SimulationStateWriterFunction(
     std::shared_ptr<SimulationStateWriter> simulationStateWriter,
     VkBuffer agentsBuffer,
-    VkBuffer agentPositionAndRotationsBuffer,
-    VkBuffer playerPositionAndRotationsBuffer,
+    VkBuffer agentRenderInfosBuffer,
+    VkBuffer playerRenderInfosBuffer,
     uint32_t maxNumberOfAgents,
     uint32_t maxNumberOfPlayers)
     : m_simulationStateWriter(simulationStateWriter) {
 
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {agentsBuffer, maxNumberOfAgents * sizeof(Agent)},
-        {agentPositionAndRotationsBuffer, maxNumberOfAgents * sizeof(AgentPositionAndRotation)},
-        {playerPositionAndRotationsBuffer, maxNumberOfPlayers * sizeof(AgentPositionAndRotation)}
+        {agentRenderInfosBuffer, maxNumberOfAgents * sizeof(AgentRenderInfo)},
+        {playerRenderInfosBuffer, maxNumberOfPlayers * sizeof(AgentRenderInfo)}
     };
 
     m_descriptorSet = Compute::createDescriptorSet(

@@ -49,7 +49,7 @@ Connector::Connector(
     for (uint32_t i = 0; i < numberOfConnections; ++i) {
         auto connection = std::make_shared<Connection>(
             i,
-            numberOfElements * sizeof(AgentPositionAndRotation),
+            numberOfElements * sizeof(AgentRenderInfo),
             physicalDevice,
             logicalDevice,
             queue,

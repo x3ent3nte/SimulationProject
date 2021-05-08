@@ -39,7 +39,7 @@ namespace {
 
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
             {agentsBuffer, numberOfElements * sizeof(Agent)},
-            {positionsBuffer, numberOfElements * sizeof(AgentPositionAndRotation)},
+            {positionsBuffer, numberOfElements * sizeof(AgentRenderInfo)},
             {timeDeltaBuffer, sizeof(float)},
             {numberOfElementsBuffer, sizeof(uint32_t)}
         };
@@ -241,20 +241,20 @@ Simulator::Simulator(
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        maxNumberOfPlayers * sizeof(AgentPositionAndRotation),
+        maxNumberOfPlayers * sizeof(AgentRenderInfo),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        m_playerPositionAndRotationsBuffer,
-        m_playerPositionAndRotationsDeviceMemory);
+        m_playerRenderInfosBuffer,
+        m_playerRenderInfosDeviceMemory);
 
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        maxNumberOfPlayers * sizeof(AgentPositionAndRotation),
+        maxNumberOfPlayers * sizeof(AgentRenderInfo),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        m_playerPositionAndRotationsHostVisibleBuffer,
-        m_playerPositionAndRotationsHostVisibleDeviceMemory);
+        m_playerRenderInfosHostVisibleBuffer,
+        m_playerRenderInfosHostVisibleDeviceMemory);
 
     m_computeDescriptorSetLayout = createComputeDescriptorSetLayout(m_logicalDevice);
 
@@ -320,7 +320,7 @@ Simulator::Simulator(
                 simulationStateWriter,
                 m_agentsBuffer,
                 m_connector->m_connections[i]->m_buffer,
-                m_playerPositionAndRotationsBuffer,
+                m_playerRenderInfosBuffer,
                 numberOfElements,
                 maxNumberOfPlayers));
     }
@@ -342,11 +342,11 @@ Simulator::~Simulator() {
     vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBufferHostVisible, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_playerPositionAndRotationsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_playerPositionAndRotationsBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_playerRenderInfosDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerRenderInfosBuffer, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_playerPositionAndRotationsHostVisibleBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_playerRenderInfosHostVisibleBuffer, nullptr);
 
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_computeDescriptorSetLayout, nullptr);
 
@@ -429,13 +429,13 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
         0,
         nullptr);
 
-    size_t playerMemorySize = numberOfPlayers * sizeof(AgentPositionAndRotation);
+    size_t playerMemorySize = numberOfPlayers * sizeof(AgentRenderInfo);
 
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
     copyRegion.size = playerMemorySize;
-    vkCmdCopyBuffer(commandBuffer, m_playerPositionAndRotationsBuffer, m_playerPositionAndRotationsHostVisibleBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, m_playerRenderInfosBuffer, m_playerRenderInfosHostVisibleBuffer, 1, &copyRegion);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");
@@ -455,11 +455,11 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
     vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
 
     void* dataMap;
-    vkMapMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory, 0, playerMemorySize, 0, &dataMap);
+    vkMapMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory, 0, playerMemorySize, 0, &dataMap);
 
     connection->m_players.resize(numberOfPlayers);
     memcpy(connection->m_players.data(), dataMap, playerMemorySize);
-    vkUnmapMemory(m_logicalDevice, m_playerPositionAndRotationsHostVisibleDeviceMemory);
+    vkUnmapMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory);
 
     connection->m_numberOfElements = m_currentNumberOfElements;
     m_connector->restoreNewestConnection(connection);

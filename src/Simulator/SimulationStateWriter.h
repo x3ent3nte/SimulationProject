@@ -38,8 +38,8 @@ public:
     SimulationStateWriterFunction::SimulationStateWriterFunction(
         std::shared_ptr<SimulationStateWriter> simulationStateWriter,
         VkBuffer agentsBuffer,
-        VkBuffer agentPositionAndRotationsBuffer,
-        VkBuffer playerPositionAndRotationsBuffer,
+        VkBuffer agentRenderInfosBuffer,
+        VkBuffer playerRenderInfosBuffer,
         uint32_t maxNumberOfAgents,
         uint32_t maxNumberOfPlayers);
 

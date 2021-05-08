@@ -228,11 +228,11 @@ private:
         m_instanceBuffers.resize(m_swapChainImages.size());
         m_instanceBufferMemories.resize(m_swapChainImages.size());
 
-        std::vector<AgentPositionAndRotation> instancePositions;
+        std::vector<AgentRenderInfo> instancePositions;
         instancePositions.resize(m_maxNumberOfAgents);
 
         for (size_t i = 0; i < instancePositions.size(); ++i) {
-            instancePositions[i] = AgentPositionAndRotation{
+            instancePositions[i] = AgentRenderInfo{
                 0,
                 MyMath::randomVec3InSphere(512.0f),
                 MyMath::axisAndThetaToQuaternion(glm::vec3(0.0f), 0.0f)};
@@ -241,7 +241,7 @@ private:
         for (size_t i = 0; i < m_instanceBuffers.size(); ++i) {
             Buffer::createBufferWithData(
                 instancePositions.data(),
-                m_maxNumberOfAgents * sizeof(AgentPositionAndRotation),
+                m_maxNumberOfAgents * sizeof(AgentRenderInfo),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,
@@ -261,7 +261,7 @@ private:
                 m_descriptorPool,
                 m_uniformBuffers,
                 m_instanceBuffers,
-                sizeof(AgentPositionAndRotation) * m_maxNumberOfAgents,
+                sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
                 model.m_model->m_textureImageView,
                 model.m_model->m_textureSampler,
                 model.m_descriptorSets);
@@ -413,7 +413,7 @@ private:
         std::cout << "x " << v.x << " y " << v.y << " z " << v.z << "\n";
     }
 
-    void updateUniformBufferWithPlayer(uint32_t currentImage, const AgentPositionAndRotation& player) {
+    void updateUniformBufferWithPlayer(uint32_t currentImage, const AgentRenderInfo& player) {
 
         glm::vec3 playerForward = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 0.0f, -1.0f), player.rotation);
         glm::vec3 playerUp = MyMath::rotatePointByQuaternion(glm::vec3(0.0f, 1.0f, 0.0f), player.rotation);
@@ -455,7 +455,7 @@ private:
 
     struct RenderInfo {
         uint32_t numberOfAgents;
-        AgentPositionAndRotation player;
+        AgentRenderInfo player;
         std::vector<TypeIdIndex> typeIdIndexes;
     };
 
@@ -464,7 +464,7 @@ private:
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
-        AgentPositionAndRotation player;
+        AgentRenderInfo player;
         if (connection->m_players.size() > 0) {
             player = connection->m_players[0];
             //std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
@@ -476,7 +476,7 @@ private:
                 m_commandPool,
                 connection->m_buffer,
                 m_instanceBuffers[imageIndex],
-                sizeof(AgentPositionAndRotation) * numberOfElements);
+                sizeof(AgentRenderInfo) * numberOfElements);
 
             VkSubmitInfo submitInfo{};
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

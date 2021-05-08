@@ -17,7 +17,7 @@ struct Agent {
     float radius;
 };
 
-struct AgentPositionAndRotation {
+struct AgentRenderInfo {
     int typeId;
     vec3 position;
     vec4 rotation;
@@ -27,12 +27,12 @@ readonly layout (std430, binding = 0) buffer agentsBuffer {
     Agent agents[];
 };
 
-writeonly layout (std430, binding = 1) buffer agentPositionAndRotationBuffer {
-    AgentPositionAndRotation agentPositionAndRotations[];
+writeonly layout (std430, binding = 1) buffer agentRenderInfosBuffer {
+    AgentRenderInfo agentRenderInfos[];
 };
 
-writeonly layout (std430, binding = 2) buffer playerPositionAndRotationBuffer {
-    AgentPositionAndRotation playerPositionAndRotations[];
+writeonly layout (std430, binding = 2) buffer playerRenderInfosBuffer {
+    AgentRenderInfo playerRenderInfos[];
 };
 
 readonly layout (push_constant) uniform InfoBuffer {
@@ -47,11 +47,11 @@ void main() {
     }
 
     Agent agent = agents[index];
-    AgentPositionAndRotation agentPositionAndRotation = AgentPositionAndRotation(agent.typeId, agent.position, agent.rotation);
+    AgentRenderInfo agentRenderInfo = AgentRenderInfo(agent.typeId, agent.position, agent.rotation);
 
-    agentPositionAndRotations[index] = agentPositionAndRotation;
+    agentRenderInfos[index] = agentRenderInfo;
 
     if (agent.playerId >= 0) {
-        playerPositionAndRotations[agent.playerId] = agentPositionAndRotation;
+        playerRenderInfos[agent.playerId] = agentRenderInfo;
     }
 }

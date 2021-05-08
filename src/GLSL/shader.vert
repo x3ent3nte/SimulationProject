@@ -8,14 +8,14 @@ layout (binding = 0) uniform UniformBufferObject {
     vec3 cameraPosition;
 } ubo;
 
-struct AgentPositionAndRotation {
+struct AgentRenderInfo {
     int typeId;
     vec3 position;
     vec4 rotation;
 };
 
 readonly layout (std430, binding = 1) buffer agentsBuffer {
-    AgentPositionAndRotation agents[];
+    AgentRenderInfo agents[];
 };
 
 layout (push_constant) uniform InfoConstant {
@@ -56,7 +56,7 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
 void main() {
     const uint agentIndex = gl_InstanceIndex + info.agentsOffset;
 
-    const AgentPositionAndRotation agent = agents[agentIndex];
+    const AgentRenderInfo agent = agents[agentIndex];
 
     mat4 model = mat4(1.0f);
     model[3] = vec4(agent.position, 1.0f);

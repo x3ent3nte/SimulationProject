@@ -60,11 +60,11 @@ private:
     VkBuffer m_numberOfElementsBufferHostVisible;
     VkDeviceMemory m_numberOfElementsDeviceMemoryHostVisible;
 
-    VkBuffer m_playerPositionAndRotationsBuffer;
-    VkDeviceMemory m_playerPositionAndRotationsDeviceMemory;
+    VkBuffer m_playerRenderInfosBuffer;
+    VkDeviceMemory m_playerRenderInfosDeviceMemory;
 
-    VkBuffer m_playerPositionAndRotationsHostVisibleBuffer;
-    VkDeviceMemory m_playerPositionAndRotationsHostVisibleDeviceMemory;
+    VkBuffer m_playerRenderInfosHostVisibleBuffer;
+    VkDeviceMemory m_playerRenderInfosHostVisibleDeviceMemory;
 
     uint32_t m_currentNumberOfElements;
 

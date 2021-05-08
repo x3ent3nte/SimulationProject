@@ -19,7 +19,7 @@ struct Agent {
     float radius;
 };
 
-struct AgentPositionAndRotation {
+struct AgentRenderInfo {
     int typeId;
     vec3 position;
     vec4 rotation;
@@ -30,7 +30,7 @@ layout (std430, binding = 0) buffer bufAgents {
 };
 
 layout (std430, binding = 1) buffer bufPositions {
-    AgentPositionAndRotation agentPositionAndRotation[];
+    AgentRenderInfo agentRenderInfos[];
 };
 
 layout (std430, binding = 2) buffer bufferTimeDelta {
@@ -301,5 +301,5 @@ void main() {
     }
     */
     agents[index] = agent;
-    agentPositionAndRotation[index] = AgentPositionAndRotation(agent.typeId, agent.position, agent.rotation);
+    agentRenderInfos[index] = AgentRenderInfo(agent.typeId, agent.position, agent.rotation);
 }

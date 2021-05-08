@@ -15,7 +15,7 @@ struct Agent {
     float radius;
 };
 
-struct AgentPositionAndRotation {
+struct AgentRenderInfo {
     int typeId;
     glm::vec3 position;
     glm::vec4 rotation;
