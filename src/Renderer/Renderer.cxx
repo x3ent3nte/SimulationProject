@@ -12,6 +12,7 @@
 #include <Renderer/Image.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
+#include <Renderer/AgentTypeIdSorter.h>
 
 #include <Utils/Timer.h>
 
@@ -59,6 +60,7 @@ public:
         m_commandPool = commandPool;
 
         m_connector = connector;
+        m_agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>();
 
         initVulkan();
     }
@@ -83,6 +85,7 @@ private:
     VkQueue m_presentQueue;
 
     std::shared_ptr<Connector> m_connector;
+    std::shared_ptr<AgentTypeIdSorter> m_agentTypeIdSorter;
 
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -448,15 +451,9 @@ private:
         vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
     }
 
-    struct TypeIdIndex {
-        int typeId;
-        uint32_t index;
-    };
-
     struct RenderInfo {
         uint32_t numberOfAgents;
         AgentRenderInfo player;
-        std::vector<TypeIdIndex> typeIdIndexes;
     };
 
     RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
@@ -493,11 +490,7 @@ private:
 
         m_connector->restoreConnection(connection);
 
-        std::vector<TypeIdIndex> typeIdIndexes = {
-            {0, 0},
-            {1, numberOfElements / 2}
-        };
-        return {numberOfElements, player, typeIdIndexes};
+        return {numberOfElements, player};
     }
 
     void recordRenderCommandForModel(
@@ -522,7 +515,7 @@ private:
     VkCommandBuffer createRenderCommand(
         size_t imageIndex,
         uint32_t numberOfInstances,
-        const std::vector<TypeIdIndex>& typeIdIndexes) {
+        const std::vector<AgentTypeIdSorter::TypeIdIndex>& typeIdIndexes) {
 
         VkCommandBuffer commandBuffer;
 
@@ -633,6 +626,9 @@ public:
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
         auto renderInfo = updateAgentPositionsBuffer(imageIndex);
+
+        const auto typeIdIndexes = m_agentTypeIdSorter->run(m_instanceBuffers[imageIndex], renderInfo.numberOfAgents);
+
         updateUniformBufferWithPlayer(imageIndex, renderInfo.player);
         auto playerPos = renderInfo.player.position;
         std::cout << "Player position x=" << playerPos.x << " y=" << playerPos.y << " z=" << playerPos.z << "\n";
@@ -648,7 +644,7 @@ public:
 
         std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
-        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
+        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, typeIdIndexes);
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
