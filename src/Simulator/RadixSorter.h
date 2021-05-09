@@ -33,12 +33,13 @@ public:
 private:
 
     void copyBuffers();
+    void setRadix(uint32_t radix);
     void destroyCommandBuffers();
     void createCommandBuffers();
     void createCommandBuffersIfNecessary(uint32_t numberOfElements);
     bool needsSorting();
-    void mapRadixToUVec4(uint32_t radix);
-    void scatter(uint32_t radix);
+    void mapRadixToUVec4();
+    void scatter();
     void sortAtRadix(uint32_t radix);
     void sort();
 
@@ -47,6 +48,12 @@ private:
     VkCommandPool m_commandPool;
 
     uint32_t m_currentNumberOfElements;
+
+    VkDescriptorSetLayout m_mapRadixDescriptorSetLayout;
+    VkDescriptorPool m_mapRadixDescriptorPool;
+    VkPipelineLayout m_mapRadixPipelineLayout;
+    VkPipeline m_mapRadixPipeline;
+    VkDescriptorSet m_mapRadixDescriptorSet;
 
     VkDeviceMemory m_dataDeviceMemory;
 

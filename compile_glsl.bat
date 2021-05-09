@@ -16,3 +16,5 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanVec4.comp -o src/GLSL/spv/Sc
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanVec4AddOffsets.comp -o src/GLSL/spv/ScanVec4AddOffsets.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Reproduction.comp -o src/GLSL/spv/Reproduction.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/SimulationOutput.comp -o src/GLSL/spv/SimulationOutput.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/RadixMap.comp -o src/GLSL/spv/RadixMap.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/RadixScatter.comp -o src/GLSL/spv/RadixScatter.spv

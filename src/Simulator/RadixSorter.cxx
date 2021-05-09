@@ -2,8 +2,12 @@
 
 namespace {
     constexpr uint32_t kRadix = 2;
-    constexpr uint32_t kMaxLoops = (sizeof(uint32_t) * 8) / kRadix;
+    constexpr uint32_t kNumberOfBits = sizeof(uint32_t) * 8;
 } // namespace anonymous
+
+namespace RadixSorterUtil {
+    constexpr size_t kXDim = 512;
+}
 
 RadixSorter::RadixSorter(
     VkPhysicalDevice physicalDevice,
@@ -51,30 +55,35 @@ void RadixSorter::copyBuffers() {
 
 }
 
+void RadixSorter::setRadix(uint32_t radix) {
+
+}
+
 bool RadixSorter::needsSorting() {
     return true;
 }
 
-void RadixSorter::mapRadixToUVec4(uint32_t radix) {
+void RadixSorter::mapRadixToUVec4() {
 
 }
 
-void RadixSorter::scatter(uint32_t radix) {
+void RadixSorter::scatter() {
 
 }
 
 void RadixSorter::sortAtRadix(uint32_t radix) {
-    mapRadixToUVec4(radix);
+    setRadix(radix);
+    mapRadixToUVec4();
     m_scanner->run(m_currentNumberOfElements);
-    scatter(radix);
+    scatter();
 }
 
 void RadixSorter::sort() {
     bool needsCopyAfterwards = false;
 
-    for (uint32_t i = 0; i < kRadix; ++i) {
+    for (uint32_t radix = 0; radix < kNumberOfBits; radix += kRadix) {
         if (needsSorting()) {
-            sortAtRadix(i);
+            sortAtRadix(radix);
             needsCopyAfterwards = !needsCopyAfterwards;
         } else {
             break;
