@@ -3,6 +3,7 @@
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 
+#include <array>
 #include <stdexcept>
 
 namespace {
@@ -54,7 +55,7 @@ namespace RadixSorterUtil {
         const size_t dataSize = maxNumberOfElements * sizeof(RadixSorter::ValueAndIndex);
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
             {dataInBuffer, dataSize},
-            {dataInBuffer, maxNumberOfElements * sizeof(glm::uvec4)},
+            {scannedBuffer, maxNumberOfElements * sizeof(glm::uvec4)},
             {dataOutBuffer, dataSize},
             {radixBuffer, sizeof(uint32_t)},
             {numberOfElementsBuffer, sizeof(uint32_t)}
@@ -197,9 +198,7 @@ RadixSorter::RadixSorter(
         m_numberOfElementsBuffer,
         maxNumberOfElements);
 
-    m_currentNumberOfElements = maxNumberOfElements;
-    createCommandBuffers();
-
+    // create commands
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -207,10 +206,33 @@ RadixSorter::RadixSorter(
     if (vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &m_fence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create compute fence");
     }
+
+    m_copyBuffersCommandBuffer = Buffer::recordCopyCommand(
+        m_logicalDevice,
+        m_commandPool,
+        m_otherBuffer,
+        m_dataBuffer,
+        dataMemorySize);
+
+    m_setNumberOfElementsCommandBuffer = Buffer::recordCopyCommand(
+        m_logicalDevice,
+        m_commandPool,
+        m_numberOfElementsHostVisibleBuffer,
+        m_numberOfElementsBuffer,
+        sizeof(uint32_t));
+
+    setNumberOfElements(maxNumberOfElements);
+    createCommandBuffers();
 }
 
 RadixSorter::~RadixSorter() {
+    // free commands
+    std::array<VkCommandBuffer, 2> commandBuffers = {
+        m_setNumberOfElementsCommandBuffer,
+        m_copyBuffersCommandBuffer};
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
     destroyCommandBuffers();
+
     // free buffers
     vkFreeMemory(m_logicalDevice, m_dataDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_dataBuffer, nullptr);
@@ -252,20 +274,56 @@ void RadixSorter::createCommandBuffers() {
 
 }
 
+void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
+    m_currentNumberOfElements = numberOfElements;
+
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t numberOfElementsCopy = numberOfElements;
+    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory);
+
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
+
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+}
+
 void RadixSorter::createCommandBuffersIfNecessary(uint32_t numberOfElements) {
     if (numberOfElements != m_currentNumberOfElements) {
+        setNumberOfElements(numberOfElements);
         destroyCommandBuffers();
-        m_currentNumberOfElements = numberOfElements;
         createCommandBuffers();
     }
 }
 
 void RadixSorter::copyBuffers() {
+    VkSubmitInfo submitInfoOne{};
+    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfoOne.commandBufferCount = 1;
+    submitInfoOne.pCommandBuffers = &m_copyBuffersCommandBuffer;
 
+    vkResetFences(m_logicalDevice, 1, &m_fence);
+
+    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
+    }
+    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
 void RadixSorter::setRadix(uint32_t radix) {
-
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t radixCopy = radix;
+    memcpy(dataMap, &radixCopy, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory);
 }
 
 bool RadixSorter::needsSorting() {

@@ -32,6 +32,7 @@ public:
 
 private:
 
+    void setNumberOfElements(uint32_t numberOfElements);
     void copyBuffers();
     void setRadix(uint32_t radix);
     void destroyCommandBuffers();
@@ -83,6 +84,10 @@ private:
 
     VkBuffer m_numberOfElementsHostVisibleBuffer;
     VkDeviceMemory m_numberOfElementsHostVisibleDeviceMemory;
+
+    // Commands
+    VkCommandBuffer m_setNumberOfElementsCommandBuffer;
+    VkCommandBuffer m_copyBuffersCommandBuffer;
 
     VkFence m_fence;
 
