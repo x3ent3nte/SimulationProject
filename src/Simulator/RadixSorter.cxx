@@ -67,7 +67,108 @@ namespace RadixSorterUtil {
             descriptorPool,
             bufferAndSizes);
     }
-}
+
+    VkCommandBuffer createCommandBuffer(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkPipeline mapPipeline,
+        VkPipelineLayout mapPipelineLayout,
+        VkDescriptorSet mapDescriptorSet,
+        std::shared_ptr<Scanner<glm::uvec4>> scanner,
+        VkPipeline scatterPipeline,
+        VkPipelineLayout scatterPipelineLayout,
+        VkDescriptorSet scatterDescriptorSet,
+        VkBuffer radixBuffer,
+        VkBuffer radixHostVisibleBuffer,
+        uint32_t numberOfElements) {
+
+        VkCommandBuffer commandBuffer;
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create compute command buffer");
+        }
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to begin compute command buffer");
+        }
+
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = sizeof(uint32_t);
+        vkCmdCopyBuffer(commandBuffer, radixHostVisibleBuffer, radixBuffer, 1, &copyRegion);
+
+        VkMemoryBarrier memoryBarrier = {};
+        memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        memoryBarrier.pNext = nullptr;
+        memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+        memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        const uint32_t xGroups = ceil(((float) numberOfElements) / ((float) kXDim));
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mapPipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mapPipelineLayout, 0, 1, &mapDescriptorSet, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        scanner->recordCommand(commandBuffer, numberOfElements);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, scatterPipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, scatterPipelineLayout, 0, 1, &scatterDescriptorSet, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to end compute command buffer");
+        }
+
+        return commandBuffer;
+    }
+} // namespace RadixSorterUtil
 
 RadixSorter::RadixSorter(
     VkPhysicalDevice physicalDevice,
@@ -267,11 +368,41 @@ RadixSorter::~RadixSorter() {
 }
 
 void RadixSorter::destroyCommandBuffers() {
-
+    std::array<VkCommandBuffer, 2> commandBuffers = {
+        m_commandBufferOne,
+        m_commandBufferTwo};
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 }
 
 void RadixSorter::createCommandBuffers() {
 
+    m_commandBufferOne = RadixSorterUtil::createCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_mapPipeline,
+        m_mapPipelineLayout,
+        m_mapDescriptorSetOne,
+        m_scanner,
+        m_scatterPipeline,
+        m_scatterPipelineLayout,
+        m_scatterDescriptorSetOne,
+        m_radixBuffer,
+        m_radixHostVisibleBuffer,
+        m_currentNumberOfElements);
+
+    m_commandBufferTwo = RadixSorterUtil::createCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_mapPipeline,
+        m_mapPipelineLayout,
+        m_mapDescriptorSetTwo,
+        m_scanner,
+        m_scatterPipeline,
+        m_scatterPipelineLayout,
+        m_scatterDescriptorSetTwo,
+        m_radixBuffer,
+        m_radixHostVisibleBuffer,
+        m_currentNumberOfElements);
 }
 
 void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
@@ -298,22 +429,22 @@ void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
 
 void RadixSorter::createCommandBuffersIfNecessary(uint32_t numberOfElements) {
     if (numberOfElements != m_currentNumberOfElements) {
-        setNumberOfElements(numberOfElements);
         destroyCommandBuffers();
+        setNumberOfElements(numberOfElements);
         createCommandBuffers();
     }
 }
 
-void RadixSorter::copyBuffers() {
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_copyBuffersCommandBuffer;
+void RadixSorter::runCommandAndWaitForFence(VkCommandBuffer commandBuffer) {
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
 
     vkResetFences(m_logicalDevice, 1, &m_fence);
 
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
+    if (vkQueueSubmit(m_queue, 1, &submitInfo, m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit RadixSorter command buffer");
     }
     vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
@@ -330,35 +461,27 @@ bool RadixSorter::needsSorting() {
     return true;
 }
 
-void RadixSorter::mapRadixToUVec4() {
-
-}
-
-void RadixSorter::scatter() {
-
-}
-
-void RadixSorter::sortAtRadix(uint32_t radix) {
-    setRadix(radix);
-    mapRadixToUVec4();
-    m_scanner->run(m_currentNumberOfElements);
-    scatter();
-}
-
 void RadixSorter::sort() {
     bool needsCopyAfterwards = false;
+    VkCommandBuffer inCommand = m_commandBufferOne;
+    VkCommandBuffer outCommand = m_commandBufferTwo;
 
     for (uint32_t radix = 0; radix < kNumberOfBits; radix += kRadix) {
         if (needsSorting()) {
-            sortAtRadix(radix);
+            setRadix(radix);
+            runCommandAndWaitForFence(inCommand);
             needsCopyAfterwards = !needsCopyAfterwards;
+
+            VkCommandBuffer temp = outCommand;
+            outCommand = inCommand;
+            inCommand = temp;
         } else {
             break;
         }
     }
 
     if (needsCopyAfterwards) {
-        copyBuffers();
+        runCommandAndWaitForFence(m_copyBuffersCommandBuffer);
     }
 }
 

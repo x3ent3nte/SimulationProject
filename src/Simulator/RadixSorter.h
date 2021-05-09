@@ -32,16 +32,13 @@ public:
 
 private:
 
+    void runCommandAndWaitForFence(VkCommandBuffer commandBuffer);
     void setNumberOfElements(uint32_t numberOfElements);
-    void copyBuffers();
     void setRadix(uint32_t radix);
     void destroyCommandBuffers();
     void createCommandBuffers();
     void createCommandBuffersIfNecessary(uint32_t numberOfElements);
     bool needsSorting();
-    void mapRadixToUVec4();
-    void scatter();
-    void sortAtRadix(uint32_t radix);
     void sort();
 
     VkDevice m_logicalDevice;
@@ -88,6 +85,9 @@ private:
     // Commands
     VkCommandBuffer m_setNumberOfElementsCommandBuffer;
     VkCommandBuffer m_copyBuffersCommandBuffer;
+
+    VkCommandBuffer m_commandBufferOne;
+    VkCommandBuffer m_commandBufferTwo;
 
     VkFence m_fence;
 
