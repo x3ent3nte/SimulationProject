@@ -38,6 +38,7 @@ private:
     void destroyCommandBuffers();
     void createCommandBuffers();
     void createCommandBuffersIfNecessary(uint32_t numberOfElements);
+    void resetNeedsSortingBuffer();
     bool needsSorting();
     void sort();
 
@@ -48,6 +49,7 @@ private:
     uint32_t m_currentNumberOfElements;
 
     // Pipeline
+    // map
     VkDescriptorSetLayout m_mapDescriptorSetLayout;
     VkDescriptorPool m_mapDescriptorPool;
     VkPipelineLayout m_mapPipelineLayout;
@@ -56,6 +58,7 @@ private:
     VkDescriptorSet m_mapDescriptorSetOne;
     VkDescriptorSet m_mapDescriptorSetTwo;
 
+    // scatter
     VkDescriptorSetLayout m_scatterDescriptorSetLayout;
     VkDescriptorPool m_scatterDescriptorPool;
     VkPipelineLayout m_scatterPipelineLayout;
@@ -63,6 +66,15 @@ private:
 
     VkDescriptorSet m_scatterDescriptorSetOne;
     VkDescriptorSet m_scatterDescriptorSetTwo;
+
+    // needsSorting
+    VkDescriptorSetLayout m_needsSortingDescriptorSetLayout;
+    VkDescriptorPool m_needsSortingDescriptorPool;
+    VkPipelineLayout m_needsSortingPipelineLayout;
+    VkPipeline m_needsSortingPipeline;
+
+    VkDescriptorSet m_needsSortingDescriptorSetOne;
+    VkDescriptorSet m_needsSortingDescriptorSetTwo;
 
     // Buffers
     VkDeviceMemory m_dataDeviceMemory;
@@ -81,6 +93,12 @@ private:
 
     VkBuffer m_numberOfElementsHostVisibleBuffer;
     VkDeviceMemory m_numberOfElementsHostVisibleDeviceMemory;
+
+    VkBuffer m_needsSortingBuffer;
+    VkDeviceMemory m_needsSortingDeviceMemory;
+
+    VkBuffer m_needsSortingHostVisibleBuffer;
+    VkDeviceMemory m_needsSortingHostVisibleDeviceMemory;
 
     // Commands
     VkCommandBuffer m_setNumberOfElementsCommandBuffer;

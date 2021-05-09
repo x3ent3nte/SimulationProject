@@ -2,9 +2,6 @@
 
 namespace {
 
-constexpr uint32_t radix = 2;
-constexpr uint32_t maxLoops = (sizeof(uint32_t) * 8) / radix;
-
 } // namespace anonymous
 
 AgentTypeIdSorter::AgentTypeIdSorter(

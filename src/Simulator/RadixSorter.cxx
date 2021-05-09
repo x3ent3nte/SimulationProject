@@ -15,6 +15,7 @@ namespace RadixSorterUtil {
     constexpr size_t kXDim = 512;
     constexpr size_t kRadixMapNumberOfBindings = 4;
     constexpr size_t kRadixScatterNumberOfBindings = 5;
+    constexpr size_t kNeedsSortingNumberOfBindings = 3;
 
     VkDescriptorSet createMapDescriptorSet(
         VkDevice logicalDevice,
@@ -68,6 +69,28 @@ namespace RadixSorterUtil {
             bufferAndSizes);
     }
 
+    VkDescriptorSet createNeedsSortingDescriptorSet(
+        VkDevice logicalDevice,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkDescriptorPool descriptorPool,
+        VkBuffer dataBuffer,
+        VkBuffer needsSortingBuffer,
+        VkBuffer numberOfElementsBuffer,
+        uint32_t maxNumberOfElements) {
+
+        std::vector<Compute::BufferAndSize> bufferAndSizes = {
+            {dataBuffer, maxNumberOfElements * sizeof(RadixSorter::ValueAndIndex)},
+            {needsSortingBuffer, sizeof(uint32_t)},
+            {numberOfElementsBuffer, sizeof(uint32_t)}
+        };
+
+        return Compute::createDescriptorSet(
+            logicalDevice,
+            descriptorSetLayout,
+            descriptorPool,
+            bufferAndSizes);
+    }
+
     VkCommandBuffer createCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
@@ -78,8 +101,13 @@ namespace RadixSorterUtil {
         VkPipeline scatterPipeline,
         VkPipelineLayout scatterPipelineLayout,
         VkDescriptorSet scatterDescriptorSet,
+        VkPipeline needsSortingPipeline,
+        VkPipelineLayout needsSortingPipelineLayout,
+        VkDescriptorSet needsSortingDescriptorSet,
         VkBuffer radixBuffer,
         VkBuffer radixHostVisibleBuffer,
+        VkBuffer needsSortingBuffer,
+        VkBuffer needsSortingHostVisibleBuffer,
         uint32_t numberOfElements) {
 
         VkCommandBuffer commandBuffer;
@@ -107,6 +135,7 @@ namespace RadixSorterUtil {
         copyRegion.dstOffset = 0;
         copyRegion.size = sizeof(uint32_t);
         vkCmdCopyBuffer(commandBuffer, radixHostVisibleBuffer, radixBuffer, 1, &copyRegion);
+        vkCmdCopyBuffer(commandBuffer, needsSortingHostVisibleBuffer, needsSortingBuffer, 1, &copyRegion);
 
         VkMemoryBarrier memoryBarrier = {};
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -161,6 +190,36 @@ namespace RadixSorterUtil {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, scatterPipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, scatterPipelineLayout, 0, 1, &scatterDescriptorSet, 0, nullptr);
         vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, needsSortingPipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, needsSortingPipelineLayout, 0, 1, &needsSortingDescriptorSet, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            1,
+            &memoryBarrier,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        vkCmdCopyBuffer(commandBuffer, needsSortingBuffer, needsSortingHostVisibleBuffer, 1, &copyRegion);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -244,6 +303,24 @@ RadixSorter::RadixSorter(
         m_numberOfElementsHostVisibleBuffer,
         m_numberOfElementsHostVisibleDeviceMemory);
 
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        m_needsSortingBuffer,
+        m_needsSortingDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        sizeof(uint32_t),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_needsSortingHostVisibleBuffer,
+        m_needsSortingHostVisibleDeviceMemory);
+
     // create pipeline
     // map pipeline
     m_mapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kRadixMapNumberOfBindings);
@@ -296,6 +373,31 @@ RadixSorter::RadixSorter(
         m_scanner->m_dataBuffer,
         m_dataBuffer,
         m_radixBuffer,
+        m_numberOfElementsBuffer,
+        maxNumberOfElements);
+
+    // needsSorting pipeline
+
+    m_needsSortingDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kNeedsSortingNumberOfBindings);
+    m_needsSortingDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, RadixSorterUtil::kNeedsSortingNumberOfBindings, 2);
+    m_needsSortingPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_needsSortingDescriptorSetLayout);
+    m_needsSortingPipeline = Compute::createPipeline("src/GLSL/spv/NeedsSorting.spv", m_logicalDevice, m_needsSortingPipelineLayout);
+
+    m_needsSortingDescriptorSetOne = RadixSorterUtil::createNeedsSortingDescriptorSet(
+        m_logicalDevice,
+        m_needsSortingDescriptorSetLayout,
+        m_needsSortingDescriptorPool,
+        m_otherBuffer,
+        m_needsSortingBuffer,
+        m_numberOfElementsBuffer,
+        maxNumberOfElements);
+
+    m_needsSortingDescriptorSetTwo = RadixSorterUtil::createNeedsSortingDescriptorSet(
+        m_logicalDevice,
+        m_needsSortingDescriptorSetLayout,
+        m_needsSortingDescriptorPool,
+        m_dataBuffer,
+        m_needsSortingBuffer,
         m_numberOfElementsBuffer,
         maxNumberOfElements);
 
@@ -353,6 +455,12 @@ RadixSorter::~RadixSorter() {
     vkFreeMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsHostVisibleBuffer, nullptr);
 
+    vkFreeMemory(m_logicalDevice, m_needsSortingDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_needsSortingBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_needsSortingHostVisibleBuffer, nullptr);
+
     // free pipeline
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_mapDescriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(m_logicalDevice, m_mapDescriptorPool, nullptr);
@@ -363,6 +471,11 @@ RadixSorter::~RadixSorter() {
     vkDestroyDescriptorPool(m_logicalDevice, m_scatterDescriptorPool, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_scatterPipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_scatterPipeline, nullptr);
+
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_needsSortingDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_needsSortingDescriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_needsSortingPipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_needsSortingPipeline, nullptr);
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
@@ -386,8 +499,13 @@ void RadixSorter::createCommandBuffers() {
         m_scatterPipeline,
         m_scatterPipelineLayout,
         m_scatterDescriptorSetOne,
+        m_needsSortingPipeline,
+        m_needsSortingPipelineLayout,
+        m_needsSortingDescriptorSetOne,
         m_radixBuffer,
         m_radixHostVisibleBuffer,
+        m_needsSortingBuffer,
+        m_needsSortingHostVisibleBuffer,
         m_currentNumberOfElements);
 
     m_commandBufferTwo = RadixSorterUtil::createCommandBuffer(
@@ -400,8 +518,13 @@ void RadixSorter::createCommandBuffers() {
         m_scatterPipeline,
         m_scatterPipelineLayout,
         m_scatterDescriptorSetTwo,
+        m_needsSortingPipeline,
+        m_needsSortingPipelineLayout,
+        m_needsSortingDescriptorSetTwo,
         m_radixBuffer,
         m_radixHostVisibleBuffer,
+        m_needsSortingBuffer,
+        m_needsSortingHostVisibleBuffer,
         m_currentNumberOfElements);
 }
 
@@ -457,8 +580,21 @@ void RadixSorter::setRadix(uint32_t radix) {
     vkUnmapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory);
 }
 
+void RadixSorter::resetNeedsSortingBuffer() {
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t zero = 0;
+    memcpy(dataMap, &zero, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+}
+
 bool RadixSorter::needsSorting() {
-    return true;
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t needsSorting;
+    memcpy(&needsSorting, dataMap, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+    return needsSorting;
 }
 
 void RadixSorter::sort() {
@@ -468,6 +604,7 @@ void RadixSorter::sort() {
 
     for (uint32_t radix = 0; radix < kNumberOfBits; radix += kRadix) {
         if (needsSorting()) {
+            resetNeedsSortingBuffer();
             setRadix(radix);
             runCommandAndWaitForFence(inCommand);
             needsCopyAfterwards = !needsCopyAfterwards;

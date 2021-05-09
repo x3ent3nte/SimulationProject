@@ -1,7 +1,6 @@
 #ifndef AGENT_TYPEID_SORTER_H
 #define AGENT_TYPEID_SORTER_H
 
-#include <Simulator/Scanner.h>
 #include <Simulator/RadixSorter.h>
 
 #include <vulkan/vulkan.h>
