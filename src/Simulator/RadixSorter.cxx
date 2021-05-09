@@ -3,6 +3,8 @@
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 
+#include <stdexcept>
+
 namespace {
     constexpr uint32_t kRadix = 2;
     constexpr uint32_t kNumberOfBits = sizeof(uint32_t) * 8;
@@ -13,7 +15,7 @@ namespace RadixSorterUtil {
     constexpr size_t kRadixMapNumberOfBindings = 4;
     constexpr size_t kRadixScatterNumberOfBindings = 5;
 
-    VkDescriptorSet createDescriptorSet(
+    VkDescriptorSet createMapDescriptorSet(
         VkDevice logicalDevice,
         VkDescriptorSetLayout descriptorSetLayout,
         VkDescriptorPool descriptorPool,
@@ -37,6 +39,33 @@ namespace RadixSorterUtil {
             descriptorPool,
             bufferAndSizes);
     }
+
+    VkDescriptorSet createScatterDescriptorSet(
+        VkDevice logicalDevice,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkDescriptorPool descriptorPool,
+        VkBuffer dataInBuffer,
+        VkBuffer scannedBuffer,
+        VkBuffer dataOutBuffer,
+        VkBuffer radixBuffer,
+        VkBuffer numberOfElementsBuffer,
+        uint32_t maxNumberOfElements) {
+
+        const size_t dataSize = maxNumberOfElements * sizeof(RadixSorter::ValueAndIndex);
+        std::vector<Compute::BufferAndSize> bufferAndSizes = {
+            {dataInBuffer, dataSize},
+            {dataInBuffer, maxNumberOfElements * sizeof(glm::uvec4)},
+            {dataOutBuffer, dataSize},
+            {radixBuffer, sizeof(uint32_t)},
+            {numberOfElementsBuffer, sizeof(uint32_t)}
+        };
+
+        return Compute::createDescriptorSet(
+            logicalDevice,
+            descriptorSetLayout,
+            descriptorPool,
+            bufferAndSizes);
+    }
 }
 
 RadixSorter::RadixSorter(
@@ -49,9 +78,6 @@ RadixSorter::RadixSorter(
     m_logicalDevice = logicalDevice;
     m_queue = queue;
     m_commandPool = commandPool;
-
-    m_currentNumberOfElements = maxNumberOfElements;
-    createCommandBuffers();
 
     m_scanner = std::make_shared<Scanner<glm::uvec4>>(
         physicalDevice,
@@ -117,12 +143,13 @@ RadixSorter::RadixSorter(
         m_numberOfElementsHostVisibleDeviceMemory);
 
     // create pipeline
+    // map pipeline
     m_mapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kRadixMapNumberOfBindings);
     m_mapDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, RadixSorterUtil::kRadixMapNumberOfBindings, 2);
     m_mapPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_mapDescriptorSetLayout);
     m_mapPipeline = Compute::createPipeline("src/GLSL/spv/RadixMap.spv", m_logicalDevice, m_mapPipelineLayout);
 
-    m_mapDescriptorSetOne = RadixSorterUtil::createDescriptorSet(
+    m_mapDescriptorSetOne = RadixSorterUtil::createMapDescriptorSet(
         m_logicalDevice,
         m_mapDescriptorSetLayout,
         m_mapDescriptorPool,
@@ -132,7 +159,7 @@ RadixSorter::RadixSorter(
         m_numberOfElementsBuffer,
         maxNumberOfElements);
 
-    m_mapDescriptorSetOne = RadixSorterUtil::createDescriptorSet(
+    m_mapDescriptorSetTwo = RadixSorterUtil::createMapDescriptorSet(
         m_logicalDevice,
         m_mapDescriptorSetLayout,
         m_mapDescriptorPool,
@@ -141,9 +168,50 @@ RadixSorter::RadixSorter(
         m_radixBuffer,
         m_numberOfElementsBuffer,
         maxNumberOfElements);
+
+    // scatter pipeline
+    m_scatterDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kRadixScatterNumberOfBindings);
+    m_scatterDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, RadixSorterUtil::kRadixScatterNumberOfBindings, 2);
+    m_scatterPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_scatterDescriptorSetLayout);
+    m_scatterPipeline = Compute::createPipeline("src/GLSL/spv/RadixScatter.spv", m_logicalDevice, m_scatterPipelineLayout);
+
+    m_scatterDescriptorSetOne = RadixSorterUtil::createScatterDescriptorSet(
+        m_logicalDevice,
+        m_scatterDescriptorSetLayout,
+        m_scatterDescriptorPool,
+        m_dataBuffer,
+        m_scanner->m_dataBuffer,
+        m_otherBuffer,
+        m_radixBuffer,
+        m_numberOfElementsBuffer,
+        maxNumberOfElements);
+
+    m_scatterDescriptorSetTwo = RadixSorterUtil::createScatterDescriptorSet(
+        m_logicalDevice,
+        m_scatterDescriptorSetLayout,
+        m_scatterDescriptorPool,
+        m_otherBuffer,
+        m_scanner->m_dataBuffer,
+        m_dataBuffer,
+        m_radixBuffer,
+        m_numberOfElementsBuffer,
+        maxNumberOfElements);
+
+    m_currentNumberOfElements = maxNumberOfElements;
+    createCommandBuffers();
+
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    if (vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &m_fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create compute fence");
+    }
 }
 
 RadixSorter::~RadixSorter() {
+    destroyCommandBuffers();
+    // free buffers
     vkFreeMemory(m_logicalDevice, m_dataDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_dataBuffer, nullptr);
 
@@ -162,10 +230,18 @@ RadixSorter::~RadixSorter() {
     vkFreeMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsHostVisibleBuffer, nullptr);
 
+    // free pipeline
     vkDestroyDescriptorSetLayout(m_logicalDevice, m_mapDescriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(m_logicalDevice, m_mapDescriptorPool, nullptr);
     vkDestroyPipelineLayout(m_logicalDevice, m_mapPipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_mapPipeline, nullptr);
+
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_scatterDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_scatterDescriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_scatterPipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_scatterPipeline, nullptr);
+
+    vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
 void RadixSorter::destroyCommandBuffers() {

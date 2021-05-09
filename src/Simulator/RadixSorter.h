@@ -49,6 +49,7 @@ private:
 
     uint32_t m_currentNumberOfElements;
 
+    // Pipeline
     VkDescriptorSetLayout m_mapDescriptorSetLayout;
     VkDescriptorPool m_mapDescriptorPool;
     VkPipelineLayout m_mapPipelineLayout;
@@ -57,6 +58,15 @@ private:
     VkDescriptorSet m_mapDescriptorSetOne;
     VkDescriptorSet m_mapDescriptorSetTwo;
 
+    VkDescriptorSetLayout m_scatterDescriptorSetLayout;
+    VkDescriptorPool m_scatterDescriptorPool;
+    VkPipelineLayout m_scatterPipelineLayout;
+    VkPipeline m_scatterPipeline;
+
+    VkDescriptorSet m_scatterDescriptorSetOne;
+    VkDescriptorSet m_scatterDescriptorSetTwo;
+
+    // Buffers
     VkDeviceMemory m_dataDeviceMemory;
 
     VkBuffer m_otherBuffer;
@@ -73,6 +83,8 @@ private:
 
     VkBuffer m_numberOfElementsHostVisibleBuffer;
     VkDeviceMemory m_numberOfElementsHostVisibleDeviceMemory;
+
+    VkFence m_fence;
 
     std::shared_ptr<Scanner<glm::uvec4>> m_scanner;
 };
