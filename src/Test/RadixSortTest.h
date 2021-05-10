@@ -1,27 +1,29 @@
-#ifndef REDUCE_TEST_H
-#define REDUCE_TEST_H
+#ifndef RADIX_SORT_TEST_H
+#define RADIX_SORT_TEST_H
 
 #include <Test/TestRunner.h>
-#include <Test/ReduceVulkanTest.h>
+
+#include <Test/RadixSortVulkanTest.h>
 
 #include <vulkan/vulkan.h>
 
 #include <memory>
 
-class ReduceTest {
+class RadixSortTest {
+
 private:
 
-    const std::shared_ptr<ReduceVulkanTest> m_vulkanTest;
+    const std::shared_ptr<RadixSortVulkanTest> m_vulkanTest;
 
 public:
 
-    ReduceTest(
+    RadixSortTest(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
         VkQueue queue,
         VkCommandPool commandPool);
 
-    virtual ~ReduceTest();
+    virtual ~RadixSortTest();
 
     void run(std::shared_ptr<TestRunner> testRunner);
 };

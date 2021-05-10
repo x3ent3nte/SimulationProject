@@ -1,5 +1,6 @@
 #include <Test/ReduceTest.h>
 
+#include <Test/ReduceCudaTest.cuh>
 #include <Simulator/Agent.h>
 #include <Utils/Timer.h>
 

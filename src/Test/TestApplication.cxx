@@ -4,6 +4,7 @@
 #include <Test/InsertionSortTest.h>
 #include <Test/ReduceTest.h>
 #include <Test/ScanTest.h>
+#include <Test/RadixSortTest.h>
 
 #include <iostream>
 #include <memory>
@@ -27,6 +28,7 @@ void TestApplication::run() {
     InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
     ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
     ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
+    RadixSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
 
     testRunner->report();
 
