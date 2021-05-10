@@ -18,6 +18,7 @@ std::vector<uint32_t> RadixSortCudaTest::run(const std::vector<uint32_t>& number
 
     cudaMemcpy(d_a, numbers.data(), memorySize, cudaMemcpyHostToDevice);
     cudaMemset(d_b, 0, memorySize);
+    cudaMemset(d_flags, 0, numbers.size() * sizeof(uint4) * 2);
 
     uint32_t* d_sorted;
     {

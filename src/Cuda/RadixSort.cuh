@@ -102,12 +102,12 @@ T* RadixSort::sort(T* a, T* b, uint4* flags, int size) {
         printf("Radix Sort at bit position %d\n", pos);
         mark<T><<<numBlocks, threadsPerBlock>>>(a, flags, pos, size);
 
-        //printf("Printing flags after marking\n");
+        printf("Printing flags after marking\n");
         //printFlags(flags, size);
 
         Scan::scan<uint4, uint4Add>(flags, size);
 
-        //printf("Printing flags after scanning\n");
+        printf("Printing flags after scanning\n");
         //printFlags(flags, size);
 
         uint4 totalOffset = {0, 0, 0, 0};
@@ -118,7 +118,7 @@ T* RadixSort::sort(T* a, T* b, uint4* flags, int size) {
         totalOffset.y = totalOffset.x;
         totalOffset.x = 0;
 
-        //printf("Total Offset %d %d %d %d\n", totalOffset.x, totalOffset.y, totalOffset.z, totalOffset.w);
+        printf("Total Offset %d %d %d %d\n", totalOffset.x, totalOffset.y, totalOffset.z, totalOffset.w);
 
         scatter<T><<<numBlocks, threadsPerBlock>>>(a, b, flags, totalOffset, pos, size);
         //printAddress(b, size);
