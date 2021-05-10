@@ -21,7 +21,7 @@ std::vector<uint32_t> RadixSortCudaTest::run(const std::vector<uint32_t>& number
 
     uint32_t* d_sorted;
     {
-        Timer timer("GPU Radix Sort");
+        Timer timer("Radix Sort Cuda");
         d_sorted = RadixSort::sort<unsigned int>(d_a, d_b, d_flags, numbers.size());
     }
 

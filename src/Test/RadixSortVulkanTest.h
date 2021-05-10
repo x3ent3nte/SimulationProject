@@ -11,6 +11,11 @@
 class RadixSortVulkanTest {
 private:
 
+    const VkPhysicalDevice m_physicalDevice;
+    const VkDevice m_logicalDevice;
+    const VkQueue m_queue;
+    const VkCommandPool m_commandPool;
+
     const std::shared_ptr<RadixSorter> m_radixSorter;
 
 public:
