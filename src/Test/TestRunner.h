@@ -40,6 +40,9 @@ private:
     int m_numberPassed = 0;
     int m_numberFailed = 0;
 
+    std::vector<std::string> m_passedNames;
+    std::vector<std::string> m_failedNames;
+
     std::mutex m_mutex;
 
 public:

@@ -33,13 +33,13 @@ void TestRunner::test(
     if (testInstance->hasPassed()) {
         {
             std::lock_guard<std::mutex> guard(m_mutex);
-            m_numberPassed += 1;
+            m_passedNames.push_back(name);
         }
         std::cout << "\n\033[92m[PASSED " << name << "]\033[0m\n\n";
     } else {
         {
             std::lock_guard<std::mutex> guard(m_mutex);
-            m_numberFailed += 1;
+            m_failedNames.push_back(name);
         }
         std::cout << "\n\033[91m[FAILED " << name << "]\033[0m\n\n";
     }
@@ -54,8 +54,15 @@ void TestRunner::report() {
 
     std::cout << "Test Report\n\n";
 
-    std::cout << "Passed = " << m_numberPassed << "\n";
-    std::cout << "Failed = " << m_numberFailed << "\n";
+    std::cout << "Passed = " << m_passedNames.size() << "\n";
+    for (const auto& name : m_passedNames) {
+        std::cout << "\n\033[92m[" << name << "]\033[0m\n\n";
+    }
+
+    std::cout << "Failed = " << m_failedNames.size() << "\n";
+    for (const auto& name : m_failedNames) {
+        std::cout << "\n\033[91m[" << name << "]\033[0m\n\n";
+    }
 
     std::cout << "\033[0m";
 }
