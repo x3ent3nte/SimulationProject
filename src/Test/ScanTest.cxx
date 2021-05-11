@@ -4,52 +4,62 @@
 #include <Utils/Timer.h>
 #include <Utils/TextColour.h>
 
+#include <sstream>
 #include <iostream>
 
 namespace {
 
     constexpr uint32_t kMaxNumberOfElements = 1024 * 16 * 64;
 
-    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, kMaxNumberOfElements / 2, 512, 1, 512 * 128, 2, 99, 100};
+    const std::vector<uint32_t> kSizes = {
+        kMaxNumberOfElements,
+        kMaxNumberOfElements / 2,
+        512,
+        513,
+        1,
+        512 * 128,
+        2,
+        99,
+        100};
 
-    std::vector<int> generateAllOnes(uint32_t size) {
-        std::vector<int> data(size);
-        for (int i = 0; i < data.size(); ++i) {
+    std::vector<int32_t> generateAllOnes(uint32_t size) {
+        std::vector<int32_t> data(size);
+        for (int32_t i = 0; i < data.size(); ++i) {
             data[i] = 1;
         }
         return data;
     }
 
-    std::vector<int> generateAlternatingZeroAndOnes(uint32_t size) {
-        std::vector<int> data(size);
-        for (int i = 0; i < data.size(); ++i) {
+    std::vector<int32_t> generateAlternatingZeroAndOnes(uint32_t size) {
+        std::vector<int32_t> data(size);
+        for (int32_t i = 0; i < data.size(); ++i) {
             data[i] = i % 2;
         }
         return data;
     }
 
-    std::vector<int> generateDecreasing(uint32_t size) {
-        std::vector<int> data(size);
-        for (int i = 0; i < data.size(); ++i) {
+    std::vector<int32_t> generateDecreasing(uint32_t size) {
+        std::vector<int32_t> data(size);
+        for (int32_t i = 0; i < data.size(); ++i) {
             data[i] = (size - i) - 1;
         }
         return data;
     }
 
-    std::vector<int> generateHasNegatives(uint32_t size) {
-        std::vector<int> data(size);
-        for (int i = 0; i < data.size(); ++i) {
+    std::vector<int32_t> generateHasNegatives(uint32_t size) {
+        std::vector<int32_t> data(size);
+        for (int32_t i = 0; i < data.size(); ++i) {
             data[i] = - i;
         }
         return data;
     }
 
-    std::vector<int> serialScan(const std::vector<int>& data) {
+    std::vector<int32_t> serialScan(const std::vector<int32_t>& data) {
         Timer timer("Scan Serial");
-        std::vector<int> result(data.size());
+        std::vector<int32_t> result(data.size());
 
-        int count = 0;
-        for (int i = 0; i < data.size(); ++i) {
+        int32_t count = 0;
+        for (int32_t i = 0; i < data.size(); ++i) {
             count += data[i];
             result[i] = count;
         }
@@ -58,7 +68,7 @@ namespace {
     }
 
     void testHelper(
-        const std::vector<int>& data,
+        const std::vector<int32_t>& data,
         std::shared_ptr<ScanVulkanTest> vulkanTest,
         std::shared_ptr<TestInstance> testInstance) {
 
@@ -69,17 +79,6 @@ namespace {
 
         auto actualCuda = ScanCudaTest::run(data);
         testInstance->assertEqual(expected, actualCuda);
-    }
-
-    void testDifferentSizesHelper(
-        std::shared_ptr<ScanVulkanTest> vulkanTest,
-        std::vector<int> (*dataGenerator)(uint32_t),
-        std::shared_ptr<TestInstance> testInstance) {
-
-        for (uint32_t size : kSizes) {
-            std::cout << "\nsize = " << size << "\n";
-            testHelper(dataGenerator(size), vulkanTest, testInstance);
-        }
     }
 } // namespace anonymous
 
@@ -104,21 +103,23 @@ ScanTest::~ScanTest() {
 void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
     std::cout << "\n" << TextColour::BLUE << "ScanTest started" << TextColour::END << "\n";
 
-    testRunner->test("testAllOnes", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateAllOnes, testInstance);
-    });
+    std::vector<std::pair<std::string, std::vector<int32_t>(*)(uint32_t)>> nameAndFns = {
+        {"AllOnes", generateAllOnes},
+        {"AlternatingZeroAndOnes", generateAlternatingZeroAndOnes},
+        {"Decreasing", generateDecreasing},
+        {"HasNegatives", generateHasNegatives}
+    };
 
-    testRunner->test("testAlternatingZeroAndOnes", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateAlternatingZeroAndOnes, testInstance);
-    });
-
-    testRunner->test("testDecreasing", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateAllOnes, testInstance);
-    });
-
-    testRunner->test("testHasNegatives", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateAlternatingZeroAndOnes, testInstance);
-    });
+    for (uint32_t size : kSizes) {
+        for (const auto& nameAndFn : nameAndFns) {
+            std::ostringstream testName;
+            testName << "testScan_" << nameAndFn.first << "_" << size;
+            auto fn = nameAndFn.second;
+            testRunner->test(testName.str(), [this, fn, size](auto testInstance) {
+                testHelper(fn(size), m_vulkanTest, testInstance);
+            });
+        }
+    }
 
     std::cout << "\n" << TextColour::PURPLE << "ScanTest finished" << TextColour::END << "\n";
 }

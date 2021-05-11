@@ -89,7 +89,7 @@ void RadixSortTest::run(std::shared_ptr<TestRunner> testRunner) {
             std::ostringstream testName;
             testName << "testRadixSort_" << nameAndFn.first << "_" << size;
             auto fn = nameAndFn.second;
-            testRunner->test(testName.str(), [this, size, fn](auto testInstance) {
+            testRunner->test(testName.str(), [this, fn, size](auto testInstance) {
                 testHelper(fn(size), m_vulkanTest, testInstance);
             });
         }

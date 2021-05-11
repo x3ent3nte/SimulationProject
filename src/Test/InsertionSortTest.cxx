@@ -5,13 +5,22 @@
 #include <Utils/TextColour.h>
 
 #include <algorithm>
+#include <sstream>
 #include <iostream>
 
 namespace {
 
     constexpr uint32_t kMaxNumberOfElements = 64 * 1024;
 
-    const std::vector<uint32_t> kSizes = {kMaxNumberOfElements, 1, 2, 100, 99};
+    const std::vector<uint32_t> kSizes = {
+        kMaxNumberOfElements,
+        kMaxNumberOfElements / 2,
+        32 * 512,
+        (32 * 512) + 1,
+        1,
+        2,
+        100,
+        99};
 
     std::vector<float> generateDataWithReverseOrder(uint32_t size) {
         std::vector<float> data(size);
@@ -129,13 +138,22 @@ void InsertionSortTest::run(std::shared_ptr<TestRunner> testRunner) {
 
     std::cout << "\n" << TextColour::BLUE << "InsertionSortTest started " << TextColour::END << "\n";
 
-    testRunner->test("testReverseOrder", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateDataWithReverseOrder, testInstance);
-    });
-    testRunner->test("testRepeatedOrder", [this](auto testInstance) {
-        testDifferentSizesHelper(m_vulkanTest, generateDataWithRepeatedOrder, testInstance);
-    });
-    //testRunner->test("testRandomOrder", [this, sizes](auto testInstance) { testRandomOrder(m_vulkanTest, sizes, testInstance); });
+    std::vector<std::pair<std::string, std::vector<float>(*)(uint32_t)>> nameAndFns = {
+        {"Reverse", generateDataWithReverseOrder},
+        {"Repeated", generateDataWithRepeatedOrder},
+        {"Random", generateDataWithRandomOrder}
+    };
+
+    for (uint32_t size : kSizes) {
+        for (const auto& nameAndFn : nameAndFns) {
+            std::ostringstream testName;
+            testName << "testInsertionSort_" << nameAndFn.first << "_" << size;
+            auto fn = nameAndFn.second;
+            testRunner->test(testName.str(), [this, fn, size](auto testInstance) {
+                testHelper(fn(size), m_vulkanTest, testInstance);
+            });
+        }
+    }
 
     std::cout << "\n" << TextColour::PURPLE << "InsertionSortTest finished" << TextColour::END << "\n";
 }

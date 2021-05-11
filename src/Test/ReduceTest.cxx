@@ -12,6 +12,16 @@
 namespace {
     constexpr uint32_t kMaxNumberOfElements = 512 * 1024;
 
+    const std::vector<uint32_t> kSizes = {
+        kMaxNumberOfElements,
+        kMaxNumberOfElements / 2,
+        32 * 512,
+        (32 * 512),
+        1,
+        2,
+        100,
+        99};
+
     Collision reduceSerial(const std::vector<Collision>& collisions) {
         auto earliest = collisions[0];
 
@@ -83,9 +93,20 @@ void ReduceTest::run(std::shared_ptr<TestRunner> testRunner) {
 
     std::cout << "\n" << TextColour::BLUE << "ReduceTest started" << TextColour::END << "\n";
 
-    testRunner->test("testReduceBasic", [this](auto testInstance) {
-        testHelper(generateCollisions(kMaxNumberOfElements), m_vulkanTest, testInstance);
-    });
+    std::vector<std::pair<std::string, std::vector<Collision>(*)(uint32_t)>> nameAndFns = {
+        {"Basic", generateCollisions}
+    };
+
+    for (uint32_t size : kSizes) {
+        for (const auto& nameAndFn : nameAndFns) {
+            std::ostringstream testName;
+            testName << "testReduce_" << nameAndFn.first << "_" << size;
+            auto fn = nameAndFn.second;
+            testRunner->test(testName.str(), [this, fn, size](auto testInstance) {
+                testHelper(fn(size), m_vulkanTest, testInstance);
+            });
+        }
+    }
 
     std::cout << "\n" << TextColour::PURPLE << "ReduceTest finished" << TextColour::END << "\n";
 }
