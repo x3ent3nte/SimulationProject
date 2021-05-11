@@ -22,6 +22,14 @@ namespace {
         99,
         100};
 
+    std::vector<int32_t> generateAllZeroes(uint32_t size) {
+        std::vector<int32_t> data(size);
+        for (int32_t i = 0; i < data.size(); ++i) {
+            data[i] = 0;
+        }
+        return data;
+    }
+
     std::vector<int32_t> generateAllOnes(uint32_t size) {
         std::vector<int32_t> data(size);
         for (int32_t i = 0; i < data.size(); ++i) {
@@ -66,6 +74,14 @@ namespace {
         std::vector<int32_t> data(size);
         for (int32_t i = 0; i < data.size(); ++i) {
             data[i] = rand();;
+        }
+        return data;
+    }
+
+    std::vector<glm::uvec4> generateUVec4WithAllZeroes(uint32_t size) {
+        std::vector<glm::uvec4> data(size);
+        for (uint32_t i = 0; i < data.size(); ++i) {
+            data[i] = {0, 0, 0, 0};
         }
         return data;
     }
@@ -173,6 +189,7 @@ void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
     std::cout << "\n" << TextColour::BLUE << "ScanTest started" << TextColour::END << "\n";
 
     std::vector<std::pair<std::string, std::vector<int32_t>(*)(uint32_t)>> nameAndFns = {
+        {"AllZeroes", generateAllZeroes},
         {"AllOnes", generateAllOnes},
         {"AlternatingZeroAndOnes", generateAlternatingZeroAndOnes},
         {"Increasing", generateIncreasing},
@@ -193,6 +210,7 @@ void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
     }
 
     std::vector<std::pair<std::string, std::vector<glm::uvec4>(*)(uint32_t)>> vecNameAndFns = {
+        {"AllZeroes", generateUVec4WithAllZeroes},
         {"AllOnes", generateUVec4WithAllOnes},
         {"AlternatingZeroAndOnes", generateUVec4AlternatingZeroAndOnes},
         {"Increasing", generateUVec4Increasing},
