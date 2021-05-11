@@ -63,8 +63,10 @@ void TestRunner::report() {
 
     std::cout << "\n";
 
-    std::cout << TextColour::RED << "Failed = " << m_failedNames.size() << TextColour::END << "\n";
-    for (const auto& name : m_failedNames) {
-        std::cout << TextColour::RED << "[FAILED " << name << "]" << TextColour::END << "\n";
+    if (m_failedNames.size() > 0) {
+        std::cout << TextColour::RED << "Failed = " << m_failedNames.size() << TextColour::END << "\n";
+        for (const auto& name : m_failedNames) {
+            std::cout << TextColour::RED << "[FAILED " << name << "]" << TextColour::END << "\n";
+        }
     }
 }

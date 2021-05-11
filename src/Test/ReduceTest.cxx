@@ -16,7 +16,7 @@ namespace {
         kMaxNumberOfElements,
         kMaxNumberOfElements / 2,
         32 * 512,
-        (32 * 512),
+        (32 * 512) + 1,
         1,
         2,
         100,
@@ -41,10 +41,10 @@ namespace {
     std::vector<Collision> generateCollisions(uint32_t numberOfElements) {
         std::vector<Collision> collisions(numberOfElements);
         for (uint32_t i = 0; i < numberOfElements; ++i) {
-            collisions[i] = {i, i + 1, float(kMaxNumberOfElements - i)};
+            collisions[i] = {i, i + 1, float(numberOfElements - i)};
         }
 
-        collisions[kMaxNumberOfElements / 2] = {123, 321, 0};
+        collisions[numberOfElements / 2] = {123, 321, 0};
         return collisions;
     }
 
