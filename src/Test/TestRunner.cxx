@@ -54,7 +54,7 @@ void TestRunner::report() {
         std::cout << TextColour::RED;
     }
 
-    std::cout << "Test Report" << TextColour::END << "\n\n";
+    std::cout << "\nTest Report" << TextColour::END << "\n\n";
 
     std::cout << TextColour::GREEN << "Passed = " << m_passedNames.size() << TextColour::END << "\n";
     for (const auto& name : m_passedNames) {

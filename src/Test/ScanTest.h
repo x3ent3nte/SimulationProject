@@ -3,6 +3,7 @@
 
 #include <Test/ScanVulkanTest.h>
 #include <Test/TestRunner.h>
+#include <Renderer/MyGLM.h>
 
 #include <vulkan/vulkan.h>
 
@@ -12,7 +13,8 @@
 class ScanTest {
 private:
 
-    std::shared_ptr<ScanVulkanTest> m_vulkanTest;
+    const std::shared_ptr<ScanVulkanTest<int32_t>> m_vulkanTestInt32;
+    const std::shared_ptr<ScanVulkanTest<glm::uvec4>> m_vulkanTestUVec4;
 
 public:
 

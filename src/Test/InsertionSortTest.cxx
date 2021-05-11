@@ -41,7 +41,7 @@ namespace {
     std::vector<float> generateDataWithRandomOrder(uint32_t size) {
         std::vector<float> data(size);
         for (uint32_t i = 0; i < size; ++i) {
-            data[i] = MyMath::randomFloatBetweenZeroAndOne() * 100.0f;
+            data[i] = MyMath::randomFloatBetweenZeroAndOne() * 100000.0f;
         }
         return data;
     }
@@ -113,17 +113,6 @@ namespace {
 
         auto actualCudaFour = InsertionSortCudaTest::run(actualCudaThree);
         testInstance->assertEqual(expected, actualCudaFour);
-    }
-
-    void testDifferentSizesHelper(
-        std::shared_ptr<InsertionSortVulkanTest> vulkanTest,
-        std::vector<float> (*dataGenerator)(uint32_t),
-        std::shared_ptr<TestInstance> testInstance) {
-
-        for (uint32_t size : kSizes) {
-            std::cout << "\nsize = " << size << "\n";
-            testHelper(dataGenerator(size), vulkanTest, testInstance);
-        }
     }
 } // end namespace anonymous
 

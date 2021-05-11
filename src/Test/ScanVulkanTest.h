@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+template <typename T>
 class ScanVulkanTest {
 
 private:
@@ -17,7 +18,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    std::shared_ptr<Scanner<int32_t>> m_scanner;
+    std::shared_ptr<Scanner<T>> m_scanner;
 
 public:
 
@@ -30,7 +31,7 @@ public:
 
     virtual ~ScanVulkanTest();
 
-    std::vector<int> run(const std::vector<int>& data);
+    std::vector<T> run(const std::vector<T>& data);
 };
 
 #endif
