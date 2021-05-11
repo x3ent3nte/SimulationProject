@@ -2,6 +2,7 @@
 
 #include <Test/RadixSortCudaTest.cuh>
 #include <Utils/Timer.h>
+#include <Utils/TextColour.h>
 
 #include <algorithm>
 #include <vector>
@@ -76,7 +77,7 @@ RadixSortTest::~RadixSortTest() {
 }
 
 void RadixSortTest::run(std::shared_ptr<TestRunner> testRunner) {
-    std::cout << "\n\033[94mRadixSortTest started\033[0m\n";
+    std::cout << "\n" << TextColour::BLUE << "RadixSortTest started" << TextColour::END << "\n";
 
     std::vector<std::pair<std::string, std::vector<uint32_t>(*)(uint32_t)>> nameAndFns = {
         {"Reverse", generateReverse},
@@ -94,5 +95,5 @@ void RadixSortTest::run(std::shared_ptr<TestRunner> testRunner) {
         }
     }
 
-    std::cout << "\n\033[95mRadixSortTest finished\033[0m\n";
+    std::cout << "\n" << TextColour::PURPLE << "RadixSortTest finished" << TextColour::END << "\n";
 }

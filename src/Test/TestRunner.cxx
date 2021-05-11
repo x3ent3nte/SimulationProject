@@ -1,11 +1,6 @@
 #include <Test/TestRunner.h>
 
-namespace {
-    constexpr char* kGreen = "\033[92m";
-    constexpr char* kRed = "\033[91m";
-    constexpr char* kCyan = "\033[96m";
-    constexpr char* kEnd = "\033[0m";
-} // namespace anonymouse
+#include <Utils/TextColour.h>
 
 void TestInstance::fail() {
     std::lock_guard<std::mutex> guard(m_mutex);
@@ -28,7 +23,7 @@ void TestRunner::test(
     const std::string& name,
     std::function<void(std::shared_ptr<TestInstance> testInstance)> fn) {
 
-    std::cout << "\n" << kCyan <<"[RUNNING " << name << "]" << kEnd <<"\n\n";
+    std::cout << "\n" << TextColour::CYAN << "[RUNNING " << name << "]" << TextColour::END << "\n\n";
     auto testInstance = std::make_shared<TestInstance>();
 
     try {
@@ -42,34 +37,34 @@ void TestRunner::test(
             std::lock_guard<std::mutex> guard(m_mutex);
             m_passedNames.push_back(name);
         }
-        std::cout << "\n" << kGreen << "[PASSED " << name << "]" << kEnd << "\n\n";
+        std::cout << "\n" << TextColour::GREEN << "[PASSED " << name << "]" << TextColour::END << "\n\n";
     } else {
         {
             std::lock_guard<std::mutex> guard(m_mutex);
             m_failedNames.push_back(name);
         }
-        std::cout << "\n" << kRed <<"[FAILED " << name << "]" << kEnd << "\n\n";
+        std::cout << "\n" << TextColour::RED << "[FAILED " << name << "]" << TextColour::END << "\n\n";
     }
 }
 
 void TestRunner::report() {
     if (m_failedNames.size() == 0) {
-        std::cout << kGreen;
+        std::cout << TextColour::GREEN;
     } else {
-        std::cout << kRed;
+        std::cout << TextColour::RED;
     }
 
-    std::cout << "Test Report" << kEnd << "\n\n";
+    std::cout << "Test Report" << TextColour::END << "\n\n";
 
-    std::cout << kGreen << "Passed = " << m_passedNames.size() << kEnd << "\n";
+    std::cout << TextColour::GREEN << "Passed = " << m_passedNames.size() << TextColour::END << "\n";
     for (const auto& name : m_passedNames) {
-        std::cout << kGreen << "[PASSED " << name << "]" << kRed << "\n";
+        std::cout << TextColour::GREEN << "[PASSED " << name << "]" << TextColour::RED << "\n";
     }
 
     std::cout << "\n";
 
-    std::cout << kRed << "Failed = " << m_failedNames.size() << kEnd << "\n";
+    std::cout << TextColour::RED << "Failed = " << m_failedNames.size() << TextColour::END << "\n";
     for (const auto& name : m_failedNames) {
-        std::cout << kRed << "[FAILED " << name << "]" << kEnd <<"\n";
+        std::cout << TextColour::RED << "[FAILED " << name << "]" << TextColour::END << "\n";
     }
 }

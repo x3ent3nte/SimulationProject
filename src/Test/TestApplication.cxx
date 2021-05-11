@@ -5,6 +5,7 @@
 #include <Test/ReduceTest.h>
 #include <Test/ScanTest.h>
 #include <Test/RadixSortTest.h>
+#include <Utils/TextColour.h>
 
 #include <iostream>
 #include <memory>
@@ -21,7 +22,7 @@ TestApplication::TestApplication(
 
 void TestApplication::run() {
 
-    std::cout << "\n\033[94mTest Runner started\033[0m\n";
+    std::cout << "\n" << TextColour::BLUE << "Test Runner started" << TextColour::END << "\n";
 
     auto testRunner = std::make_shared<TestRunner>();
 
@@ -32,5 +33,5 @@ void TestApplication::run() {
 
     testRunner->report();
 
-    std::cout << "\n\033[95mTest Runner finished\033[0m\n";
+    std::cout << "\n" << TextColour::PURPLE << "Test Runner finished" << TextColour::END << "\n";
 }

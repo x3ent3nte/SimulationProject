@@ -2,6 +2,7 @@
 
 #include <Test/ScanCudaTest.cuh>
 #include <Utils/Timer.h>
+#include <Utils/TextColour.h>
 
 #include <iostream>
 
@@ -101,7 +102,7 @@ ScanTest::~ScanTest() {
 }
 
 void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
-    std::cout << "\n\033[94mScanTest started\033[0m\n";
+    std::cout << "\n" << TextColour::BLUE << "ScanTest started" << TextColour::END << "\n";
 
     testRunner->test("testAllOnes", [this](auto testInstance) {
         testDifferentSizesHelper(m_vulkanTest, generateAllOnes, testInstance);
@@ -119,5 +120,5 @@ void ScanTest::run(std::shared_ptr<TestRunner> testRunner) {
         testDifferentSizesHelper(m_vulkanTest, generateAlternatingZeroAndOnes, testInstance);
     });
 
-    std::cout << "\n\033[95mScanTest finished\033[0m\n";
+    std::cout << "\n" << TextColour::PURPLE << "ScanTest finished" << TextColour::END << "\n";
 }

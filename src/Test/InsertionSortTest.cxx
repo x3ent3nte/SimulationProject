@@ -2,6 +2,7 @@
 
 #include <Utils/MyMath.h>
 #include <Utils/Timer.h>
+#include <Utils/TextColour.h>
 
 #include <algorithm>
 #include <iostream>
@@ -126,7 +127,7 @@ InsertionSortTest::InsertionSortTest(
 
 void InsertionSortTest::run(std::shared_ptr<TestRunner> testRunner) {
 
-    std::cout << "\n\033[94mInsertionSortTest started\033[0m\n";
+    std::cout << "\n" << TextColour::BLUE << "InsertionSortTest started " << TextColour::END << "\n";
 
     testRunner->test("testReverseOrder", [this](auto testInstance) {
         testDifferentSizesHelper(m_vulkanTest, generateDataWithReverseOrder, testInstance);
@@ -136,5 +137,5 @@ void InsertionSortTest::run(std::shared_ptr<TestRunner> testRunner) {
     });
     //testRunner->test("testRandomOrder", [this, sizes](auto testInstance) { testRandomOrder(m_vulkanTest, sizes, testInstance); });
 
-    std::cout << "\n\033[95mInsertionSortTest finished\033[0m\n";
+    std::cout << "\n" << TextColour::PURPLE << "InsertionSortTest finished" << TextColour::END << "\n";
 }

@@ -3,6 +3,7 @@
 #include <Test/ReduceCudaTest.cuh>
 #include <Simulator/Agent.h>
 #include <Utils/Timer.h>
+#include <Utils/TextColour.h>
 
 #include <vector>
 #include <iostream>
@@ -80,11 +81,11 @@ ReduceTest::~ReduceTest() {}
 
 void ReduceTest::run(std::shared_ptr<TestRunner> testRunner) {
 
-    std::cout << "\n\033[94mReduceTest started\033[0m\n";
+    std::cout << "\n" << TextColour::BLUE << "ReduceTest started" << TextColour::END << "\n";
 
     testRunner->test("testReduceBasic", [this](auto testInstance) {
         testHelper(generateCollisions(kMaxNumberOfElements), m_vulkanTest, testInstance);
     });
 
-    std::cout << "\n\033[95mReduceTest finished\033[0m\n";
+    std::cout << "\n" << TextColour::PURPLE << "ReduceTest finished" << TextColour::END << "\n";
 }
