@@ -5,6 +5,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <iostream>
 
 namespace {
     constexpr uint32_t kRadix = 2;
@@ -27,10 +28,9 @@ namespace RadixSorterUtil {
         VkBuffer numberOfElementsBuffer,
         uint32_t maxNumberOfElements) {
 
-        const size_t dataSize = maxNumberOfElements * sizeof(RadixSorter::ValueAndIndex);
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
-            {dataInBuffer, dataSize},
-            {dataOutBuffer, dataSize},
+            {dataInBuffer, maxNumberOfElements * sizeof(RadixSorter::ValueAndIndex)},
+            {dataOutBuffer, maxNumberOfElements * sizeof(glm::uvec4)},
             {radixBuffer, sizeof(uint32_t)},
             {numberOfElementsBuffer, sizeof(uint32_t)}
         };
@@ -321,6 +321,12 @@ RadixSorter::RadixSorter(
         m_needsSortingHostVisibleBuffer,
         m_needsSortingHostVisibleDeviceMemory);
 
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t one = 1;
+    memcpy(dataMap, &one, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+
     // create pipeline
     // map pipeline
     m_mapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kRadixMapNumberOfBindings);
@@ -333,7 +339,7 @@ RadixSorter::RadixSorter(
         m_mapDescriptorSetLayout,
         m_mapDescriptorPool,
         m_dataBuffer,
-        m_otherBuffer,
+        m_scanner->m_dataBuffer,
         m_radixBuffer,
         m_numberOfElementsBuffer,
         maxNumberOfElements);
@@ -343,7 +349,7 @@ RadixSorter::RadixSorter(
         m_mapDescriptorSetLayout,
         m_mapDescriptorPool,
         m_otherBuffer,
-        m_dataBuffer,
+        m_scanner->m_dataBuffer,
         m_radixBuffer,
         m_numberOfElementsBuffer,
         maxNumberOfElements);
@@ -537,17 +543,7 @@ void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
     memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    runCommandAndWaitForFence(m_setNumberOfElementsCommandBuffer);
 }
 
 void RadixSorter::createCommandBuffersIfNecessary(uint32_t numberOfElements) {
@@ -591,10 +587,11 @@ void RadixSorter::resetNeedsSortingBuffer() {
 bool RadixSorter::needsSorting() {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t needsSorting;
-    memcpy(&needsSorting, dataMap, sizeof(uint32_t));
+    uint32_t needs;
+    memcpy(&needs, dataMap, sizeof(uint32_t));
     vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
-    return needsSorting;
+    std::cout << "Needs = " << needs << "\n";
+    return needs;
 }
 
 void RadixSorter::sort() {
@@ -604,6 +601,7 @@ void RadixSorter::sort() {
 
     for (uint32_t radix = 0; radix < kNumberOfBits; radix += kRadix) {
         if (needsSorting()) {
+            std::cout << "Sorting Radix:" << radix << "\n";
             resetNeedsSortingBuffer();
             setRadix(radix);
             runCommandAndWaitForFence(inCommand);
