@@ -321,12 +321,6 @@ RadixSorter::RadixSorter(
         m_needsSortingHostVisibleBuffer,
         m_needsSortingHostVisibleDeviceMemory);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t one = 1;
-    memcpy(dataMap, &one, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
-
     // create pipeline
     // map pipeline
     m_mapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, RadixSorterUtil::kRadixMapNumberOfBindings);
@@ -576,6 +570,14 @@ void RadixSorter::setRadix(uint32_t radix) {
     vkUnmapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory);
 }
 
+void RadixSorter::setNeedsSortingBuffer() {
+    void* dataMap;
+    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
+    uint32_t one = 1;
+    memcpy(dataMap, &one, sizeof(uint32_t));
+    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+}
+
 void RadixSorter::resetNeedsSortingBuffer() {
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
@@ -598,6 +600,8 @@ void RadixSorter::sort() {
     bool needsCopyAfterwards = false;
     VkCommandBuffer inCommand = m_commandBufferOne;
     VkCommandBuffer outCommand = m_commandBufferTwo;
+
+    setNeedsSortingBuffer();
 
     for (uint32_t radix = 0; radix < kNumberOfBits; radix += kRadix) {
         if (needsSorting()) {

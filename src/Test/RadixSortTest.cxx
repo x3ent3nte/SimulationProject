@@ -14,17 +14,18 @@ namespace {
     constexpr uint32_t kMaxNumberOfElements = 1024 * 32;
 
     const std::vector<uint32_t> kSizes = {
-        //kMaxNumberOfElements,
-        //kMaxNumberOfElements / 2,
-        //512,
-        //1,
-        //512 * 16,
-        //(512 * 16) + 1,
-        //2,
-        //99,
-        //100,
-        //1024,
-        16
+        kMaxNumberOfElements,
+        kMaxNumberOfElements / 2,
+        512,
+        1,
+        512 * 16,
+        (512 * 16) + 1,
+        2,
+        99,
+        100,
+        1024,
+        16,
+        8
     };
 
     std::vector<uint32_t> generateAlternatingZeroAndOnes(uint32_t size) {
@@ -78,7 +79,7 @@ namespace {
         const auto actualVulkan = vulkanTest->run(numbers);
         //const auto actualCuda = RadixSortCudaTest::run(numbers);
 
-        printNumbers(actualVulkan);
+        //printNumbers(actualVulkan);
         testInstance->assertEqual(expected, actualVulkan);
         //testInstance->assertEqual(expected, actualCuda);
     }
@@ -100,8 +101,8 @@ void RadixSortTest::run(std::shared_ptr<TestRunner> testRunner) {
 
     std::vector<std::pair<std::string, std::vector<uint32_t>(*)(uint32_t)>> nameAndFns = {
         {"AlternatingZeroAndOnes", generateAlternatingZeroAndOnes},
-        //{"Reverse", generateReverse},
-        //{"Random", generateRandom}
+        {"Reverse", generateReverse},
+        {"Random", generateRandom}
     };
 
     for (uint32_t size : kSizes) {

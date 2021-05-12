@@ -38,6 +38,7 @@ private:
     void destroyCommandBuffers();
     void createCommandBuffers();
     void createCommandBuffersIfNecessary(uint32_t numberOfElements);
+    void setNeedsSortingBuffer();
     void resetNeedsSortingBuffer();
     bool needsSorting();
     void sort();
