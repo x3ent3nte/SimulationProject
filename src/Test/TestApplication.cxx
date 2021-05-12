@@ -26,9 +26,9 @@ void TestApplication::run() {
 
     auto testRunner = std::make_shared<TestRunner>();
 
-    //InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
-    //ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
-    //ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
+    InsertionSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
+    ReduceTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
+    ScanTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
     RadixSortTest(m_physicalDevice, m_logicalDevice, m_queue, m_commandPool).run(testRunner);
 
     testRunner->report();

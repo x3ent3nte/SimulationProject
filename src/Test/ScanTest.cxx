@@ -9,7 +9,7 @@
 
 namespace {
 
-    constexpr uint32_t kMaxNumberOfElements = 1024 * 16 * 64;
+    constexpr uint32_t kMaxNumberOfElements = 1024 * 32;
 
     const std::vector<uint32_t> kSizes = {
         kMaxNumberOfElements,
@@ -17,7 +17,9 @@ namespace {
         512,
         513,
         1,
-        512 * 128,
+        512 * 32,
+        (512 * 32) - 1,
+        (512 * 32) + 1,
         2,
         99,
         100};

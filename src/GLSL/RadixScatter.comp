@@ -56,5 +56,4 @@ void main() {
     const uint outputAddress = scan[anded] + scanOffsets[anded];
 
     dataOut[outputAddress] = valueAndIndex;
-    //dataOut[globalIndex] = ValueAndIndex(numberOfElements, globalIndex);
 }
