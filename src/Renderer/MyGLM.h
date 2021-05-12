@@ -9,5 +9,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
+#include <sstream>
+
+std::ostream& operator<<(std::ostream& os, const glm::uvec4& v);
 
 #endif

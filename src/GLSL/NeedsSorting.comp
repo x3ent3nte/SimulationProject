@@ -27,11 +27,10 @@ void main() {
     const uint localIndex = gl_LocalInvocationID.x;
     const uint globalIndex = globalOffset + localIndex;
 
-    if (globalIndex >= numberOfElements) { return; }
+    const uint rightIndex = globalIndex + 1;
+    if (rightIndex >= numberOfElements) { return; }
 
-    if (globalIndex > 0) {
-        if (data[globalIndex - 1].value > data[globalIndex].value) {
-            needsSorting = 1;
-        }
+    if (data[globalIndex].value > data[rightIndex].value) {
+        needsSorting = 1;
     }
 }
