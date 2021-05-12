@@ -38,15 +38,20 @@ void main() {
     if (globalIndex >= numberOfElements) { return; }
 
     const ValueAndIndex valueAndIndex = dataIn[globalIndex];
-    const uvec4 scan = scanned[globalIndex];
-    const uvec4 scanEnd = scanned[numberOfElements - 1];
+    const uint anded = (valueAndIndex.value >> radix) & 3;
 
+    const uvec4 scanEnd = scanned[numberOfElements - 1];
     const uint yOffset = scanEnd.x;
     const uint zOffset = yOffset + scanEnd.y;
     const uint wOffset = zOffset + scanEnd.z;
     const uvec4 scanOffsets = uvec4(0, yOffset, zOffset, wOffset);
 
-    const uint anded = (valueAndIndex.value >> radix) & 3;
+    uvec4 scan;
+    if (globalIndex == 0) {
+        scan = uvec4(0, 0, 0, 0);
+    } else {
+        scan = scanned[globalIndex - 1];
+    }
 
     const uint outputAddress = scan[anded] + scanOffsets[anded];
 

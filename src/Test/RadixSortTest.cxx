@@ -14,15 +14,27 @@ namespace {
     constexpr uint32_t kMaxNumberOfElements = 1024 * 32;
 
     const std::vector<uint32_t> kSizes = {
-        kMaxNumberOfElements,
-        kMaxNumberOfElements / 2,
-        512,
-        1,
-        512 * 16,
-        (512 * 16) + 1,
-        2,
-        99,
-        100};
+        //kMaxNumberOfElements,
+        //kMaxNumberOfElements / 2,
+        //512,
+        //1,
+        //512 * 16,
+        //(512 * 16) + 1,
+        //2,
+        //99,
+        //100,
+        //1024,
+        16
+    };
+
+    std::vector<uint32_t> generateAlternatingZeroAndOnes(uint32_t size) {
+        std::cout << "Generating Reverse\n";
+        std::vector<uint32_t> numbers(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            numbers[i] = i % 2;
+        }
+        return numbers;
+    }
 
     std::vector<uint32_t> generateReverse(uint32_t size) {
         std::cout << "Generating Reverse\n";
@@ -51,6 +63,12 @@ namespace {
         return sorted;
     }
 
+    void printNumbers(const std::vector<uint32_t>& numbers) {
+        for (int i = 0; i < numbers.size(); ++i) {
+            std::cout << "i " << i << " v " << numbers[i] << "\n";
+        }
+    }
+
     void testHelper(
         const std::vector<uint32_t>& numbers,
         std::shared_ptr<RadixSortVulkanTest> vulkanTest,
@@ -60,6 +78,7 @@ namespace {
         const auto actualVulkan = vulkanTest->run(numbers);
         //const auto actualCuda = RadixSortCudaTest::run(numbers);
 
+        printNumbers(actualVulkan);
         testInstance->assertEqual(expected, actualVulkan);
         //testInstance->assertEqual(expected, actualCuda);
     }
@@ -80,8 +99,10 @@ void RadixSortTest::run(std::shared_ptr<TestRunner> testRunner) {
     std::cout << "\n" << TextColour::BLUE << "RadixSortTest started" << TextColour::END << "\n";
 
     std::vector<std::pair<std::string, std::vector<uint32_t>(*)(uint32_t)>> nameAndFns = {
-        {"Reverse", generateReverse},
-        {"Random", generateRandom}};
+        {"AlternatingZeroAndOnes", generateAlternatingZeroAndOnes},
+        //{"Reverse", generateReverse},
+        //{"Random", generateRandom}
+    };
 
     for (uint32_t size : kSizes) {
         for (const auto& nameAndFn : nameAndFns) {

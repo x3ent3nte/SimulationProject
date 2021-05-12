@@ -416,13 +416,6 @@ RadixSorter::RadixSorter(
         throw std::runtime_error("Failed to create compute fence");
     }
 
-    m_copyBuffersCommandBuffer = Buffer::recordCopyCommand(
-        m_logicalDevice,
-        m_commandPool,
-        m_otherBuffer,
-        m_dataBuffer,
-        dataMemorySize);
-
     m_setNumberOfElementsCommandBuffer = Buffer::recordCopyCommand(
         m_logicalDevice,
         m_commandPool,
@@ -436,9 +429,8 @@ RadixSorter::RadixSorter(
 
 RadixSorter::~RadixSorter() {
     // free commands
-    std::array<VkCommandBuffer, 2> commandBuffers = {
-        m_setNumberOfElementsCommandBuffer,
-        m_copyBuffersCommandBuffer};
+    std::array<VkCommandBuffer, 1> commandBuffers = {
+        m_setNumberOfElementsCommandBuffer};
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
     destroyCommandBuffers();
 
@@ -487,9 +479,10 @@ RadixSorter::~RadixSorter() {
 }
 
 void RadixSorter::destroyCommandBuffers() {
-    std::array<VkCommandBuffer, 2> commandBuffers = {
+    std::array<VkCommandBuffer, 3> commandBuffers = {
         m_commandBufferOne,
-        m_commandBufferTwo};
+        m_commandBufferTwo,
+        m_copyBuffersCommandBuffer};
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 }
 
@@ -532,6 +525,13 @@ void RadixSorter::createCommandBuffers() {
         m_needsSortingBuffer,
         m_needsSortingHostVisibleBuffer,
         m_currentNumberOfElements);
+
+    m_copyBuffersCommandBuffer = Buffer::recordCopyCommand(
+        m_logicalDevice,
+        m_commandPool,
+        m_otherBuffer,
+        m_dataBuffer,
+        m_currentNumberOfElements * sizeof(ValueAndIndex));
 }
 
 void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
@@ -605,11 +605,12 @@ void RadixSorter::sort() {
             resetNeedsSortingBuffer();
             setRadix(radix);
             runCommandAndWaitForFence(inCommand);
-            needsCopyAfterwards = !needsCopyAfterwards;
 
             VkCommandBuffer temp = outCommand;
             outCommand = inCommand;
             inCommand = temp;
+
+            needsCopyAfterwards = !needsCopyAfterwards;
         } else {
             break;
         }

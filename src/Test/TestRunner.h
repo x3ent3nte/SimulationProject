@@ -70,7 +70,7 @@ void TestInstance::assertEqual(const std::vector<T>& expected, const std::vector
         if (expected[i] != actual[i]) {
             numberOfErrors += 1;
             fail();
-            //std::cout << "Mismatch at index = " << i << " Expected = " << expected[i] << " Actual = " << actual[i] << "\n";
+            std::cout << "Mismatch at index = " << i << " Expected = " << expected[i] << " Actual = " << actual[i] << "\n";
         }
     }
     std::cout << "Number of errors = " << numberOfErrors << "\n";
