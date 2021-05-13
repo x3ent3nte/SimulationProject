@@ -60,12 +60,6 @@ public:
         m_commandPool = commandPool;
 
         m_connector = connector;
-        m_agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>(
-            physicalDevice,
-            m_logicalDevice,
-            m_graphicsQueue,
-            m_commandPool,
-            maxNumberOfAgents);
 
         initVulkan();
     }
@@ -90,7 +84,7 @@ private:
     VkQueue m_presentQueue;
 
     std::shared_ptr<Connector> m_connector;
-    std::shared_ptr<AgentTypeIdSorter> m_agentTypeIdSorter;
+    std::vector<std::shared_ptr<AgentTypeIdSorterFunction>> m_agentTypeIdSorterFunctions;
 
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -217,6 +211,25 @@ private:
 
         createInstanceBuffers();
         createUniformBuffers();
+
+        auto agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>(
+            m_physicalDevice,
+            m_logicalDevice,
+            m_graphicsQueue,
+            m_commandPool,
+            m_maxNumberOfAgents,
+            m_connector->m_connections.size() * m_swapChainImages.size());
+
+        for (const auto connector: m_connector->m_connections) {
+            for (int i = 0; i < m_instanceBuffers.size(); ++i) {
+                std::shared_ptr<AgentTypeIdSorterFunction> fn = std::make_shared<AgentTypeIdSorterFunction>(
+                    agentTypeIdSorter,
+                    connector->m_buffer,
+                    m_instanceBuffers[i],
+                    m_maxNumberOfAgents);
+                m_agentTypeIdSorterFunctions.push_back(fn);
+            }
+        }
 
         m_descriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
@@ -459,6 +472,7 @@ private:
     struct RenderInfo {
         uint32_t numberOfAgents;
         AgentRenderInfo player;
+        std::vector<AgentTypeIdSorter::TypeIdIndex> typeIdIndexes;
     };
 
     RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
@@ -493,9 +507,12 @@ private:
             vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
         }
 
+        const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
+        const auto typeIdIndexes = m_agentTypeIdSorterFunctions[fnIndex]->run(numberOfElements);
+
         m_connector->restoreConnection(connection);
 
-        return {numberOfElements, player};
+        return {numberOfElements, player, typeIdIndexes};
     }
 
     void recordRenderCommandForModel(
@@ -632,8 +649,6 @@ public:
 
         auto renderInfo = updateAgentPositionsBuffer(imageIndex);
 
-        const auto typeIdIndexes = m_agentTypeIdSorter->run(m_instanceBuffers[imageIndex], renderInfo.numberOfAgents);
-
         updateUniformBufferWithPlayer(imageIndex, renderInfo.player);
         auto playerPos = renderInfo.player.position;
         std::cout << "Player position x=" << playerPos.x << " y=" << playerPos.y << " z=" << playerPos.z << "\n";
@@ -649,7 +664,7 @@ public:
 
         std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
-        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, typeIdIndexes);
+        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];

@@ -9,8 +9,10 @@ AgentTypeIdSorter::AgentTypeIdSorter(
     VkDevice logicalDevice,
     VkQueue queue,
     VkCommandPool commandPool,
-    uint32_t maxNumberOfElements) {
+    uint32_t maxNumberOfElements,
+    size_t descriptorPoolSize) {
 
+    m_physicalDevice = physicalDevice;
     m_logicalDevice = logicalDevice;
     m_queue = queue;
     m_commandPool = commandPool;
@@ -27,28 +29,23 @@ AgentTypeIdSorter::~AgentTypeIdSorter() {
 
 }
 
-void AgentTypeIdSorter::mapAgentRenderInfoToTypeInfoAndIndex() {
+AgentTypeIdSorterFunction::AgentTypeIdSorterFunction(
+    std::shared_ptr<AgentTypeIdSorter> agentTypeIdSorter,
+        VkBuffer agentsIn,
+        VkBuffer agentsOut,
+        uint32_t maxNumberOfAgents) {
+
+    m_agentTypeIdSorter = agentTypeIdSorter;
+}
+
+AgentTypeIdSorterFunction::~AgentTypeIdSorterFunction() {
 
 }
 
-void AgentTypeIdSorter::scatterTypeInfoAndIndexToAgentRenderInfo() {
-
-}
-
-std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorter::calculateTypeIdIndexes(uint32_t numberOfElements) {
+std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorterFunction::run(uint32_t numberOfElements) {
+    m_agentTypeIdSorter->m_radixSorter->run(numberOfElements);
     return {
         {0, 0},
         {1, numberOfElements / 2}
     };
-}
-
-std::vector<AgentTypeIdSorter::TypeIdIndex> AgentTypeIdSorter::run(VkBuffer agents, uint32_t numberOfElements) {
-
-    mapAgentRenderInfoToTypeInfoAndIndex();
-
-    m_radixSorter->run(numberOfElements);
-
-    scatterTypeInfoAndIndexToAgentRenderInfo();
-
-    return calculateTypeIdIndexes(numberOfElements);
 }
