@@ -155,7 +155,7 @@ Simulator::Simulator(
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
-    m_currentNumberOfElements = numberOfElements / 4;
+    m_currentNumberOfElements = numberOfElements / 2;
 
     m_isActive = false;
     m_connector = connector;
@@ -174,7 +174,7 @@ Simulator::Simulator(
 
     std::vector<Agent> agents(numberOfElements);
     for (size_t i = 0; i < numberOfElements; ++i) {
-        glm::vec3 position = MyMath::randomVec3InSphere(1024.0f);
+        glm::vec3 position = MyMath::randomVec3InSphere(2000.0f);
         glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
         glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
