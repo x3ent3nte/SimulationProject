@@ -2,6 +2,7 @@
 
 #include <Simulator/Collision.h>
 #include <Utils/Buffer.h>
+#include <Utils/Timer.h>
 
 InsertionSortVulkanTest::InsertionSortVulkanTest(
     VkPhysicalDevice physicalDevice,
@@ -39,7 +40,10 @@ std::vector<float> InsertionSortVulkanTest::run(const std::vector<float>& data) 
         m_commandPool,
         m_queue);
 
-    m_insertionSort->run(data.size());
+    {
+        Timer timer("InsertionSort Vulkan");
+        m_insertionSort->run(data.size());
+    }
 
     Buffer::copyDeviceBufferToHost(
         valueAndIndexes.data(),

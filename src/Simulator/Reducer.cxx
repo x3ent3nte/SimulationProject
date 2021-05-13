@@ -4,7 +4,6 @@
 #include <Simulator/ReducerUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
-#include <Utils/Timer.h>
 
 #include <array>
 #include <stdexcept>
@@ -162,7 +161,6 @@ VkBuffer Reducer::run(uint32_t numberOfElements) {
     VkDescriptorSet otherDescriptorSet = m_twoToOne;
 
     {
-        //Timer timer("Reduce Vulkan");
         while (numberOfElements > 1) {
 
             runReduceCommand(numberOfElements, currentDescriptorSet);

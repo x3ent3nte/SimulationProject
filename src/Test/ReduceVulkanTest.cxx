@@ -1,6 +1,7 @@
 #include <Test/ReduceVulkanTest.h>
 
 #include <Utils/Buffer.h>
+#include <Utils/Timer.h>
 
 ReduceVulkanTest::ReduceVulkanTest(
     VkPhysicalDevice physicalDevice,
@@ -35,7 +36,11 @@ Collision ReduceVulkanTest::run(const std::vector<Collision>& data) {
         m_commandPool,
         m_queue);
 
-    VkBuffer resultBuffer = m_reducer->run(data.size());
+    VkBuffer resultBuffer;
+    {
+        Timer timer("Reduce Vulkan");
+        resultBuffer = m_reducer->run(data.size());
+    }
 
     Collision result;
     Buffer::copyDeviceBufferToHost(
