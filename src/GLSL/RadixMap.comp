@@ -14,7 +14,7 @@ readonly layout (std430, binding = 0) buffer dataInBuffer {
     ValueAndIndex dataIn[];
 };
 
-writeonly layout(std430, binding = 1) buffer dataOutBuffer {
+writeonly layout (std430, binding = 1) buffer dataOutBuffer {
     uvec4 dataOut[];
 };
 
@@ -27,18 +27,16 @@ readonly layout (std430, binding = 3) buffer numberOfElementsBuffer {
 };
 
 void main() {
-    const uint globalOffset = gl_WorkGroupID.x * X_DIM;
-    const uint localIndex = gl_LocalInvocationID.x;
-    const uint globalIndex = globalOffset + localIndex;
+    const uint index = gl_GlobalInvocationID.x;
 
-    if (globalIndex >= numberOfElements) { return; }
+    if (index >= numberOfElements) { return; }
 
-    const uint value = dataIn[globalIndex].value;
+    const uint value = dataIn[index].value;
 
     const uint anded = (value >> radix) & 3;
 
     uvec4 outVector = uvec4(0, 0, 0, 0);
     outVector[anded] = 1;
 
-    dataOut[globalIndex] = outVector;
+    dataOut[index] = outVector;
 }

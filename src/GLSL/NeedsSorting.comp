@@ -23,14 +23,12 @@ readonly layout (std430, binding = 2) buffer numberOfElementsBuffer {
 };
 
 void main() {
-    const uint globalOffset = gl_WorkGroupID.x * X_DIM;
-    const uint localIndex = gl_LocalInvocationID.x;
-    const uint globalIndex = globalOffset + localIndex;
+    const uint index = gl_GlobalInvocationID.x;
 
-    const uint rightIndex = globalIndex + 1;
+    const uint rightIndex = index + 1;
     if (rightIndex >= numberOfElements) { return; }
 
-    if (data[globalIndex].value > data[rightIndex].value) {
+    if (data[index].value > data[rightIndex].value) {
         needsSorting = 1;
     }
 }

@@ -19,3 +19,5 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/SimulationOutput.comp -o src/GLS
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/RadixMap.comp -o src/GLSL/spv/RadixMap.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/RadixScatter.comp -o src/GLSL/spv/RadixScatter.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/NeedsSorting.comp -o src/GLSL/spv/NeedsSorting.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AgentTypeIdSortMap.comp -o src/GLSL/spv/AgentTypeIdSortMap.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AgentTypeIdSortGather.comp -o src/GLSL/spv/AgentTypeIdSortGather.spv

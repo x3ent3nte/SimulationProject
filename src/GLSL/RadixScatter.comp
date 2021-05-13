@@ -10,34 +10,32 @@ struct ValueAndIndex {
     uint index;
 };
 
-readonly layout(std430, binding = 0) buffer dataInBuffer {
+readonly layout (std430, binding = 0) buffer dataInBuffer {
     ValueAndIndex dataIn[];
 };
 
-readonly layout(std430, binding = 1) buffer scannedBuffer {
+readonly layout (std430, binding = 1) buffer scannedBuffer {
     uvec4 scanned[];
 };
 
-writeonly layout(std430, binding = 2) buffer dataOutBuffer {
+writeonly layout (std430, binding = 2) buffer dataOutBuffer {
     ValueAndIndex dataOut[];
 };
 
-readonly layout(std430, binding = 3) buffer radixBuffer {
+readonly layout (std430, binding = 3) buffer radixBuffer {
     uint radix;
 };
 
-readonly layout(std430, binding = 4) buffer numberOfElementsBuffer {
+readonly layout (std430, binding = 4) buffer numberOfElementsBuffer {
     uint numberOfElements;
 };
 
 void main() {
-    const uint globalOffset = gl_WorkGroupID.x * X_DIM;
-    const uint localIndex = gl_LocalInvocationID.x;
-    const uint globalIndex = globalOffset + localIndex;
+    const uint index = gl_GlobalInvocationID.x;
 
-    if (globalIndex >= numberOfElements) { return; }
+    if (index >= numberOfElements) { return; }
 
-    const ValueAndIndex valueAndIndex = dataIn[globalIndex];
+    const ValueAndIndex valueAndIndex = dataIn[index];
     const uint anded = (valueAndIndex.value >> radix) & 3;
 
     const uvec4 scanEnd = scanned[numberOfElements - 1];
@@ -47,10 +45,10 @@ void main() {
     const uvec4 scanOffsets = uvec4(0, yOffset, zOffset, wOffset);
 
     uvec4 scan;
-    if (globalIndex == 0) {
+    if (index == 0) {
         scan = uvec4(0, 0, 0, 0);
     } else {
-        scan = scanned[globalIndex - 1];
+        scan = scanned[index - 1];
     }
 
     const uint outputAddress = scan[anded] + scanOffsets[anded];
