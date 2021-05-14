@@ -11,12 +11,20 @@ struct AgentRenderInfo {
     vec4 rotation;
 };
 
+struct VkDrawIndexedIndirectCommand {
+    uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    int vertexOffset;
+    uint firstInstance;
+};
+
 readonly layout (std430, binding = 0) buffer agentsBuffer {
     AgentRenderInfo agents[];
 };
 
-writeonly layout (std430, binding = 1) buffer offsetsBuffer {
-    uint offsets[];
+writeonly layout (std430, binding = 1) buffer drawCommandsBuffer {
+    VkDrawIndexedIndirectCommand drawCommands[];
 };
 
 readonly layout (std430, binding = 2) buffer numberOfElementsBuffer {
@@ -28,9 +36,13 @@ void main() {
 
     if (index >= numberOfElements) { return; }
 
-    AgentRenderInfo agent = agents[index];
+    const AgentRenderInfo agent = agents[index];
 
     if ((index == 0) || (agents[index - 1].typeId != agent.typeId)) {
-        offsets[agent.typeId] = index;
+        drawCommands[agent.typeId].firstInstance = index;
+    }
+
+    if ((index == (numberOfElements - 1)) || (agent.typeId != agents[index + 1].typeId)) {
+        drawCommands[agent.typeId].instanceCount = index;
     }
 }

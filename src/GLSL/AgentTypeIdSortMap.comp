@@ -11,13 +11,13 @@ struct AgentRenderInfo {
     vec4 rotation;
 };
 
-readonly layout (std430, binding = 0) buffer agentsBuffer {
-    AgentRenderInfo agents[];
-};
-
 struct ValueAndIndex {
     uint value;
     uint index;
+};
+
+readonly layout (std430, binding = 0) buffer agentsBuffer {
+    AgentRenderInfo agents[];
 };
 
 writeonly layout (std430, binding = 1) buffer valueAndIndexesBuffer {

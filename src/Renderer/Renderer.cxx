@@ -226,7 +226,9 @@ private:
                     agentTypeIdSorter,
                     connector->m_buffer,
                     m_instanceBuffers[i],
-                    m_maxNumberOfAgents);
+                    m_instanceBuffers[i], // TODO change to indirect draw buffer
+                    m_maxNumberOfAgents,
+                    2);
                 m_agentTypeIdSorterFunctions.push_back(fn);
             }
         }

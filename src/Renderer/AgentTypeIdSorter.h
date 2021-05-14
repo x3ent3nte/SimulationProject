@@ -22,20 +22,20 @@ public:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkDescriptorSetLayout m_mapDescriptorSet;
+    VkDescriptorSetLayout m_mapDescriptorSetLayout;
     VkDescriptorPool m_mapDescriptorPool;
     VkPipelineLayout m_mapPipelineLayout;
     VkPipeline m_mapPipeline;
 
-    VkDescriptorSetLayout m_gatherDescriptorSet;
+    VkDescriptorSetLayout m_gatherDescriptorSetLayout;
     VkDescriptorPool m_gatherDescriptorPool;
     VkPipelineLayout m_gatherPipelineLayout;
     VkPipeline m_gatherPipeline;
 
-    VkDescriptorSetLayout m_offsetsDescriptorSet;
-    VkDescriptorPool m_offsetsDescriptorPool;
-    VkPipelineLayout m_offsetsPipelineLayout;
-    VkPipeline m_offsetsPipeline;
+    VkDescriptorSetLayout m_updateDrawCommandsDescriptorSetLayout;
+    VkDescriptorPool m_updateDrawCommandsDescriptorPool;
+    VkPipelineLayout m_updateDrawCommandsPipelineLayout;
+    VkPipeline m_updateDrawCommandsPipeline;
 
     std::shared_ptr<RadixSorter> m_radixSorter;
 
@@ -61,7 +61,9 @@ public:
         std::shared_ptr<AgentTypeIdSorter> agentTypeIdSorter,
         VkBuffer agentsIn,
         VkBuffer agentsOut,
-        uint32_t maxNumberOfAgents);
+        VkBuffer indirectDrawBuffer,
+        uint32_t maxNumberOfAgents,
+        uint32_t numberOfTypeIds);
 
     virtual ~AgentTypeIdSorterFunction();
 
@@ -70,6 +72,22 @@ public:
 private:
 
     std::shared_ptr<AgentTypeIdSorter> m_agentTypeIdSorter;
+
+    uint32_t m_currentNumberOfElements;
+
+    VkDescriptorSet m_mapDescriptorSet;
+    VkDescriptorSet m_gatherDescriptorSet;
+    VkDescriptorSet m_updateDrawCommandsDescriptorSet;
+
+    VkBuffer m_numberOfElementsBuffer;
+    VkDeviceMemory m_numberOfElementsDeviceMemory;
+
+    VkBuffer m_numberOfElementsHostVisibleBuffer;
+    VkDeviceMemory m_numberOfElementsHostVisibleDeviceMemory;
+
+    VkCommandBuffer m_commandBuffer;
+
+    VkFence m_fence;
 };
 
 #endif
