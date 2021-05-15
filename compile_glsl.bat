@@ -27,5 +27,6 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/NeedsSorting.comp -o src/GLSL/sp
 
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AgentTypeIdSortMap.comp -o src/GLSL/spv/AgentTypeIdSortMap.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AgentTypeIdSortGather.comp -o src/GLSL/spv/AgentTypeIdSortGather.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ResetIndirectDrawCommands.comp -o src/GLSL/spv/ResetIndirectDrawCommands.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/UpdateIndirectDrawCommands.comp -o src/GLSL/spv/UpdateIndirectDrawCommands.spv
-
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/UpdateInstanceCountForIndirectDrawCommands.comp -o src/GLSL/spv/UpdateInstanceCountForIndirectDrawCommands.spv

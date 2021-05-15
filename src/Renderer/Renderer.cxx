@@ -12,7 +12,7 @@
 #include <Renderer/Image.h>
 #include <Utils/MyMath.h>
 #include <Renderer/MyGLM.h>
-#include <Renderer/AgentTypeIdSorter.h>
+#include <Renderer/IndirectDrawCommandUpdater.h>
 
 #include <Utils/Timer.h>
 
@@ -84,7 +84,7 @@ private:
     VkQueue m_presentQueue;
 
     std::shared_ptr<Connector> m_connector;
-    std::vector<std::shared_ptr<AgentTypeIdSorterFunction>> m_agentTypeIdSorterFunctions;
+    std::vector<std::shared_ptr<IndirectDrawCommandUpdaterFunction>> m_indirectDrawCommandUpdaterFunctions;
 
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -212,24 +212,24 @@ private:
         createInstanceBuffers();
         createUniformBuffers();
 
-        auto agentTypeIdSorter = std::make_shared<AgentTypeIdSorter>(
+        auto indirectDrawCommandUpdater = std::make_shared<IndirectDrawCommandUpdater>(
             m_physicalDevice,
             m_logicalDevice,
             m_graphicsQueue,
             m_commandPool,
             m_maxNumberOfAgents,
+            2,
             m_connector->m_connections.size() * m_swapChainImages.size());
 
         for (const auto connector: m_connector->m_connections) {
             for (int i = 0; i < m_instanceBuffers.size(); ++i) {
-                std::shared_ptr<AgentTypeIdSorterFunction> fn = std::make_shared<AgentTypeIdSorterFunction>(
-                    agentTypeIdSorter,
+                std::shared_ptr<IndirectDrawCommandUpdaterFunction> fn = std::make_shared<IndirectDrawCommandUpdaterFunction>(
+                    indirectDrawCommandUpdater,
                     connector->m_buffer,
                     m_instanceBuffers[i],
                     m_instanceBuffers[i], // TODO change to indirect draw buffer
-                    m_maxNumberOfAgents,
-                    2);
-                m_agentTypeIdSorterFunctions.push_back(fn);
+                    m_maxNumberOfAgents);
+                m_indirectDrawCommandUpdaterFunctions.push_back(fn);
             }
         }
 
@@ -474,7 +474,7 @@ private:
     struct RenderInfo {
         uint32_t numberOfAgents;
         AgentRenderInfo player;
-        std::vector<AgentTypeIdSorter::TypeIdIndex> typeIdIndexes;
+        std::vector<IndirectDrawCommandUpdater::TypeIdIndex> typeIdIndexes;
     };
 
     RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
@@ -510,7 +510,7 @@ private:
         }
 
         const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
-        const auto typeIdIndexes = m_agentTypeIdSorterFunctions[fnIndex]->run(numberOfElements);
+        const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
 
         m_connector->restoreConnection(connection);
 
@@ -539,7 +539,7 @@ private:
     VkCommandBuffer createRenderCommand(
         size_t imageIndex,
         uint32_t numberOfInstances,
-        const std::vector<AgentTypeIdSorter::TypeIdIndex>& typeIdIndexes) {
+        const std::vector<IndirectDrawCommandUpdater::TypeIdIndex>& typeIdIndexes) {
 
         VkCommandBuffer commandBuffer;
 

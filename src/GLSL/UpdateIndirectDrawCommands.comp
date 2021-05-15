@@ -43,6 +43,6 @@ void main() {
     }
 
     if ((index == (numberOfElements - 1)) || (agent.typeId != agents[index + 1].typeId)) {
-        drawCommands[agent.typeId].instanceCount = index;
+        drawCommands[agent.typeId].instanceCount = index + 1;
     }
 }
