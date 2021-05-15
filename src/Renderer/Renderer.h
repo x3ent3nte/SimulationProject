@@ -4,6 +4,7 @@
 #include <Renderer/Surface.h>
 #include <Renderer/Connector.h>
 #include <Renderer/Model.h>
+#include <Renderer/Mesh.h>
 
 #include <vulkan/vulkan.h>
 
@@ -28,6 +29,7 @@ public:
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
         const std::vector<std::shared_ptr<Model>>& models,
+        std::shared_ptr<Mesh> mesh,
         uint32_t maxNumberOfAgents);
 };
 

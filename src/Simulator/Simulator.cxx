@@ -145,11 +145,11 @@ Simulator::Simulator(
     VkCommandPool computeCommandPool,
     std::shared_ptr<Connector> connector,
     std::shared_ptr<InputTerminal> inputTerminal,
-    const std::vector<std::shared_ptr<Model>>& models,
+    std::shared_ptr<Mesh> mesh,
     uint32_t numberOfElements,
     uint32_t maxNumberOfPlayers) {
 
-    m_models = models;
+    m_mesh = mesh;
 
     m_logicalDevice = logicalDevice;
     m_computeQueue = computeQueue;
@@ -182,7 +182,7 @@ Simulator::Simulator(
             MyMath::randomVec3InSphere(1.0f),
             MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
         glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
-        float radius = m_models[0]->radius();
+        float radius = m_mesh->m_subMeshInfos[0].radius;
         agents[i] = Agent{0, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
     }
 

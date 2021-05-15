@@ -9,6 +9,7 @@
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
 #include <Renderer/Model.h>
+#include <Renderer/Mesh.h>
 
 #include <Simulator/InputTerminal.h>
 #include <Simulator/Simulator.h>
@@ -131,6 +132,14 @@ public:
 
         std::vector<std::shared_ptr<Model>> models = {freyjaModel, arwingModel};
 
+        const std::vector<std::string> modelPaths = {Constants::kFreyjaModelPath, Constants::kArwingModelPath};
+        auto mesh = std::make_shared<Mesh>(
+            modelPaths,
+            m_physicalDevice,
+            m_logicalDevice,
+            m_graphicsQueue,
+            m_graphicsCommandPool);
+
         auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_graphicsQueue, m_graphicsCommandPool, maxNumberOfAgents);
         auto simulator = std::make_shared<Simulator>(
             m_physicalDevice,
@@ -139,7 +148,7 @@ public:
             m_computeCommandPool,
             connector,
             inputTerminal,
-            models,
+            mesh,
             maxNumberOfAgents,
             maxNumberOfPlayers);
         simulator->simulate();
@@ -155,6 +164,7 @@ public:
             m_graphicsCommandPool,
             connector,
             models,
+            mesh,
             maxNumberOfAgents);
 
         m_prevTime = std::chrono::high_resolution_clock::now();

@@ -41,12 +41,15 @@ public:
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
         const std::vector<std::shared_ptr<Model>>& models,
+        std::shared_ptr<Mesh> mesh,
         uint32_t maxNumberOfAgents)
         : m_maxNumberOfAgents(maxNumberOfAgents) {
 
         for (auto& model: models) {
             m_models.push_back({model, {}});
         }
+
+        m_mesh = mesh;
 
         m_window = window;
 
@@ -110,6 +113,7 @@ private:
     };
 
     std::vector<ModelAndDescriptorSets> m_models;
+    std::shared_ptr<Mesh> m_mesh;
 
     std::shared_ptr<Connector> m_connector;
     std::vector<std::shared_ptr<IndirectDrawCommandUpdaterFunction>> m_indirectDrawCommandUpdaterFunctions;
@@ -221,7 +225,7 @@ private:
             m_graphicsQueue,
             m_commandPool,
             m_maxNumberOfAgents,
-            2,
+            static_cast<uint32_t>(m_mesh->m_subMeshInfos.size()),
             m_connector->m_connections.size() * m_swapChainImages.size());
 
         for (const auto connector: m_connector->m_connections) {
@@ -279,27 +283,26 @@ private:
     }
 
     void createIndirectDrawCommandBuffers() {
-        const uint32_t numberOfDrawCommands = m_instanceBuffers.size();
-
+        const size_t numberOfDrawCommands = m_mesh->m_subMeshInfos.size();
         std::vector<VkDrawIndexedIndirectCommand> drawCommands(numberOfDrawCommands);
-        for (uint32_t i = 0; i < numberOfDrawCommands; ++i) {
-            VkDrawIndexedIndirectCommand drawCommand = {};
-            drawCommand.indexCount = 0;
-            drawCommand.instanceCount = 0;
-            drawCommand.firstIndex = 0;
-            drawCommand.vertexOffset = 0;
-            drawCommand.firstInstance = 0;
+        for (size_t i = 0; i < numberOfDrawCommands; ++i) {
+            SubMeshInfo subMeshInfo = m_mesh->m_subMeshInfos[i];
 
-            drawCommands[i] = drawCommand;
+            drawCommands[i].indexCount = subMeshInfo.numberOfIndexes;
+            drawCommands[i].instanceCount = 0;
+            drawCommands[i].firstIndex = subMeshInfo.indexOffset;
+            drawCommands[i].vertexOffset = subMeshInfo.vertexOffset;
+            drawCommands[i].firstInstance = 0;
         }
 
-        m_indirectDrawCommandBuffers.resize(numberOfDrawCommands);
-        m_indirectDrawCommandDeviceMemories.resize(numberOfDrawCommands);
+        const size_t swapChainSize = m_swapChainImages.size();
+        m_indirectDrawCommandBuffers.resize(swapChainSize);
+        m_indirectDrawCommandDeviceMemories.resize(swapChainSize);
 
-        for (uint32_t i = 0; i < numberOfDrawCommands; ++i) {
+        for (uint32_t i = 0; i < swapChainSize; ++i) {
             Buffer::createBufferWithData(
                 drawCommands.data(),
-                2 * sizeof(VkDrawIndexedIndirectCommand),
+                numberOfDrawCommands * sizeof(VkDrawIndexedIndirectCommand),
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 m_physicalDevice,
                 m_logicalDevice,
@@ -810,6 +813,7 @@ std::shared_ptr<Renderer> Renderer::create(
     VkCommandPool commandPool,
     std::shared_ptr<Connector> connector,
     const std::vector<std::shared_ptr<Model>>& models,
+    std::shared_ptr<Mesh> mesh,
     uint32_t maxNumberOfAgents) {
 
     return std::make_shared<DefaultRenderer>(
@@ -823,5 +827,6 @@ std::shared_ptr<Renderer> Renderer::create(
         commandPool,
         connector,
         models,
+        mesh,
         maxNumberOfAgents);
 }
