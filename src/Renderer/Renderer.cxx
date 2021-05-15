@@ -83,9 +83,6 @@ private:
     VkQueue m_graphicsQueue;
     VkQueue m_presentQueue;
 
-    std::shared_ptr<Connector> m_connector;
-    std::vector<std::shared_ptr<IndirectDrawCommandUpdaterFunction>> m_indirectDrawCommandUpdaterFunctions;
-
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
     std::vector<VkImageView> m_swapChainImageViews;
@@ -113,6 +110,11 @@ private:
     };
 
     std::vector<ModelAndDescriptorSets> m_models;
+
+    std::shared_ptr<Connector> m_connector;
+    std::vector<std::shared_ptr<IndirectDrawCommandUpdaterFunction>> m_indirectDrawCommandUpdaterFunctions;
+    std::vector<VkBuffer> m_indirectDrawCommandBuffers;
+    std::vector<VkDeviceMemory> m_indirectDrawCommandDeviceMemories;
 
     std::vector<VkBuffer> m_instanceBuffers;
     std::vector<VkDeviceMemory> m_instanceBufferMemories;
@@ -210,6 +212,7 @@ private:
         createFrameBuffers();
 
         createInstanceBuffers();
+        createIndirectDrawCommandBuffers();
         createUniformBuffers();
 
         auto indirectDrawCommandUpdater = std::make_shared<IndirectDrawCommandUpdater>(
@@ -227,7 +230,7 @@ private:
                     indirectDrawCommandUpdater,
                     connector->m_buffer,
                     m_instanceBuffers[i],
-                    m_instanceBuffers[i], // TODO change to indirect draw buffer
+                    m_indirectDrawCommandBuffers[i],
                     m_maxNumberOfAgents);
                 m_indirectDrawCommandUpdaterFunctions.push_back(fn);
             }
@@ -272,6 +275,38 @@ private:
                 m_graphicsQueue,
                 m_instanceBuffers[i],
                 m_instanceBufferMemories[i]);
+        }
+    }
+
+    void createIndirectDrawCommandBuffers() {
+        const uint32_t numberOfDrawCommands = m_instanceBuffers.size();
+
+        std::vector<VkDrawIndexedIndirectCommand> drawCommands(numberOfDrawCommands);
+        for (uint32_t i = 0; i < numberOfDrawCommands; ++i) {
+            VkDrawIndexedIndirectCommand drawCommand = {};
+            drawCommand.indexCount = 0;
+            drawCommand.instanceCount = 0;
+            drawCommand.firstIndex = 0;
+            drawCommand.vertexOffset = 0;
+            drawCommand.firstInstance = 0;
+
+            drawCommands[i] = drawCommand;
+        }
+
+        m_indirectDrawCommandBuffers.resize(numberOfDrawCommands);
+        m_indirectDrawCommandDeviceMemories.resize(numberOfDrawCommands);
+
+        for (uint32_t i = 0; i < numberOfDrawCommands; ++i) {
+            Buffer::createBufferWithData(
+                drawCommands.data(),
+                2 * sizeof(VkDrawIndexedIndirectCommand),
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                m_physicalDevice,
+                m_logicalDevice,
+                m_commandPool,
+                m_graphicsQueue,
+                m_indirectDrawCommandBuffers[i],
+                m_indirectDrawCommandDeviceMemories[i]);
         }
     }
 
@@ -750,6 +785,9 @@ private:
         for (size_t i = 0; i < numberOfBuffers; ++i) {
             vkDestroyBuffer(m_logicalDevice, m_instanceBuffers[i], nullptr);
             vkFreeMemory(m_logicalDevice, m_instanceBufferMemories[i], nullptr);
+
+            vkDestroyBuffer(m_logicalDevice, m_indirectDrawCommandBuffers[i], nullptr);
+            vkFreeMemory(m_logicalDevice, m_indirectDrawCommandDeviceMemories[i], nullptr);
         }
 
         for (size_t i = 0; i < kMaxFramesInFlight; ++i) {

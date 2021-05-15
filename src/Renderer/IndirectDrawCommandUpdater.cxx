@@ -54,7 +54,7 @@ IndirectDrawCommandUpdater::IndirectDrawCommandUpdater(
     m_updateInstanceCountForDrawCommandsDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, kUpdateInstanceCountForDrawNumberOfBindings);
     m_updateInstanceCountForDrawCommandsDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, kUpdateInstanceCountForDrawNumberOfBindings, descriptorPoolSize);
     m_updateInstanceCountForDrawCommandsPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_updateInstanceCountForDrawCommandsDescriptorSetLayout);
-    m_updateInstanceCountForDrawCommandsPipeline = Compute::createPipeline("src/GLSL/spv/UpdateIndirectDrawCommands.spv", m_logicalDevice, m_updateInstanceCountForDrawCommandsPipelineLayout);
+    m_updateInstanceCountForDrawCommandsPipeline = Compute::createPipeline("src/GLSL/spv/UpdateInstanceCountForIndirectDrawCommands.spv", m_logicalDevice, m_updateInstanceCountForDrawCommandsPipelineLayout);
 
     uint32_t numberOfDrawCommandsCopy = m_numberOfDrawCommands;
     Buffer::createBufferWithData(
