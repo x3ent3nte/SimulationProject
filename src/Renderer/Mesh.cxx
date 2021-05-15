@@ -14,10 +14,10 @@ std::vector<SubMeshInfo> initializeMesh(
     VkDevice logicalDevice,
     VkQueue queue,
     VkCommandPool commandPool,
-    VkBuffer vertexesBuffer,
-    VkDeviceMemory vertexesDeviceMemory,
-    VkBuffer indicesBuffer,
-    VkDeviceMemory indicesDeviceMemory) {
+    VkBuffer& vertexesBuffer,
+    VkDeviceMemory& vertexesDeviceMemory,
+    VkBuffer& indicesBuffer,
+    VkDeviceMemory& indicesDeviceMemory) {
 
     const size_t numberOfSubMeshes = modelPaths.size();
 
@@ -84,19 +84,20 @@ Mesh::Mesh(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
     VkQueue queue,
-    VkCommandPool commandPool) {
+    VkCommandPool commandPool)
+    : m_subMeshInfos(
+        initializeMesh(
+            modelPaths,
+            physicalDevice,
+            logicalDevice,
+            queue,
+            commandPool,
+            m_vertexesBuffer,
+            m_vertexesDeviceMemory,
+            m_indicesBuffer,
+            m_indicesDeviceMemory)) {
 
     m_logicalDevice = logicalDevice;
-    m_subMeshInfos = initializeMesh(
-        modelPaths,
-        physicalDevice,
-        m_logicalDevice,
-        queue,
-        commandPool,
-        m_vertexesBuffer,
-        m_vertexesDeviceMemory,
-        m_indicesBuffer,
-        m_indicesDeviceMemory);
 }
 
 Mesh::~Mesh() {

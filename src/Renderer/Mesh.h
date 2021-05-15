@@ -17,7 +17,7 @@ class Mesh {
 
 public:
 
-    std::vector<SubMeshInfo> m_subMeshInfos;
+    const std::vector<SubMeshInfo> m_subMeshInfos;
 
     Mesh(
         const std::vector<std::string>& modelPaths,
