@@ -19,6 +19,9 @@ public:
 
     const std::vector<SubMeshInfo> m_subMeshInfos;
 
+    VkBuffer m_vertexesBuffer;
+    VkBuffer m_indicesBuffer;
+
     Mesh(
         const std::vector<std::string>& modelPaths,
         VkPhysicalDevice physicalDevice,
@@ -31,9 +34,6 @@ public:
 private:
 
     VkDevice m_logicalDevice;
-
-    VkBuffer m_vertexesBuffer;
-    VkBuffer m_indicesBuffer;
 
     VkDeviceMemory m_vertexesDeviceMemory;
     VkDeviceMemory m_indicesDeviceMemory;

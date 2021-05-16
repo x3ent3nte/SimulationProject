@@ -40,6 +40,6 @@ void main() {
 
     vec3 light = ambient + diffuse + specular;
 
-    outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
-    //outColour = vec4(light * fragColour * vec3(0.35, 0.05, 0.99), 1.0f);
+    //outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
+    outColour = vec4(light * fragColour * vec3(0.35, 0.05, 0.99), 1.0f);
 }

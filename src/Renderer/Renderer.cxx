@@ -101,7 +101,10 @@ private:
     std::vector<VkFramebuffer> m_swapChainFrameBuffers;
 
     VkCommandPool m_commandPool;
+    VkDescriptorPool m_renDescriptorPool;
     std::vector<VkCommandBuffer> m_renderCommandBuffers;
+    std::vector<VkCommandBuffer> m_renCommandBuffers;
+    std::vector<VkDescriptorSet> m_renDescriptorSets;
 
     VkFence m_copyCompletedFence;
 
@@ -184,8 +187,14 @@ private:
             m_logicalDevice,
             static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
 
+        m_renDescriptorPool = Descriptors::createDescriptorPool(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()));
+
+        createRenDescriptorSets();
         createDescriptorSets();
         createCommandBuffers();
+        createRenDrawCommandBuffers();
     }
 
     void initVulkan() {
@@ -244,8 +253,14 @@ private:
             m_logicalDevice,
             static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
 
+        m_renDescriptorPool = Descriptors::createDescriptorPool(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()));
+
+        createRenDescriptorSets();
         createDescriptorSets();
         createCommandBuffers();
+        createRenDrawCommandBuffers();
         createSyncObjects();
 
         VkFenceCreateInfo fenceInfo{};
@@ -311,6 +326,20 @@ private:
                 m_indirectDrawCommandBuffers[i],
                 m_indirectDrawCommandDeviceMemories[i]);
         }
+    }
+
+    void createRenDescriptorSets() {
+        Descriptors::createDescriptorSets(
+            m_logicalDevice,
+            static_cast<uint32_t>(m_swapChainImages.size()),
+            m_descriptorSetLayout,
+            m_renDescriptorPool,
+            m_uniformBuffers,
+            m_instanceBuffers,
+            sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
+            m_models[0].m_model->m_textureImageView,
+            m_models[0].m_model->m_textureSampler,
+            m_renDescriptorSets);
     }
 
     void createDescriptorSets() {
@@ -644,6 +673,87 @@ private:
         return commandBuffer;
     }
 
+    VkCommandBuffer createRenCommandBuffer(
+        VkDescriptorSet descriptorSet,
+        VkFramebuffer frameBuffer,
+        VkBuffer indirectDrawCommandsBuffer,
+        size_t numberOfDrawCommands) {
+
+        VkCommandBuffer commandBuffer;
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate command buffers");
+        }
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to begin recording command buffer");
+        }
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = m_renderPass;
+        renderPassInfo.framebuffer = frameBuffer;
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = m_swapChainExtent;
+
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+
+        VkBuffer vertexBuffers[1] = {m_mesh->m_vertexesBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, m_mesh->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+            0, 1, &descriptorSet, 0, nullptr);
+
+        uint32_t zero = 0;
+        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &zero);
+
+        vkCmdDrawIndexedIndirect(commandBuffer, indirectDrawCommandsBuffer, 0, numberOfDrawCommands, sizeof(VkDrawIndexedIndirectCommand));
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to record command buffer");
+        }
+
+        return commandBuffer;
+    }
+
+    void createRenDrawCommandBuffers() {
+        const size_t numberOfCommandBuffers = m_instanceBuffers.size();
+
+        m_renCommandBuffers.resize(numberOfCommandBuffers);
+
+        for (int i = 0; i < numberOfCommandBuffers; ++i) {
+            m_renCommandBuffers[i] = createRenCommandBuffer(
+                m_renDescriptorSets[i],
+                m_swapChainFrameBuffers[i],
+                m_indirectDrawCommandBuffers[i],
+                m_mesh->m_subMeshInfos.size());
+        }
+    }
+
     void createCommandBuffers() {
 
         m_renderCommandBuffers = std::vector<VkCommandBuffer>();
@@ -702,12 +812,13 @@ public:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
-        m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
+        //std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
+        //vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
+        //m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
+        //submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
+        submitInfo.pCommandBuffers = &m_renCommandBuffers[m_currentFrame];
 
         VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
@@ -759,6 +870,7 @@ private:
         }
 
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_renderCommandBuffers.size()), m_renderCommandBuffers.data());
+        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_renCommandBuffers.size()), m_renCommandBuffers.data());
 
         vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
@@ -776,6 +888,7 @@ private:
         }
 
         vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
+        vkDestroyDescriptorPool(m_logicalDevice, m_renDescriptorPool, nullptr);
     }
 
     void cleanUp() {
