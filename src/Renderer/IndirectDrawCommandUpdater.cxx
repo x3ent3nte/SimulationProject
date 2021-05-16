@@ -347,7 +347,7 @@ void IndirectDrawCommandUpdaterFunction::createAfterRadixSortCommand() {
 
     vkCmdBindPipeline(m_afterRadixSortCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_parent->m_updateDrawCommandsPipeline);
     vkCmdBindDescriptorSets(m_afterRadixSortCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_parent->m_updateDrawCommandsPipelineLayout, 0, 1, &m_updateDrawCommandsDescriptorSet, 0, nullptr);
-    vkCmdDispatch(m_afterRadixSortCommandBuffer, updateDrawCommandsXGroups, 1, 1);
+    vkCmdDispatch(m_afterRadixSortCommandBuffer, gatherXGroups, 1, 1);
 
     vkCmdPipelineBarrier(
         m_afterRadixSortCommandBuffer,
