@@ -29,6 +29,6 @@ void main() {
     const VkDrawIndexedIndirectCommand drawCommand = drawCommands[index];
 
     if (drawCommand.instanceCount != 0) {
-        drawCommands[index].instanceCount = drawCommand.instanceCount - drawCommand.firstIndex;
+        drawCommands[index].instanceCount = drawCommand.instanceCount - drawCommand.firstInstance;
     }
 }

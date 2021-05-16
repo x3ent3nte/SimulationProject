@@ -555,6 +555,7 @@ private:
             //std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
         }
 
+        /*
         if (numberOfElements > 0) {
             VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
                 m_logicalDevice,
@@ -575,9 +576,10 @@ private:
 
             vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
         }
+        */
 
         const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
-        //const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
+        const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
 
         m_connector->restoreConnection(connection);
 
