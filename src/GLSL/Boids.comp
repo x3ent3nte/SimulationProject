@@ -407,7 +407,8 @@ void main() {
     Agent agent = agentsIn[index];
 
     switch (agent.typeId) {
-        case 0: {
+        case 0:
+        case 1: {
            processSpaceShip(agent, index);
            break;
         }

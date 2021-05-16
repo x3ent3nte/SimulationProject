@@ -183,7 +183,7 @@ Simulator::Simulator(
             MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
         glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
         float radius = m_mesh->m_subMeshInfos[0].radius;
-        agents[i] = Agent{0, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
+        agents[i] = Agent{i % 2, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
     }
 
     agents[0].playerId = 0;
