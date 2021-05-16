@@ -304,10 +304,10 @@ private:
             SubMeshInfo subMeshInfo = m_mesh->m_subMeshInfos[i];
 
             drawCommands[i].indexCount = subMeshInfo.numberOfIndexes;
-            drawCommands[i].instanceCount = 0;
+            drawCommands[i].instanceCount = 5000;
             drawCommands[i].firstIndex = subMeshInfo.indexOffset;
             drawCommands[i].vertexOffset = subMeshInfo.vertexOffset;
-            drawCommands[i].firstInstance = 0;
+            drawCommands[i].firstInstance = i * 5000;
         }
 
         const size_t swapChainSize = m_swapChainImages.size();
@@ -318,7 +318,7 @@ private:
             Buffer::createBufferWithData(
                 drawCommands.data(),
                 numberOfDrawCommands * sizeof(VkDrawIndexedIndirectCommand),
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT ,
                 m_physicalDevice,
                 m_logicalDevice,
                 m_commandPool,
@@ -577,11 +577,12 @@ private:
         }
 
         const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
-        const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
+        //const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
 
         m_connector->restoreConnection(connection);
 
-        return {numberOfElements, player, typeIdIndexes};
+        //return {numberOfElements, player, typeIdIndexes};
+        return {numberOfElements, player, {}};
     }
 
     void recordRenderCommandForModel(
@@ -730,6 +731,9 @@ private:
         vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &zero);
 
         vkCmdDrawIndexedIndirect(commandBuffer, indirectDrawCommandsBuffer, 0, numberOfDrawCommands, sizeof(VkDrawIndexedIndirectCommand));
+        //for (int i = 0; i < numberOfDrawCommands; ++i) {
+        //    vkCmdDrawIndexedIndirect(commandBuffer, indirectDrawCommandsBuffer, i * sizeof(VkDrawIndexedIndirectCommand), 1, sizeof(VkDrawIndexedIndirectCommand));
+        //}
 
         vkCmdEndRenderPass(commandBuffer);
 

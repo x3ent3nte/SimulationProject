@@ -21,6 +21,8 @@ void Utils::loadModel(
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
+
+    uint32_t indexValue = 0;
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
@@ -45,8 +47,9 @@ void Utils::loadModel(
             vertex.colour = {1.0f, 1.0f, 1.0f};
 
             if (uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                uniqueVertices[vertex] = static_cast<uint32_t>(indexValue);
                 vertices.push_back(vertex);
+                indexValue += 1;
             }
 
             indices.push_back(uniqueVertices[vertex]);
