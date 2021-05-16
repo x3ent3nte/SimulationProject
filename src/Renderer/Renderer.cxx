@@ -45,9 +45,7 @@ public:
         uint32_t maxNumberOfAgents)
         : m_maxNumberOfAgents(maxNumberOfAgents) {
 
-        for (auto& model: models) {
-            m_models.push_back({model, {}});
-        }
+        m_models = models;
 
         m_mesh = mesh;
 
@@ -102,20 +100,10 @@ private:
 
     VkCommandPool m_commandPool;
     VkDescriptorPool m_renDescriptorPool;
-    std::vector<VkCommandBuffer> m_renderCommandBuffers;
     std::vector<VkCommandBuffer> m_renCommandBuffers;
     std::vector<VkDescriptorSet> m_renDescriptorSets;
 
-    VkFence m_copyCompletedFence;
-
-    VkDescriptorPool m_descriptorPool;
-
-    struct ModelAndDescriptorSets {
-        std::shared_ptr<Model> m_model;
-        std::vector<VkDescriptorSet> m_descriptorSets;
-    };
-
-    std::vector<ModelAndDescriptorSets> m_models;
+    std::vector<std::shared_ptr<Model>> m_models;
     std::shared_ptr<Mesh> m_mesh;
 
     std::shared_ptr<Connector> m_connector;
@@ -183,17 +171,11 @@ private:
         createFrameBuffers();
         createUniformBuffers();
 
-        m_descriptorPool = Descriptors::createDescriptorPool(
-            m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
-
         m_renDescriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
             static_cast<uint32_t>(m_swapChainImages.size()));
 
         createRenDescriptorSets();
-        createDescriptorSets();
-        createCommandBuffers();
         createRenDrawCommandBuffers();
     }
 
@@ -249,24 +231,13 @@ private:
             }
         }
 
-        m_descriptorPool = Descriptors::createDescriptorPool(
-            m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size() * m_models.size()));
-
         m_renDescriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
             static_cast<uint32_t>(m_swapChainImages.size()));
 
         createRenDescriptorSets();
-        createDescriptorSets();
-        createCommandBuffers();
         createRenDrawCommandBuffers();
         createSyncObjects();
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        vkCreateFence(m_logicalDevice, &fenceInfo, nullptr, &m_copyCompletedFence);
     }
 
     void createInstanceBuffers() {
@@ -337,25 +308,9 @@ private:
             m_uniformBuffers,
             m_instanceBuffers,
             sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
-            m_models[0].m_model->m_textureImageView,
-            m_models[0].m_model->m_textureSampler,
+            m_models[0]->m_textureImageView,
+            m_models[0]->m_textureSampler,
             m_renDescriptorSets);
-    }
-
-    void createDescriptorSets() {
-        for (ModelAndDescriptorSets& model : m_models) {
-            Descriptors::createDescriptorSets(
-                m_logicalDevice,
-                static_cast<uint32_t>(m_swapChainImages.size()),
-                m_descriptorSetLayout,
-                m_descriptorPool,
-                m_uniformBuffers,
-                m_instanceBuffers,
-                sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
-                model.m_model->m_textureImageView,
-                model.m_model->m_textureSampler,
-                model.m_descriptorSets);
-        }
     }
 
     void createColourResources() {
@@ -541,7 +496,6 @@ private:
     struct RenderInfo {
         uint32_t numberOfAgents;
         AgentRenderInfo player;
-        std::vector<IndirectDrawCommandUpdater::TypeIdIndex> typeIdIndexes;
     };
 
     RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
@@ -555,125 +509,12 @@ private:
             //std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
         }
 
-        /*
-        if (numberOfElements > 0) {
-            VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
-                m_logicalDevice,
-                m_commandPool,
-                connection->m_buffer,
-                m_instanceBuffers[imageIndex],
-                sizeof(AgentRenderInfo) * numberOfElements);
-
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &copyCommand;
-            vkResetFences(m_logicalDevice, 1, &m_copyCompletedFence);
-
-            vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_copyCompletedFence);
-
-            vkWaitForFences(m_logicalDevice, 1, &m_copyCompletedFence, VK_TRUE, UINT64_MAX);
-
-            vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
-        }
-        */
-
         const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
-        const auto typeIdIndexes = m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
+        m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
 
         m_connector->restoreConnection(connection);
 
-        //return {numberOfElements, player, typeIdIndexes};
-        return {numberOfElements, player, {}};
-    }
-
-    void recordRenderCommandForModel(
-        VkCommandBuffer commandBuffer,
-        const ModelAndDescriptorSets& model,
-        size_t imageIndex,
-        uint32_t startIndex,
-        uint32_t numberOfInstances) {
-
-        VkBuffer vertexBuffers[1] = {model.m_model->m_vertexesBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, model.m_model->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-            0, 1, &model.m_descriptorSets[imageIndex], 0, nullptr);
-        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &startIndex);
-        vkCmdDrawIndexed(commandBuffer, model.m_model->numberOfIndices(), numberOfInstances, 0, 0, 0);
-    }
-
-    VkCommandBuffer createRenderCommand(
-        size_t imageIndex,
-        uint32_t numberOfInstances,
-        const std::vector<IndirectDrawCommandUpdater::TypeIdIndex>& typeIdIndexes) {
-
-        VkCommandBuffer commandBuffer;
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = m_commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = 1;
-
-        if (vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, &commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate command buffers");
-        }
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = 0;
-        beginInfo.pInheritanceInfo = nullptr;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to begin recording command buffer");
-        }
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = m_renderPass;
-        renderPassInfo.framebuffer = m_swapChainFrameBuffers[imageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = m_swapChainExtent;
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
-
-        for (int i = 0; i < typeIdIndexes.size(); ++i) {
-            const uint32_t typeId = typeIdIndexes[i].typeId;
-            const uint32_t startIndex = typeIdIndexes[i].index;
-            uint32_t numberOfModelInstances;
-            if (i < (typeIdIndexes.size() - 1)) {
-                numberOfModelInstances = typeIdIndexes[i + 1].index - startIndex;
-            } else {
-                numberOfModelInstances = numberOfInstances - startIndex;
-            }
-            recordRenderCommandForModel(
-                commandBuffer,
-                m_models[typeId],
-                imageIndex,
-                startIndex,
-                numberOfModelInstances);
-        }
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to record command buffer");
-        }
-
-        return commandBuffer;
+        return {numberOfElements, player};
     }
 
     VkCommandBuffer createRenCommandBuffer(
@@ -760,15 +601,6 @@ private:
         }
     }
 
-    void createCommandBuffers() {
-
-        m_renderCommandBuffers = std::vector<VkCommandBuffer>();
-
-        for (int i = 0; i < kMaxFramesInFlight; ++i) {
-            m_renderCommandBuffers.push_back(createRenderCommand(i, 0, {}));
-        }
-    }
-
 public:
 
     void render(float timeDelta) override {
@@ -818,12 +650,7 @@ public:
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        //std::cout << "Freeing render command buffer " << m_currentFrame << "\n";
-        //vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_renderCommandBuffers[m_currentFrame]);
-        //m_renderCommandBuffers[m_currentFrame] = createRenderCommand(imageIndex, renderInfo.numberOfAgents, renderInfo.typeIdIndexes);
-
         submitInfo.commandBufferCount = 1;
-        //submitInfo.pCommandBuffers = &m_renderCommandBuffers[m_currentFrame];
         submitInfo.pCommandBuffers = &m_renCommandBuffers[m_currentFrame];
 
         VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
@@ -875,7 +702,6 @@ private:
             vkDestroyFramebuffer(m_logicalDevice, frameBuffer, nullptr);
         }
 
-        vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_renderCommandBuffers.size()), m_renderCommandBuffers.data());
         vkFreeCommandBuffers(m_logicalDevice, m_commandPool, static_cast<uint32_t>(m_renCommandBuffers.size()), m_renCommandBuffers.data());
 
         vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
@@ -893,7 +719,6 @@ private:
             vkFreeMemory(m_logicalDevice, m_uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
         vkDestroyDescriptorPool(m_logicalDevice, m_renDescriptorPool, nullptr);
     }
 
@@ -917,7 +742,6 @@ private:
             vkDestroySemaphore(m_logicalDevice, m_imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(m_logicalDevice, m_inFlightFences[i], nullptr);
         }
-        vkDestroyFence(m_logicalDevice, m_copyCompletedFence, nullptr);
     }
 };
 

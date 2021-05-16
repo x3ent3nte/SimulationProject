@@ -383,14 +383,9 @@ void IndirectDrawCommandUpdaterFunction::createCommandBuffersIfNecessary(uint32_
     }
 }
 
-std::vector<IndirectDrawCommandUpdater::TypeIdIndex> IndirectDrawCommandUpdaterFunction::run(uint32_t numberOfElements) {
+void IndirectDrawCommandUpdaterFunction::run(uint32_t numberOfElements) {
     createCommandBuffersIfNecessary(numberOfElements);
     runCommandAndWaitForFence(m_beforeRadixSortCommandBuffer);
     m_parent->m_radixSorter->run(numberOfElements);
     runCommandAndWaitForFence(m_afterRadixSortCommandBuffer);
-
-    return {
-        {0, 0},
-        {1, numberOfElements / 2}
-    };
 }

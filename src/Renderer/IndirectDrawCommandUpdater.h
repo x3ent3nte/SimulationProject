@@ -82,7 +82,7 @@ public:
 
     virtual ~IndirectDrawCommandUpdaterFunction();
 
-    std::vector<IndirectDrawCommandUpdater::TypeIdIndex> run(uint32_t numberOfElements);
+    void run(uint32_t numberOfElements);
 
 private:
 
