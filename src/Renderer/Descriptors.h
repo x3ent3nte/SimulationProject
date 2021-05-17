@@ -20,8 +20,10 @@ namespace Descriptors {
         const std::vector<VkBuffer>& uniformBuffers,
         const std::vector<VkBuffer>& agentBuffers,
         size_t agentBuffersSize,
-        VkImageView textureImageView,
-        VkSampler textureSampler,
+        VkImageView freyjaTextureImageView,
+        VkSampler freyjaTextureSampler,
+        VkImageView arwingTextureImageView,
+        VkSampler arwingTextureSampler,
         std::vector<VkDescriptorSet>& descriptorSets);
 
 }

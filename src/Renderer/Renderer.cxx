@@ -310,6 +310,8 @@ private:
             sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
             m_models[0]->m_textureImageView,
             m_models[0]->m_textureSampler,
+            m_models[1]->m_textureImageView,
+            m_models[1]->m_textureSampler,
             m_renDescriptorSets);
     }
 

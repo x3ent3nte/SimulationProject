@@ -26,8 +26,6 @@ public:
     VkBuffer m_vertexesBuffer;
     VkBuffer m_indicesBuffer;
 
-    VkImage m_textureImage;
-    VkDeviceMemory m_textureImageMemory;
     VkImageView m_textureImageView;
     VkSampler m_textureSampler;
 
@@ -39,6 +37,9 @@ private:
     VkDevice m_logicalDevice;
     VkDeviceMemory m_vertexesDeviceMemory;
     VkDeviceMemory m_indicesDeviceMemory;
+
+    VkImage m_textureImage;
+    VkDeviceMemory m_textureImageMemory;
 
     uint32_t m_mipLevels;
 };

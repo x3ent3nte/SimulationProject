@@ -22,7 +22,7 @@ VkDescriptorSetLayout Descriptors::createDescriptorSetLayout(VkDevice logicalDev
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 2;
-    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorCount = 2;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -47,7 +47,7 @@ VkDescriptorPool Descriptors::createDescriptorPool(VkDevice logicalDevice, uint3
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[1].descriptorCount = size;
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[2].descriptorCount = size;
+    poolSizes[2].descriptorCount = size * 2;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -70,8 +70,10 @@ void Descriptors::createDescriptorSets(
     const std::vector<VkBuffer>& uniformBuffers,
     const std::vector<VkBuffer>& agentBuffers,
     size_t agentsBufferSize,
-    VkImageView textureImageView,
-    VkSampler textureSampler,
+    VkImageView freyjaTextureImageView,
+    VkSampler freyjaTextureSampler,
+    VkImageView arwingTextureImageView,
+    VkSampler arwingTextureSampler,
     std::vector<VkDescriptorSet>& descriptorSets) {
 
     std::vector<VkDescriptorSetLayout> layouts(size, descriptorSetLayout);
@@ -97,10 +99,17 @@ void Descriptors::createDescriptorSets(
         agentsBufferInfo.offset = 0;
         agentsBufferInfo.range = agentsBufferSize;
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureImageView;
-        imageInfo.sampler = textureSampler;
+        VkDescriptorImageInfo freyjaImageInfo{};
+        freyjaImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        freyjaImageInfo.imageView = freyjaTextureImageView;
+        freyjaImageInfo.sampler = freyjaTextureSampler;
+
+        VkDescriptorImageInfo arwingImageInfo{};
+        arwingImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        arwingImageInfo.imageView = arwingTextureImageView;
+        arwingImageInfo.sampler = arwingTextureSampler;
+
+        std::array<VkDescriptorImageInfo, 2> imageInfos = {freyjaImageInfo, arwingImageInfo};
 
         std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 
@@ -125,8 +134,8 @@ void Descriptors::createDescriptorSets(
         descriptorWrites[2].dstBinding = 2;
         descriptorWrites[2].dstArrayElement = 0;
         descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[2].descriptorCount = 1;
-        descriptorWrites[2].pImageInfo = &imageInfo;
+        descriptorWrites[2].descriptorCount = imageInfos.size();
+        descriptorWrites[2].pImageInfo = imageInfos.data();
 
         vkUpdateDescriptorSets(
             logicalDevice,

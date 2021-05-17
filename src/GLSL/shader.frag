@@ -1,13 +1,15 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_nonuniform_qualifier : enable
 
-layout (binding = 2) uniform sampler2D texSampler;
+layout (binding = 2) uniform sampler2D texSampler[];
 
 layout (location = 0) in vec3 fragColour;
 layout (location = 1) in vec2 fragTexCoord;
 layout (location = 2) in vec3 fragNormal;
 layout (location = 3) in vec3 fragPosition;
 layout (location = 4) in flat vec3 fragCameraPosition;
+layout (location = 5) in flat uint typeId;
 
 layout (location = 0) out vec4 outColour;
 
@@ -40,6 +42,6 @@ void main() {
 
     vec3 light = ambient + diffuse + specular;
 
-    //outColour = vec4(light * fragColour * texture(texSampler, fragTexCoord).rgb, 1.0f);
-    outColour = vec4(light * fragColour * vec3(0.35, 0.05, 0.99), 1.0f);
+    outColour = vec4(light * fragColour * texture(texSampler[typeId], fragTexCoord).rgb, 1.0f);
+    //outColour = vec4(light * fragColour * vec3(0.35, 0.05, 0.99), 1.0f);
 }
