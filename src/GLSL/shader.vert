@@ -18,10 +18,6 @@ readonly layout (std430, binding = 1) buffer agentsBuffer {
     AgentRenderInfo agents[];
 };
 
-layout (push_constant) uniform InfoConstant {
-    uint agentsOffset;
-} info;
-
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec3 inColour;
@@ -55,9 +51,8 @@ vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
 }
 
 void main() {
-    const uint agentIndex = gl_InstanceIndex + info.agentsOffset;
 
-    const AgentRenderInfo agent = agents[agentIndex];
+    const AgentRenderInfo agent = agents[gl_InstanceIndex];
 
     mat4 model = mat4(1.0f);
     model[3] = vec4(agent.position, 1.0f);

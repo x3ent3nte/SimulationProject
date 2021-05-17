@@ -568,17 +568,10 @@ private:
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(commandBuffer, m_mesh->m_indicesBuffer, 0, VK_INDEX_TYPE_UINT32);
-
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
             0, 1, &descriptorSet, 0, nullptr);
 
-        uint32_t zero = 0;
-        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint32_t), &zero);
-
         vkCmdDrawIndexedIndirect(commandBuffer, indirectDrawCommandsBuffer, 0, numberOfDrawCommands, sizeof(VkDrawIndexedIndirectCommand));
-        //for (int i = 0; i < numberOfDrawCommands; ++i) {
-        //    vkCmdDrawIndexedIndirect(commandBuffer, indirectDrawCommandsBuffer, i * sizeof(VkDrawIndexedIndirectCommand), 1, sizeof(VkDrawIndexedIndirectCommand));
-        //}
 
         vkCmdEndRenderPass(commandBuffer);
 
