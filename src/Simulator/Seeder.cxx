@@ -1,0 +1,74 @@
+#include <Simulator/Seeder.h>
+
+#include <Utils/MyMath.h>
+#include <Renderer/MyGLM.h>
+
+#include <math.h>
+
+namespace {
+
+Agent createSpaceShip(uint32_t typeId, float radius) {
+    const glm::vec3 position = MyMath::randomVec3InSphere(2000.0f);
+    const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
+    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
+    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
+    const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
+        MyMath::randomVec3InSphere(1.0f),
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
+    const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
+
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
+}
+
+Agent createFreyja(std::shared_ptr<Mesh> mesh) {
+    const uint32_t typeId = 0;
+    return createSpaceShip(typeId, mesh->m_subMeshInfos[typeId].radius);
+}
+
+Agent createArwing(std::shared_ptr<Mesh> mesh) {
+    const uint32_t typeId = 1;
+    return createSpaceShip(typeId, mesh->m_subMeshInfos[typeId].radius);
+}
+
+Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
+    const uint32_t typeId = 2;
+
+    const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
+    const float x = (sin(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1500.0f);
+    const float z = (cos(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1500.0f);
+    const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 250;
+
+    const glm::vec3 position = {x, y, z};
+    const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
+    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
+    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
+    const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
+        MyMath::randomVec3InSphere(1.0f),
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
+    const glm::vec3 rotationalVelocity = glm::vec3{
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI,
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI,
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI};
+
+    const float radius = mesh->m_subMeshInfos[typeId].radius;
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
+}
+
+} // namespace anonymous
+
+std::vector<Agent> Seeder::seed(
+    uint32_t numberOfAgents,
+    uint32_t numberOfPlayers,
+    std::shared_ptr<Mesh> mesh) {
+
+    const std::vector<Agent(*)(std::shared_ptr<Mesh>)> createFns = {createFreyja, createArwing, createAsteroid};
+
+    std::vector<Agent> agents(numberOfAgents);
+    for (size_t i = 0; i < numberOfAgents; ++i) {
+        agents[i] = createFns[i % createFns.size()](mesh);
+    }
+
+    agents[0].playerId = 0;
+
+    return agents;
+}

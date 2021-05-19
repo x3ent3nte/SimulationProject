@@ -1,6 +1,7 @@
 #include <Simulator/Simulator.h>
 
 #include <Simulator/Agent.h>
+#include <Simulator/Seeder.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 #include <Utils/Utils.h>
@@ -149,6 +150,8 @@ Simulator::Simulator(
     uint32_t numberOfElements,
     uint32_t maxNumberOfPlayers) {
 
+    std::cout << "Size of Agent = " << sizeof(Agent) << "\n";
+
     m_mesh = mesh;
 
     m_logicalDevice = logicalDevice;
@@ -172,24 +175,7 @@ Simulator::Simulator(
 
     m_computeFence = createComputeFence(m_logicalDevice);
 
-    std::vector<Agent> agents(numberOfElements);
-    for (size_t i = 0; i < numberOfElements; ++i) {
-        glm::vec3 position = MyMath::randomVec3InSphere(2000.0f);
-        glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
-        glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
-        glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
-            MyMath::randomVec3InSphere(1.0f),
-            MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
-        glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
-
-        const uint32_t typeId = i % 2;
-        const float radius = m_mesh->m_subMeshInfos[typeId].radius;
-        agents[i] = Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
-    }
-
-    agents[0].playerId = 0;
-    agents[0].rotation = MyMath::axisAndThetaToQuaternion(MyMath::randomVec3InSphere(1.0f), 0);
+    std::vector<Agent> agents = Seeder::seed(numberOfElements, maxNumberOfPlayers, m_mesh);
 
     Buffer::createBufferWithData(
         agents.data(),
