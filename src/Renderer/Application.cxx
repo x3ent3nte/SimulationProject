@@ -8,8 +8,8 @@
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
 #include <Renderer/Command.h>
-#include <Renderer/Model.h>
 #include <Renderer/Mesh.h>
+#include <Renderer/Texture.h>
 
 #include <Simulator/InputTerminal.h>
 #include <Simulator/Simulator.h>
@@ -114,31 +114,24 @@ public:
         auto inputTerminal = std::make_shared<InputTerminal>();
         inputTerminal->addPlayer(m_keyboardControl);
 
-        auto freyjaModel = std::make_shared<Model>(
-            Constants::kFreyjaModelPath,
-            Constants::kFreyjaTexturePath,
-            m_physicalDevice,
-            m_logicalDevice,
-            m_graphicsCommandPool,
-            m_graphicsQueue);
-
-        auto arwingModel = std::make_shared<Model>(
-            Constants::kArwingModelPath,
-            Constants::kArwingTexturePath,
-            m_physicalDevice,
-            m_logicalDevice,
-            m_graphicsCommandPool,
-            m_graphicsQueue);
-
-        std::vector<std::shared_ptr<Model>> models = {freyjaModel, arwingModel};
-
-        const std::vector<std::string> modelPaths = {Constants::kFreyjaModelPath, Constants::kArwingModelPath};
+        const std::vector<std::string> modelPaths = {Constants::kFreyjaModelPath, Constants::kArwingModelPath, Constants::kAsteroidModelPath};
         auto mesh = std::make_shared<Mesh>(
             modelPaths,
             m_physicalDevice,
             m_logicalDevice,
             m_graphicsQueue,
             m_graphicsCommandPool);
+
+        const std::vector<std::string> texturePaths = {Constants::kFreyjaTexturePath, Constants::kArwingTexturePath, Constants::kAsteroidTexturePath};
+        std::vector<std::shared_ptr<Texture>> textures(texturePaths.size());
+        for (size_t i = 0; i < texturePaths.size(); ++i) {
+            textures[i] = std::make_shared<Texture>(
+                texturePaths[i],
+                m_physicalDevice,
+                m_logicalDevice,
+                m_graphicsQueue,
+                m_graphicsCommandPool);
+        }
 
         auto connector = std::make_shared<Connector>(m_physicalDevice, m_logicalDevice, m_graphicsQueue, m_graphicsCommandPool, maxNumberOfAgents);
         auto simulator = std::make_shared<Simulator>(
@@ -163,8 +156,8 @@ public:
             m_presentQueue,
             m_graphicsCommandPool,
             connector,
-            models,
             mesh,
+            textures,
             maxNumberOfAgents);
 
         m_prevTime = std::chrono::high_resolution_clock::now();

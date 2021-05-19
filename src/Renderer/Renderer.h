@@ -3,8 +3,8 @@
 
 #include <Renderer/Surface.h>
 #include <Renderer/Connector.h>
-#include <Renderer/Model.h>
 #include <Renderer/Mesh.h>
+#include <Renderer/Texture.h>
 
 #include <vulkan/vulkan.h>
 
@@ -28,8 +28,8 @@ public:
         VkQueue presentQueue,
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
-        const std::vector<std::shared_ptr<Model>>& models,
         std::shared_ptr<Mesh> mesh,
+        const std::vector<std::shared_ptr<Texture>>& textures,
         uint32_t maxNumberOfAgents);
 };
 

@@ -1,15 +1,18 @@
 #ifndef DESCRIPTORS_H
 #define DESCRIPTORS_H
 
+#include <Renderer/Texture.h>
+
 #include <vulkan/vulkan.h>
 
+#include <memory>
 #include <vector>
 
 namespace Descriptors {
 
-    VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice);
+    VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice, size_t numberOfTextureSamplers);
 
-    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, uint32_t size);
+    VkDescriptorPool createDescriptorPool(VkDevice logicalDevice, size_t maxSets, size_t numberOfTextureSamplers);
 
 
     void createDescriptorSets(
@@ -20,10 +23,7 @@ namespace Descriptors {
         const std::vector<VkBuffer>& uniformBuffers,
         const std::vector<VkBuffer>& agentBuffers,
         size_t agentBuffersSize,
-        VkImageView freyjaTextureImageView,
-        VkSampler freyjaTextureSampler,
-        VkImageView arwingTextureImageView,
-        VkSampler arwingTextureSampler,
+        const std::vector<std::shared_ptr<Texture>>& textures,
         std::vector<VkDescriptorSet>& descriptorSets);
 
 }

@@ -5,7 +5,7 @@
 #include <array>
 #include <stdexcept>
 
-VkDescriptorSetLayout Descriptors::createDescriptorSetLayout(VkDevice logicalDevice) {
+VkDescriptorSetLayout Descriptors::createDescriptorSetLayout(VkDevice logicalDevice, size_t numberOfTextureSamplers) {
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -22,7 +22,7 @@ VkDescriptorSetLayout Descriptors::createDescriptorSetLayout(VkDevice logicalDev
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 2;
-    samplerLayoutBinding.descriptorCount = 2;
+    samplerLayoutBinding.descriptorCount = numberOfTextureSamplers;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -40,20 +40,20 @@ VkDescriptorSetLayout Descriptors::createDescriptorSetLayout(VkDevice logicalDev
     return descriptorSetLayout;
 }
 
-VkDescriptorPool Descriptors::createDescriptorPool(VkDevice logicalDevice, uint32_t size) {
+VkDescriptorPool Descriptors::createDescriptorPool(VkDevice logicalDevice, size_t maxSets, size_t numberOfTextureSamplers) {
     std::array<VkDescriptorPoolSize, 3> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = size;
+    poolSizes[0].descriptorCount = maxSets;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[1].descriptorCount = size;
+    poolSizes[1].descriptorCount = maxSets;
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[2].descriptorCount = size * 2;
+    poolSizes[2].descriptorCount = maxSets * numberOfTextureSamplers;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = size;
+    poolInfo.maxSets = maxSets;
 
     VkDescriptorPool descriptorPool;
     if (vkCreateDescriptorPool(logicalDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
@@ -70,10 +70,7 @@ void Descriptors::createDescriptorSets(
     const std::vector<VkBuffer>& uniformBuffers,
     const std::vector<VkBuffer>& agentBuffers,
     size_t agentsBufferSize,
-    VkImageView freyjaTextureImageView,
-    VkSampler freyjaTextureSampler,
-    VkImageView arwingTextureImageView,
-    VkSampler arwingTextureSampler,
+    const std::vector<std::shared_ptr<Texture>>& textures,
     std::vector<VkDescriptorSet>& descriptorSets) {
 
     std::vector<VkDescriptorSetLayout> layouts(size, descriptorSetLayout);
@@ -99,17 +96,12 @@ void Descriptors::createDescriptorSets(
         agentsBufferInfo.offset = 0;
         agentsBufferInfo.range = agentsBufferSize;
 
-        VkDescriptorImageInfo freyjaImageInfo{};
-        freyjaImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        freyjaImageInfo.imageView = freyjaTextureImageView;
-        freyjaImageInfo.sampler = freyjaTextureSampler;
-
-        VkDescriptorImageInfo arwingImageInfo{};
-        arwingImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        arwingImageInfo.imageView = arwingTextureImageView;
-        arwingImageInfo.sampler = arwingTextureSampler;
-
-        std::array<VkDescriptorImageInfo, 2> imageInfos = {freyjaImageInfo, arwingImageInfo};
+        std::vector<VkDescriptorImageInfo> imageInfos(textures.size());
+        for (size_t i = 0; i < textures.size(); ++i) {
+            imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfos[i].imageView = textures[i]->m_imageView;
+            imageInfos[i].sampler = textures[i]->m_sampler;
+        }
 
         std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 

@@ -40,14 +40,13 @@ public:
         VkQueue presentQueue,
         VkCommandPool commandPool,
         std::shared_ptr<Connector> connector,
-        const std::vector<std::shared_ptr<Model>>& models,
         std::shared_ptr<Mesh> mesh,
+        const std::vector<std::shared_ptr<Texture>>& textures,
         uint32_t maxNumberOfAgents)
         : m_maxNumberOfAgents(maxNumberOfAgents) {
 
-        m_models = models;
-
         m_mesh = mesh;
+        m_textures = textures;
 
         m_window = window;
 
@@ -103,8 +102,8 @@ private:
     std::vector<VkCommandBuffer> m_renCommandBuffers;
     std::vector<VkDescriptorSet> m_renDescriptorSets;
 
-    std::vector<std::shared_ptr<Model>> m_models;
     std::shared_ptr<Mesh> m_mesh;
+    std::vector<std::shared_ptr<Texture>> m_textures;
 
     std::shared_ptr<Connector> m_connector;
     std::vector<std::shared_ptr<IndirectDrawCommandUpdaterFunction>> m_indirectDrawCommandUpdaterFunctions;
@@ -173,7 +172,8 @@ private:
 
         m_renDescriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size()));
+            m_swapChainImages.size(),
+            m_textures.size());
 
         createRenDescriptorSets();
         createRenDrawCommandBuffers();
@@ -191,7 +191,7 @@ private:
             findDepthFormat(),
             m_msaaSamples);
 
-        m_descriptorSetLayout = Descriptors::createDescriptorSetLayout(m_logicalDevice);
+        m_descriptorSetLayout = Descriptors::createDescriptorSetLayout(m_logicalDevice, m_textures.size());
 
         Pipeline::createPipeline(
             m_logicalDevice,
@@ -233,7 +233,8 @@ private:
 
         m_renDescriptorPool = Descriptors::createDescriptorPool(
             m_logicalDevice,
-            static_cast<uint32_t>(m_swapChainImages.size()));
+            m_swapChainImages.size(),
+            m_textures.size());
 
         createRenDescriptorSets();
         createRenDrawCommandBuffers();
@@ -308,10 +309,7 @@ private:
             m_uniformBuffers,
             m_instanceBuffers,
             sizeof(AgentRenderInfo) * m_maxNumberOfAgents,
-            m_models[0]->m_textureImageView,
-            m_models[0]->m_textureSampler,
-            m_models[1]->m_textureImageView,
-            m_models[1]->m_textureSampler,
+            m_textures,
             m_renDescriptorSets);
     }
 
@@ -750,8 +748,8 @@ std::shared_ptr<Renderer> Renderer::create(
     VkQueue presentQueue,
     VkCommandPool commandPool,
     std::shared_ptr<Connector> connector,
-    const std::vector<std::shared_ptr<Model>>& models,
     std::shared_ptr<Mesh> mesh,
+    const std::vector<std::shared_ptr<Texture>>& textures,
     uint32_t maxNumberOfAgents) {
 
     return std::make_shared<DefaultRenderer>(
@@ -764,7 +762,7 @@ std::shared_ptr<Renderer> Renderer::create(
         presentQueue,
         commandPool,
         connector,
-        models,
         mesh,
+        textures,
         maxNumberOfAgents);
 }
