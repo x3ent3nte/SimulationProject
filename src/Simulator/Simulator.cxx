@@ -36,11 +36,11 @@ namespace {
         VkBuffer positionsBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer numberOfElementsBuffer,
-        uint32_t numberOfElements) {
+        uint32_t maxNumberOfAgents) {
 
         std::vector<Compute::BufferAndSize> bufferAndSizes = {
-            {agentsBuffer, numberOfElements * sizeof(Agent)},
-            {positionsBuffer, numberOfElements * sizeof(AgentRenderInfo)},
+            {agentsBuffer, maxNumberOfAgents * sizeof(Agent)},
+            {positionsBuffer, maxNumberOfAgents * sizeof(AgentRenderInfo)},
             {timeDeltaBuffer, sizeof(float)},
             {numberOfElementsBuffer, sizeof(uint32_t)}
         };
@@ -147,7 +147,7 @@ Simulator::Simulator(
     std::shared_ptr<Connector> connector,
     std::shared_ptr<InputTerminal> inputTerminal,
     std::shared_ptr<Mesh> mesh,
-    uint32_t numberOfElements,
+    uint32_t maxNumberOfAgents,
     uint32_t maxNumberOfPlayers) {
 
     std::cout << "Size of Agent = " << sizeof(Agent) << "\n";
@@ -158,7 +158,7 @@ Simulator::Simulator(
     m_computeQueue = computeQueue;
     m_computeCommandPool = computeCommandPool;
 
-    m_currentNumberOfElements = numberOfElements / 2;
+    m_currentNumberOfElements = maxNumberOfAgents / 2;
 
     m_isActive = false;
     m_connector = connector;
@@ -175,18 +175,25 @@ Simulator::Simulator(
 
     m_computeFence = createComputeFence(m_logicalDevice);
 
-    std::vector<Agent> agents = Seeder::seed(numberOfElements, maxNumberOfPlayers, m_mesh);
+    std::vector<Agent> agents = Seeder::seed(m_currentNumberOfElements, maxNumberOfPlayers, m_mesh);
 
-    Buffer::createBufferWithData(
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        maxNumberOfAgents * sizeof(Agent),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        m_agentsBuffer,
+        m_agentsBufferMemory);
+
+    Buffer::copyHostToDeviceBuffer(
         agents.data(),
-        numberOfElements * sizeof(Agent),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        agents.size() * sizeof(Agent),
+        m_agentsBuffer,
         physicalDevice,
         m_logicalDevice,
         m_computeCommandPool,
-        m_computeQueue,
-        m_agentsBuffer,
-        m_agentsBufferMemory);
+        m_computeQueue);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -207,7 +214,7 @@ Simulator::Simulator(
         m_timeDeltaDeviceMemoryHostVisible);
 
     Buffer::createBufferWithData(
-        &numberOfElements,
+        &maxNumberOfAgents,
         sizeof(uint32_t),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         physicalDevice,
@@ -258,7 +265,7 @@ Simulator::Simulator(
             m_connector->m_connections[i]->m_buffer,
             m_timeDeltaBuffer,
             m_numberOfElementsBuffer,
-            numberOfElements);
+            maxNumberOfAgents);
 
         m_computePipelineLayouts[i] = createComputePipelineLayout(m_logicalDevice, m_computeDescriptorSetLayout);
 
@@ -272,7 +279,7 @@ Simulator::Simulator(
             m_computeDescriptorSets[i],
             m_timeDeltaBufferHostVisible,
             m_timeDeltaBuffer,
-            numberOfElements);
+            maxNumberOfAgents);
     }
 
     m_collider = std::make_shared<Collider>(
@@ -281,7 +288,7 @@ Simulator::Simulator(
         m_computeQueue,
         m_computeCommandPool,
         m_agentsBuffer,
-        numberOfElements);
+        maxNumberOfAgents);
 
     m_agentSorter = std::make_shared<AgentSorter>(
         physicalDevice,
@@ -289,7 +296,7 @@ Simulator::Simulator(
         m_computeQueue,
         m_computeCommandPool,
         m_agentsBuffer,
-        numberOfElements,
+        maxNumberOfAgents,
         false);
 
     m_boids = std::make_shared<Boids>(
@@ -298,7 +305,7 @@ Simulator::Simulator(
         m_computeQueue,
         m_computeCommandPool,
         m_agentsBuffer,
-        numberOfElements,
+        maxNumberOfAgents,
         maxNumberOfPlayers);
 
     auto simulationStateWriter = std::make_shared<SimulationStateWriter>(m_logicalDevice, m_connector->m_connections.size());
@@ -309,7 +316,7 @@ Simulator::Simulator(
                 m_agentsBuffer,
                 m_connector->m_connections[i]->m_buffer,
                 m_playerRenderInfosBuffer,
-                numberOfElements,
+                maxNumberOfAgents,
                 maxNumberOfPlayers));
     }
 }

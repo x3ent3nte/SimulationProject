@@ -87,7 +87,7 @@ public:
         std::shared_ptr<Connector> connector,
         std::shared_ptr<InputTerminal> inputTerminal,
         std::shared_ptr<Mesh> mesh,
-        uint32_t numberOfElements,
+        uint32_t maxNumberOfAgents,
         uint32_t maxNumberOfPlayers);
 
     virtual ~Simulator();

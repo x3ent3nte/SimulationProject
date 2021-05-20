@@ -318,7 +318,7 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = timeDelta * 2000.0f;
+    const float accFloat = timeDelta * 500.0f;
     const float rotationalAccFloat = timeDelta * 7.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));

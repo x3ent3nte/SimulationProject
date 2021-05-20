@@ -41,6 +41,11 @@ float cosineSimilarity(vec3 a, vec3 b) {
     return dot(a, b) / magMult;
 }
 
+vec3 projection(vec3 u, vec3 v) {
+    const float magV = length(v);
+    return (dot(u, v) / (magV * magV)) * v;
+}
+
 void main() {
 
     Collision col = collisions[0];
@@ -52,8 +57,9 @@ void main() {
     float twoMass = two.mass;
 
     vec3 posDiff = two.position - one.position;
-    vec3 oneImpactVelocity = one.velocity * cosineSimilarity(posDiff, one.velocity);
-    vec3 twoImpactVelocity = two.velocity * cosineSimilarity(-posDiff, two.velocity);
+    vec3 oneImpactVelocity = projection(one.velocity, posDiff);
+    vec3 twoImpactVelocity = projection(two.velocity, -posDiff);
+
 
     vec3 oneMomentumPre = oneImpactVelocity * oneMass;
     vec3 twoMomentumPre = twoImpactVelocity * twoMass;
