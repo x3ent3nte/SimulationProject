@@ -448,6 +448,7 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
     }
 
     vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+    vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &commandBuffer);
 
     void* dataMap;
     vkMapMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory, 0, playerMemorySize, 0, &dataMap);
