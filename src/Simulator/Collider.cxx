@@ -300,11 +300,11 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
         {
             //Timer timer("computeNextStep");
             float timeDepleted = computeNextStep(timeDelta);
-            //std::cout << "Time depleted= " << timeDepleted << "\n";
+            std::cout << "Time depleted= " << timeDepleted << "\n";
             timeDelta -= timeDepleted;
         }
         numberOfSteps += 1;
     }
 
-    //std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
+    std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
 }

@@ -13,6 +13,7 @@ struct Agent {
     glm::vec3 rotationalVelocity;
     glm::vec4 rotation;
     float radius;
+    float mass;
 };
 
 struct AgentRenderInfo {

@@ -19,6 +19,7 @@ struct Agent {
     vec3 rotationalVelocity;
     vec4 rotation;
     float radius;
+    float mass;
 };
 
 readonly layout (std430, binding = 0) buffer bufAgentsIn {
@@ -317,8 +318,8 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = timeDelta * 300.0f;
-    const float rotationalAccFloat = timeDelta * 12.0f;
+    const float accFloat = timeDelta * 2000.0f;
+    const float rotationalAccFloat = timeDelta * 7.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
     acceleration += up * accFloat * (computeInputValue(inputState, kUpBit) - computeInputValue(inputState, kDownBit));

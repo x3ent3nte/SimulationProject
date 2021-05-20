@@ -8,7 +8,8 @@
 namespace {
 
 Agent createSpaceShip(uint32_t typeId, float radius) {
-    const glm::vec3 position = MyMath::randomVec3InSphere(2000.0f);
+    glm::vec3 position = MyMath::randomUnitVec3();
+    position = (position * 300.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
@@ -16,8 +17,9 @@ Agent createSpaceShip(uint32_t typeId, float radius) {
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
+    const float mass = 75;
 
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 
 Agent createFreyja(std::shared_ptr<Mesh> mesh) {
@@ -34,8 +36,8 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
     const uint32_t typeId = 2;
 
     const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
-    const float x = (sin(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1500.0f);
-    const float z = (cos(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1500.0f);
+    const float x = (sin(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
+    const float z = (cos(azimuth) * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
     const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 250;
 
     const glm::vec3 position = {x, y, z};
@@ -46,12 +48,13 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
     const glm::vec3 rotationalVelocity = glm::vec3{
-        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI,
-        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI,
-        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI};
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI * 0.2,
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI * 0.2,
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI * 0.2};
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius};
+    const float mass = 5000;
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 
 } // namespace anonymous

@@ -46,13 +46,16 @@ float MyMath::randomFloatBetweenMinusOneAndOne() {
     return (randomFloatBetweenZeroAndOne() * 2.0f) - 1.0f;
 }
 
-glm::vec3 MyMath::randomVec3InSphere(float radius) {
+glm::vec3 MyMath::randomUnitVec3() {
     float x = randomFloatBetweenMinusOneAndOne();
     float y = randomFloatBetweenMinusOneAndOne();
     float z = randomFloatBetweenMinusOneAndOne();
 
     glm::vec3 v = {x, y, z};
     float mag = glm::length(v);
-    v = (mag == 0) ? glm::vec3(1.0f) : (v / mag);
-    return v * (radius * randomFloatBetweenZeroAndOne());
+    return (mag == 0) ? glm::vec3(1.0f) : (v / mag);
+}
+
+glm::vec3 MyMath::randomVec3InSphere(float radius) {
+    return randomUnitVec3() * (radius * randomFloatBetweenZeroAndOne());
 }

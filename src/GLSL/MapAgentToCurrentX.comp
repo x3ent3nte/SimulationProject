@@ -15,6 +15,7 @@ struct Agent {
     vec3 rotationalVelocity;
     vec4 rotation;
     float radius;
+    float mass;
 };
 
 struct ValueAndIndex {

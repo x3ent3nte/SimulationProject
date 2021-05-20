@@ -23,6 +23,8 @@ namespace MyMath {
 
     float randomFloatBetweenMinusOneAndOne();
 
+    glm::vec3 randomUnitVec3();
+
     glm::vec3 randomVec3InSphere(float radius);
 }
 

@@ -15,6 +15,7 @@ struct Agent {
     vec3 rotationalVelocity;
     vec4 rotation;
     float radius;
+    float mass;
 };
 
 struct Collision {
@@ -47,20 +48,19 @@ void main() {
     Agent one = agents[col.one];
     Agent two = agents[col.two];
 
-    float oneMass = 1.0f;
-    float twoMass = 1.0f;
+    float oneMass = one.mass;
+    float twoMass = two.mass;
 
     vec3 posDiff = two.position - one.position;
     vec3 oneImpactVelocity = one.velocity * cosineSimilarity(posDiff, one.velocity);
     vec3 twoImpactVelocity = two.velocity * cosineSimilarity(-posDiff, two.velocity);
 
-    vec3 oneMomentum = oneImpactVelocity * oneMass;
-    vec3 twoMomentum = twoImpactVelocity * twoMass;
+    vec3 oneMomentumPre = oneImpactVelocity * oneMass;
+    vec3 twoMomentumPre = twoImpactVelocity * twoMass;
+    vec3 totalMomentum = oneMomentumPre + twoMomentumPre;
 
-    vec3 totalMomentum = oneMomentum + twoMomentum;
-
-    two.velocity += oneImpactVelocity;
-    one.velocity += twoImpactVelocity;
+    two.velocity += (-twoImpactVelocity + oneImpactVelocity);
+    one.velocity += (-oneImpactVelocity + twoImpactVelocity);
 
     agents[col.one] = one;
     agents[col.two] = two;
