@@ -20,6 +20,9 @@ namespace Constants {
     const std::string kVikingRoomModelPath = "models/viking_room.obj";
     const std::string kVikingRoomTexturePath = "textures/viking_room.png";
 
+    const std::string kSunModelPath = "models/sun.obj";
+    const std::string kSunTexturePath = "textures/neptune_texture.jpg";
+
     const std::vector<const char*> kValidationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };

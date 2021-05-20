@@ -114,7 +114,21 @@ public:
         auto inputTerminal = std::make_shared<InputTerminal>();
         inputTerminal->addPlayer(m_keyboardControl);
 
-        const std::vector<std::string> modelPaths = {Constants::kFreyjaModelPath, Constants::kArwingModelPath, Constants::kAsteroidModelPath};
+        const std::vector<std::pair<std::string, std::string>> modelAndTexturePaths = {
+            {Constants::kFreyjaModelPath, Constants::kFreyjaTexturePath},
+            {Constants::kArwingModelPath, Constants::kArwingTexturePath},
+            {Constants::kAsteroidModelPath, Constants::kAsteroidTexturePath},
+            {Constants::kSunModelPath, Constants::kSunTexturePath}
+        };
+
+        std::vector<std::string> modelPaths(modelAndTexturePaths.size());
+        std::vector<std::string> texturePaths(modelAndTexturePaths.size());
+
+        for (size_t i = 0; i < modelAndTexturePaths.size(); ++i) {
+            modelPaths[i] = modelAndTexturePaths[i].first;
+            texturePaths[i] = modelAndTexturePaths[i].second;
+        }
+
         auto mesh = std::make_shared<Mesh>(
             modelPaths,
             m_physicalDevice,
@@ -122,7 +136,6 @@ public:
             m_graphicsQueue,
             m_graphicsCommandPool);
 
-        const std::vector<std::string> texturePaths = {Constants::kFreyjaTexturePath, Constants::kArwingTexturePath, Constants::kAsteroidTexturePath};
         std::vector<std::shared_ptr<Texture>> textures(texturePaths.size());
         for (size_t i = 0; i < texturePaths.size(); ++i) {
             textures[i] = std::make_shared<Texture>(

@@ -57,6 +57,23 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 
+Agent createSun(std::shared_ptr<Mesh> mesh) {
+    const uint32_t typeId = 3;
+
+    const glm::vec3 position = {0.0f, 0.0f, 0.0f};
+    const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
+    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
+    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
+    const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
+        MyMath::randomVec3InSphere(1.0f),
+        MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
+    const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.1f, 0.0f};
+
+    const float radius = mesh->m_subMeshInfos[typeId].radius;
+    const float mass = 99999999;
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
+}
+
 } // namespace anonymous
 
 std::vector<Agent> Seeder::seed(
@@ -68,7 +85,11 @@ std::vector<Agent> Seeder::seed(
 
     std::vector<Agent> agents(numberOfAgents);
     for (size_t i = 0; i < numberOfAgents; ++i) {
-        agents[i] = createFns[i % createFns.size()](mesh);
+        if (i == (numberOfAgents - 1)) {
+            agents[i] = createSun(mesh);
+        } else {
+            agents[i] = createFns[i % createFns.size()](mesh);
+        }
     }
 
     agents[0].playerId = 0;

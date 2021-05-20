@@ -417,7 +417,8 @@ void main() {
            processSpaceShip(agent, index);
            break;
         }
-        case 2: {
+        case 2:
+        case 3: {
             processAsteroid(agent, index);
             break;
         }

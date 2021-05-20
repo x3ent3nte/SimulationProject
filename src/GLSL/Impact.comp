@@ -60,7 +60,6 @@ void main() {
     vec3 oneImpactVelocity = projection(one.velocity, posDiff);
     vec3 twoImpactVelocity = projection(two.velocity, -posDiff);
 
-
     vec3 oneMomentumPre = oneImpactVelocity * oneMass;
     vec3 twoMomentumPre = twoImpactVelocity * twoMass;
     vec3 totalMomentum = oneMomentumPre + twoMomentumPre;
