@@ -23,13 +23,14 @@ vec3 safeNormalize(vec3 v) {
 }
 
 void main() {
-    vec3 lightColour = vec3(0.98, 0.98, 0.98);
+    vec3 lightColour = vec3(1, 1, 1);
 
-    float ambientStrength = 0.015f;
+    float ambientStrength = 0.00005f;
     vec3 ambient = ambientStrength * lightColour;
 
     vec3 normalizedNormal = safeNormalize(fragNormal);
-    vec3 lightVector = safeNormalize(vec3(0.0f, 0.0f, 0.0f) - fragPosition);
+    vec3 sunPosition = vec3(10000, 300, 10000);
+    vec3 lightVector = safeNormalize(sunPosition - fragPosition);
     float lightCosSim = max(dot(normalizedNormal, lightVector), 0.0f);
     vec3 diffuse = lightCosSim * lightColour;
 
