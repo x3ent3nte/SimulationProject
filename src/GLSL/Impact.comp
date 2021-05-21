@@ -33,7 +33,7 @@ readonly layout (std430, binding = 1) buffer bufferCollisions {
 };
 
 float cosineSimilarity(vec3 a, vec3 b) {
-    float magMult = length(a) * length(b);
+    const float magMult = length(a) * length(b);
     if (magMult == 0.0f) {
         return 0.0f;
     }
@@ -53,19 +53,22 @@ void main() {
     Agent one = agents[col.one];
     Agent two = agents[col.two];
 
-    float oneMass = one.mass;
-    float twoMass = two.mass;
+    const float oneMass = one.mass;
+    const float twoMass = two.mass;
 
-    vec3 posDiff = two.position - one.position;
-    vec3 oneImpactVelocity = projection(one.velocity, posDiff);
-    vec3 twoImpactVelocity = projection(two.velocity, -posDiff);
+    const vec3 posDiff = two.position - one.position;
+    const vec3 oneImpactVelocityPre = projection(one.velocity, posDiff);
+    vec3 twoImpactVelocityPre = projection(two.velocity, -posDiff);
 
-    vec3 oneMomentumPre = oneImpactVelocity * oneMass;
-    vec3 twoMomentumPre = twoImpactVelocity * twoMass;
-    vec3 totalMomentum = oneMomentumPre + twoMomentumPre;
+    const vec3 oneMomentumPre = oneImpactVelocityPre * oneMass;
+    const vec3 twoMomentumPre = twoImpactVelocityPre * twoMass;
+    const vec3 totalMomentumPre = oneMomentumPre + twoMomentumPre;
 
-    two.velocity += (-twoImpactVelocity + oneImpactVelocity);
-    one.velocity += (-oneImpactVelocity + twoImpactVelocity);
+    const vec3 oneImpactVelocityPost = (((oneMass - twoMass) / (oneMass + twoMass)) * oneImpactVelocityPre) + (((2 * twoMass) / (oneMass + twoMass)) * twoImpactVelocityPre);
+    const vec3 twoImpactVelocityPost = (totalMomentumPre - (oneImpactVelocityPost * oneMass)) / twoMass;
+
+    one.velocity += (-oneImpactVelocityPre + oneImpactVelocityPost);
+    two.velocity += (-twoImpactVelocityPre + twoImpactVelocityPost);
 
     agents[col.one] = one;
     agents[col.two] = two;
