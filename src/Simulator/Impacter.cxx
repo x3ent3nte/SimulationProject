@@ -188,11 +188,9 @@ Impacter::~Impacter() {
 }
 
 void Impacter::run(const Collision& collision) {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_collisionHostVisibleDeviceMemory, 0, sizeof(Collision), 0, &dataMap);
+
     Collision collisionCopy = collision;
-    memcpy(dataMap, &collisionCopy, sizeof(Collision));
-    vkUnmapMemory(m_logicalDevice, m_collisionHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&collisionCopy, m_collisionHostVisibleDeviceMemory, 0, sizeof(Collision), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

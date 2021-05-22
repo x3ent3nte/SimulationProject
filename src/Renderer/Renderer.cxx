@@ -487,10 +487,7 @@ private:
 
         ubo.proj[1][1] *= -1;
 
-        void* data;
-        vkMapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage], 0, sizeof(UniformBufferObject), 0, &data);
-        memcpy(data, &ubo, sizeof(UniformBufferObject));
-        vkUnmapMemory(m_logicalDevice, m_uniformBuffersMemory[currentImage]);
+        Buffer::writeHostVisible(&ubo, m_uniformBuffersMemory[currentImage], 0, sizeof(UniformBufferObject), m_logicalDevice);
     }
 
     struct RenderInfo {

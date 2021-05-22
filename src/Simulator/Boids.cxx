@@ -331,11 +331,7 @@ void Boids::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
 
     m_currentNumberOfElements = numberOfElements;
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible);
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -390,23 +386,16 @@ uint32_t Boids::extractNumberOfElements() {
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t numberOfElements;
-    memcpy(&numberOfElements, dataMap, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible);
+    Buffer::readHostVisible(m_numberOfElementsDeviceMemoryHostVisible, &numberOfElements, 0, sizeof(uint32_t), m_logicalDevice);
     return numberOfElements;
 }
 
 void Boids::copyPlayerInputStates(std::vector<uint32_t>& playerInputStates) {
     //Timer timer("Boids::copyPlayerInputStates");
-    const size_t numberOfPlayers = playerInputStates.size();
-    const size_t memorySize = numberOfPlayers * sizeof(uint32_t);
+    const size_t memorySize = playerInputStates.size() * sizeof(uint32_t);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_playerInputStatesHostVisibleDeviceMemory, 0, memorySize, 0, &dataMap);
-    memcpy(dataMap, playerInputStates.data(), memorySize);
-    vkUnmapMemory(m_logicalDevice, m_playerInputStatesHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(playerInputStates.data(), m_playerInputStatesHostVisibleDeviceMemory, 0, memorySize, m_logicalDevice);
 
     VkCommandBuffer copyCommand = Buffer::recordCopyCommand(
         m_logicalDevice,
@@ -432,11 +421,7 @@ uint32_t Boids::run(float timeDelta, uint32_t numberOfElements, std::vector<uint
     updateNumberOfElementsIfNecessary(numberOfElements);
     copyPlayerInputStates(playerInputStates);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
-    float timeDeltaCopy = timeDelta;
-    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
-    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
+    Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

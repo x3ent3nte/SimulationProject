@@ -100,11 +100,7 @@ void TimeAdvancer::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) 
 
     m_currentNumberOfElements = numberOfElements;
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsDeviceMemoryHostVisible);
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -162,11 +158,7 @@ void TimeAdvancer::run(float timeDelta, uint32_t numberOfElements) {
 
     updateNumberOfElementsIfNecessary(numberOfElements);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
-    float timeDeltaCopy = timeDelta;
-    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
-    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
+    Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

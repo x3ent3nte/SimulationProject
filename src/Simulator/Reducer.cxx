@@ -116,16 +116,9 @@ Reducer::~Reducer() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Reducer::setNumberOfElements(uint32_t numberOfElements) {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible);
-}
-
 void Reducer::runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descriptorSet) {
-    setNumberOfElements(numberOfElements);
+
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
     VkCommandBuffer commandBuffer = ReducerUtil::createCommandBuffer(
         m_logicalDevice,

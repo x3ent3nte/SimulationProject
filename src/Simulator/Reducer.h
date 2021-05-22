@@ -31,8 +31,6 @@ private:
 
     VkFence m_fence;
 
-    void setNumberOfElements(uint32_t);
-
     void runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descriptorSet);
 
 public:

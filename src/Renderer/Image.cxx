@@ -247,10 +247,7 @@ uint32_t Image::createTextureImage(
         stagingBuffer,
         stagingBufferMemory);
 
-    void* data;
-    vkMapMemory(logicalDevice, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(logicalDevice, stagingBufferMemory);
+    Buffer::writeHostVisible(pixels, stagingBufferMemory, 0, imageSize, logicalDevice);
 
     stbi_image_free(pixels);
 

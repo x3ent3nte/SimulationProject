@@ -255,11 +255,7 @@ void IndirectDrawCommandUpdaterFunction::destroyCommandBuffers() {
 void IndirectDrawCommandUpdaterFunction::setNumberOfElements(uint32_t numberOfElements) {
     m_currentNumberOfElements = numberOfElements;
 
-    void* dataMap;
-    vkMapMemory(m_parent->m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_parent->m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_parent->m_logicalDevice);
 
     runCommandAndWaitForFence(m_setNumberOfElementsCommandBuffer);
 }

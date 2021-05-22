@@ -59,6 +59,20 @@ namespace Buffer {
         VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
+    void writeHostVisible(
+        void* src,
+        VkDeviceMemory dst,
+        VkDeviceSize offset,
+        VkDeviceSize size,
+        VkDevice logicalDevice);
+
+    void readHostVisible(
+        VkDeviceMemory src,
+        void* dst,
+        VkDeviceSize offset,
+        VkDeviceSize size,
+        VkDevice logicalDevice);
+
     void copyDeviceBufferToHost(
         void* data,
         VkDeviceSize bufferSize,

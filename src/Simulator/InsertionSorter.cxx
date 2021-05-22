@@ -191,11 +191,7 @@ void InsertionSorter::setNumberOfElements(uint32_t numberOfElements) {
 
     createCommandBuffer(numberOfElements);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsBufferMemoryHostVisible);
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
     VkSubmitInfo submitInfoOne{};
     submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -227,11 +223,8 @@ void InsertionSorter::createCommandBuffer(uint32_t numberOfElements) {
 }
 
 void InsertionSorter::setWasSwappedToZero() {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t zero = 0;
-    memcpy(dataMap, &zero, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
+    Buffer::writeHostVisible(&zero, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 }
 
 void InsertionSorter::runSortCommands() {
@@ -249,12 +242,8 @@ void InsertionSorter::runSortCommands() {
 }
 
 uint32_t InsertionSorter::needsSorting() {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t wasSwappedValue = 0;
-    memcpy(&wasSwappedValue, dataMap, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_wasSwappedBufferMemoryHostVisible);
-
+    uint32_t wasSwappedValue;
+    Buffer::readHostVisible(m_wasSwappedBufferMemoryHostVisible, &wasSwappedValue, 0, sizeof(uint32_t), m_logicalDevice);
     return wasSwappedValue;
 }
 

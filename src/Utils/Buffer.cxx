@@ -158,10 +158,7 @@ void Buffer::createBufferWithData(
         stagingBuffer,
         stagingBufferMemory);
 
-    void* dataMap;
-    vkMapMemory(logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &dataMap);
-    memcpy(dataMap, data, (size_t) bufferSize);
-    vkUnmapMemory(logicalDevice, stagingBufferMemory);
+    Buffer::writeHostVisible(data, stagingBufferMemory, 0, bufferSize, logicalDevice);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -176,6 +173,32 @@ void Buffer::createBufferWithData(
 
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
+}
+
+void Buffer::writeHostVisible(
+    void* src,
+    VkDeviceMemory dst,
+    VkDeviceSize offset,
+    VkDeviceSize size,
+    VkDevice logicalDevice) {
+
+    void* dataMap;
+    vkMapMemory(logicalDevice, dst, offset, size, 0, &dataMap);
+    memcpy(dataMap, src, size);
+    vkUnmapMemory(logicalDevice, dst);
+}
+
+void Buffer::readHostVisible(
+    VkDeviceMemory src,
+    void* dst,
+    VkDeviceSize offset,
+    VkDeviceSize size,
+    VkDevice logicalDevice) {
+
+    void* dataMap;
+    vkMapMemory(logicalDevice, src, offset, size, 0, &dataMap);
+    memcpy(dst, dataMap, size);
+    vkUnmapMemory(logicalDevice, src);
 }
 
 // Copy device to host. Creates temporary buffers each time, so not very optimal
@@ -202,10 +225,7 @@ void Buffer::copyDeviceBufferToHost(
 
     Buffer::copyBuffer(logicalDevice, commandPool, queue, buffer, stagingBuffer, bufferSize);
 
-    void* dataMap;
-    vkMapMemory(logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &dataMap);
-    memcpy(data, dataMap, (size_t) bufferSize);
-    vkUnmapMemory(logicalDevice, stagingBufferMemory);
+    Buffer::readHostVisible(stagingBufferMemory, data, 0, bufferSize, logicalDevice);
 
     vkDestroyBuffer(logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBufferMemory, nullptr);
@@ -233,10 +253,7 @@ void Buffer::copyHostToDeviceBuffer(
         stagingBuffer,
         stagingBufferMemory);
 
-    void* dataMap;
-    vkMapMemory(logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &dataMap);
-    memcpy(dataMap, data, (size_t) bufferSize);
-    vkUnmapMemory(logicalDevice, stagingBufferMemory);
+    Buffer::writeHostVisible(data, stagingBufferMemory, 0, bufferSize, logicalDevice);
 
     Buffer::copyBuffer(logicalDevice, commandPool, queue, stagingBuffer, buffer, bufferSize);
 

@@ -358,11 +358,8 @@ Simulator::~Simulator() {
 
 void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta) {
     //Timer timer("Simulator::simulateNextStep");
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), 0, &dataMap);
-    float timeDeltaCopy = timeDelta;
-    memcpy(dataMap, &timeDeltaCopy, sizeof(float));
-    vkUnmapMemory(m_logicalDevice, m_timeDeltaDeviceMemoryHostVisible);
+
+    Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -450,12 +447,8 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
     vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &commandBuffer);
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory, 0, playerMemorySize, 0, &dataMap);
-
     connection->m_players.resize(numberOfPlayers);
-    memcpy(connection->m_players.data(), dataMap, playerMemorySize);
-    vkUnmapMemory(m_logicalDevice, m_playerRenderInfosHostVisibleDeviceMemory);
+    Buffer::readHostVisible(m_playerRenderInfosHostVisibleDeviceMemory, connection->m_players.data(), 0, playerMemorySize, m_logicalDevice);
 
     connection->m_numberOfElements = m_currentNumberOfElements;
     m_connector->restoreNewestConnection(connection);

@@ -531,11 +531,7 @@ void RadixSorter::createCommandBuffers() {
 void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
     m_currentNumberOfElements = numberOfElements;
 
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t numberOfElementsCopy = numberOfElements;
-    memcpy(dataMap, &numberOfElementsCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_numberOfElementsHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
 
     runCommandAndWaitForFence(m_setNumberOfElementsCommandBuffer);
 }
@@ -563,35 +559,23 @@ void RadixSorter::runCommandAndWaitForFence(VkCommandBuffer commandBuffer) {
 }
 
 void RadixSorter::setRadix(uint32_t radix) {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
-    uint32_t radixCopy = radix;
-    memcpy(dataMap, &radixCopy, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_radixHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&radix, m_radixHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
 }
 
 void RadixSorter::setNeedsSortingBuffer() {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t one = 1;
-    memcpy(dataMap, &one, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&one, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
 }
 
 void RadixSorter::resetNeedsSortingBuffer() {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t zero = 0;
-    memcpy(dataMap, &zero, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+    Buffer::writeHostVisible(&zero, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
 }
 
 bool RadixSorter::needsSorting() {
-    void* dataMap;
-    vkMapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory, 0, sizeof(uint32_t), 0, &dataMap);
     uint32_t needs;
-    memcpy(&needs, dataMap, sizeof(uint32_t));
-    vkUnmapMemory(m_logicalDevice, m_needsSortingHostVisibleDeviceMemory);
+    Buffer::readHostVisible(m_needsSortingHostVisibleDeviceMemory, &needs, 0, sizeof(uint32_t), m_logicalDevice);
+
     std::cout << "Needs = " << needs << "\n";
     return needs;
 }
