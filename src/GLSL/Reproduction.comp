@@ -35,25 +35,24 @@ layout (push_constant) uniform InfoConstant {
 } info;
 
 void main() {
-    uint globalOffset = gl_WorkGroupID.x * X_DIM;
-    uint localIndex = gl_LocalInvocationID.x;
-    uint globalIndex = globalOffset + localIndex;
+    const uint index = gl_GlobalInvocationID.x;
 
-    if (globalIndex >= info.numberOfElements) { return; }
+    if (index >= info.numberOfElements) { return; }
 
     uint address;
-    if (globalIndex == 0) {
+    if (index == 0) {
         address = 0;
     } else {
-        address = addresses[globalIndex - 1];
+        address = addresses[index - 1];
     }
 
-    Agent agent = agentsIn[globalIndex];
+    Agent agent = agentsIn[index];
 
-    uint numberToSpawn = addresses[globalIndex] - address;
+    uint numberToSpawn = addresses[index] - address;
 
     Agent agentSpawn = agent;
     agentSpawn.playerId = -1;
+
     for (uint i = 1; i < numberToSpawn; ++i) {
         agentsOut[address + i] = agentSpawn;
     }
