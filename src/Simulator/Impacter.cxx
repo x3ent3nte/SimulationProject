@@ -3,7 +3,7 @@
 #include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
-#include <Renderer/Command.h>
+#include <Utils/Command.h>
 
 #include <vector>
 #include <stdexcept>

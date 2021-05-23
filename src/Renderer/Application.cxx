@@ -7,7 +7,7 @@
 #include <Renderer/LogicalDevice.h>
 #include <Renderer/KeyboardControl.h>
 #include <Renderer/Constants.h>
-#include <Renderer/Command.h>
+#include <Utils/Command.h>
 #include <Renderer/Mesh.h>
 #include <Renderer/Texture.h>
 

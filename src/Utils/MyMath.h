@@ -1,7 +1,7 @@
 #ifndef MY_MATH_H
 #define MY_MATH_H
 
-#include <Renderer/MyGLM.h>
+#include <Utils/MyGLM.h>
 
 namespace MyMath {
 

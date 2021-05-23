@@ -3,7 +3,7 @@
 #include <Utils/Buffer.h>
 #include <Utils/Timer.h>
 
-#include <Renderer/MyGLM.h>
+#include <Utils/MyGLM.h>
 
 template<typename T>
 ScanVulkanTest<T>::ScanVulkanTest(

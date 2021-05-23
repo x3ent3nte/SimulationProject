@@ -6,7 +6,7 @@
 #include <Utils/MyMath.h>
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
-#include <Renderer/Command.h>
+#include <Utils/Command.h>
 
 #include <vector>
 #include <stdexcept>

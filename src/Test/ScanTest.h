@@ -3,7 +3,7 @@
 
 #include <Test/ScanVulkanTest.h>
 #include <Test/TestRunner.h>
-#include <Renderer/MyGLM.h>
+#include <Utils/MyGLM.h>
 
 #include <vulkan/vulkan.h>
 
