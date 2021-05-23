@@ -7,6 +7,7 @@
 #include <Utils/Utils.h>
 #include <Renderer/PhysicalDevice.h>
 #include <Renderer/MyGLM.h>
+#include <Renderer/Command.h>
 #include <Utils/MyMath.h>
 
 #include <Utils/Timer.h>
@@ -361,18 +362,7 @@ void Simulator::simulateNextStep(VkCommandBuffer commandBuffer, float timeDelta)
 
     Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_computeFence);
-
-    if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit compute command buffer");
-    }
-
-    vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(commandBuffer, m_computeFence, m_computeQueue, m_logicalDevice);
 }
 
 void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
@@ -433,18 +423,8 @@ void Simulator::runSimulatorStateWriterFunction(uint32_t numberOfPlayers) {
         throw std::runtime_error("Failed to end compute command buffer");
     }
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    Command::runAndWait(commandBuffer, m_computeFence, m_computeQueue, m_logicalDevice);
 
-    vkResetFences(m_logicalDevice, 1, &m_computeFence);
-
-    if (vkQueueSubmit(m_computeQueue, 1, &submitInfo, m_computeFence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit compute command buffer");
-    }
-
-    vkWaitForFences(m_logicalDevice, 1, &m_computeFence, VK_TRUE, UINT64_MAX);
     vkFreeCommandBuffers(m_logicalDevice, m_computeCommandPool, 1, &commandBuffer);
 
     connection->m_players.resize(numberOfPlayers);

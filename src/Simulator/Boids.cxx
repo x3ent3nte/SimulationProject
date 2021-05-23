@@ -4,6 +4,7 @@
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <stdexcept>
@@ -326,24 +327,12 @@ void Boids::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     }
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
-
     createCommandBuffer(numberOfElements);
 
     m_currentNumberOfElements = numberOfElements;
 
     Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
-
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 void Boids::createCommandBuffer(uint32_t numberOfElements) {
@@ -374,15 +363,7 @@ uint32_t Boids::extractNumberOfElements() {
         (m_currentNumberOfElements - 1) * sizeof(uint32_t),
         0);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &copyCommand;
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    vkQueueSubmit(m_queue, 1, &submitInfo, m_fence);
-
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(copyCommand, m_fence, m_queue, m_logicalDevice);
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
 
@@ -404,15 +385,7 @@ void Boids::copyPlayerInputStates(std::vector<uint32_t>& playerInputStates) {
         m_playerInputStatesBuffer,
         memorySize);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &copyCommand;
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    vkQueueSubmit(m_queue, 1, &submitInfo, m_fence);
-
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(copyCommand, m_fence, m_queue, m_logicalDevice);
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCommand);
 }
@@ -423,17 +396,7 @@ uint32_t Boids::run(float timeDelta, uint32_t numberOfElements, std::vector<uint
 
     Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
 
     return extractNumberOfElements();
 }

@@ -2,6 +2,7 @@
 
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <vector>
 #include <stdexcept>
@@ -245,26 +246,10 @@ void Scanner<T>::createScanCommandIfNecessary(uint32_t numberOfElements) {
 }
 
 template <typename T>
-void Scanner<T>::runScanCommand() {
-
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
-}
-
-template <typename T>
 void Scanner<T>::run(uint32_t numberOfElements) {
     if (numberOfElements > 1) {
         createScanCommandIfNecessary(numberOfElements);
-        runScanCommand();
+        Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
     }
 }
 

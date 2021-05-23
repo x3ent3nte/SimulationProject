@@ -102,8 +102,6 @@ Mesh::Mesh(
 
 Mesh::~Mesh() {
 
-    std::cout << "Mesh Destructor Called\n";
-
     vkFreeMemory(m_logicalDevice, m_indicesDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_indicesBuffer, nullptr);
 

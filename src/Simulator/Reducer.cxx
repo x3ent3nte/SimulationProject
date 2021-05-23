@@ -4,6 +4,7 @@
 #include <Simulator/ReducerUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <stdexcept>
@@ -130,17 +131,7 @@ void Reducer::runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descri
         m_numberOfElementsBufferHostVisible,
         numberOfElements);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(commandBuffer, m_fence, m_queue, m_logicalDevice);
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &commandBuffer);
 }

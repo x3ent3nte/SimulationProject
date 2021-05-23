@@ -3,6 +3,7 @@
 #include <Simulator/TimeAdvancerUtil.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <memory>
@@ -102,17 +103,7 @@ void TimeAdvancer::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) 
 
     Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 void TimeAdvancer::createCommandBuffer(uint32_t numberOfElements) {
@@ -160,15 +151,5 @@ void TimeAdvancer::run(float timeDelta, uint32_t numberOfElements) {
 
     Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
 }

@@ -32,7 +32,6 @@ public:
 
 private:
 
-    void runCommandAndWaitForFence(VkCommandBuffer commandBuffer);
     void setNumberOfElements(uint32_t numberOfElements);
     void setRadix(uint32_t radix);
     void destroyCommandBuffers();

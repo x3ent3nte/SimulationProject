@@ -21,6 +21,25 @@ VkCommandPool Command::createCommandPool(
     return commandPool;
 }
 
+void Command::runAndWait(
+    VkCommandBuffer commandBuffer,
+    VkFence fence,
+    VkQueue queue,
+    VkDevice logicalDevice) {
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    vkResetFences(logicalDevice, 1, &fence);
+
+    if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit command buffer");
+    }
+
+    vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+}
+
 VkCommandBuffer Command::beginSingleTimeCommands(VkDevice logicalDevice, VkCommandPool commandPool) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

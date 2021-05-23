@@ -3,6 +3,7 @@
 #include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <stdexcept>
@@ -232,17 +233,7 @@ IndirectDrawCommandUpdaterFunction::~IndirectDrawCommandUpdaterFunction() {
 }
 
 void IndirectDrawCommandUpdaterFunction::runCommandAndWaitForFence(VkCommandBuffer commandBuffer) {
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkResetFences(m_parent->m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_parent->m_queue, 1, &submitInfo, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit RadixSorter command buffer");
-    }
-    vkWaitForFences(m_parent->m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(commandBuffer, m_fence, m_parent->m_queue, m_parent->m_logicalDevice);
 }
 
 void IndirectDrawCommandUpdaterFunction::destroyCommandBuffers() {

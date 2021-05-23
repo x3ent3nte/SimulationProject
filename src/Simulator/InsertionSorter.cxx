@@ -6,6 +6,7 @@
 #include <Utils/MyMath.h>
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
+#include <Renderer/Command.h>
 
 #include <vector>
 #include <stdexcept>
@@ -193,17 +194,7 @@ void InsertionSorter::setNumberOfElements(uint32_t numberOfElements) {
 
     Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsBufferMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 void InsertionSorter::createCommandBuffer(uint32_t numberOfElements) {
@@ -227,20 +218,6 @@ void InsertionSorter::setWasSwappedToZero() {
     Buffer::writeHostVisible(&zero, m_wasSwappedBufferMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 }
 
-void InsertionSorter::runSortCommands() {
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
-}
-
 uint32_t InsertionSorter::needsSorting() {
     uint32_t wasSwappedValue;
     Buffer::readHostVisible(m_wasSwappedBufferMemoryHostVisible, &wasSwappedValue, 0, sizeof(uint32_t), m_logicalDevice);
@@ -259,7 +236,7 @@ void InsertionSorter::run(uint32_t numberOfElements) {
         do {
             setWasSwappedToZero();
 
-            runSortCommands();
+            Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
 
             numIterations += 1;
         } while (needsSorting());

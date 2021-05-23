@@ -49,7 +49,6 @@ private:
     void createCommandBuffer(uint32_t numberOfElements);
 
     void setWasSwappedToZero();
-    void runSortCommands();
     uint32_t needsSorting();
 
     uint32_t m_currentNumberOfElements;

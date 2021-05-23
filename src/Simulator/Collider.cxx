@@ -4,6 +4,7 @@
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <stdexcept>
@@ -159,34 +160,14 @@ void Collider::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
 
     Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsDeviceMemoryHostVisible, 0, sizeof(uint32_t), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_setNumberOfElementsCommandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 void Collider::runCollisionDetection(float timeDelta) {
 
     Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 Collider::~Collider() {
@@ -228,17 +209,9 @@ Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
         m_collisionsHostVisibleBuffer,
         collisionsSize);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &copyCollisionsCommandBuffer;
+    Command::runAndWait(copyCollisionsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit insertion sort set data size command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCollisionsCommandBuffer);
 
     Collision earliestCollision;
     Buffer::readHostVisible(m_collisionsHostVisibleDeviceMemory, &earliestCollision, 0, sizeof(Collision), m_logicalDevice);

@@ -2,6 +2,7 @@
 
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <array>
 #include <stdexcept>
@@ -533,7 +534,8 @@ void RadixSorter::setNumberOfElements(uint32_t numberOfElements) {
 
     Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
 
-    runCommandAndWaitForFence(m_setNumberOfElementsCommandBuffer);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
+
 }
 
 void RadixSorter::createCommandBuffersIfNecessary(uint32_t numberOfElements) {
@@ -542,20 +544,6 @@ void RadixSorter::createCommandBuffersIfNecessary(uint32_t numberOfElements) {
         setNumberOfElements(numberOfElements);
         createCommandBuffers();
     }
-}
-
-void RadixSorter::runCommandAndWaitForFence(VkCommandBuffer commandBuffer) {
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfo, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit RadixSorter command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
 }
 
 void RadixSorter::setRadix(uint32_t radix) {
@@ -592,7 +580,7 @@ void RadixSorter::sort() {
             std::cout << "Sorting Radix:" << radix << "\n";
             resetNeedsSortingBuffer();
             setRadix(radix);
-            runCommandAndWaitForFence(inCommand);
+            Command::runAndWait(inCommand, m_fence, m_queue, m_logicalDevice);
 
             VkCommandBuffer temp = outCommand;
             outCommand = inCommand;
@@ -605,7 +593,7 @@ void RadixSorter::sort() {
     }
 
     if (needsCopyAfterwards) {
-        runCommandAndWaitForFence(m_copyBuffersCommandBuffer);
+        Command::runAndWait(m_copyBuffersCommandBuffer, m_fence, m_queue, m_logicalDevice);
     }
 }
 

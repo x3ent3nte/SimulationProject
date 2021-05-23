@@ -34,8 +34,6 @@ private:
 
     void createScanCommandIfNecessary(uint32_t numberOfElements);
 
-    void runScanCommand();
-
 public:
 
     VkBuffer m_dataBuffer;

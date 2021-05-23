@@ -3,6 +3,7 @@
 #include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
+#include <Renderer/Command.h>
 
 #include <vector>
 #include <stdexcept>
@@ -192,15 +193,5 @@ void Impacter::run(const Collision& collision) {
     Collision collisionCopy = collision;
     Buffer::writeHostVisible(&collisionCopy, m_collisionHostVisibleDeviceMemory, 0, sizeof(Collision), m_logicalDevice);
 
-    VkSubmitInfo submitInfoOne{};
-    submitInfoOne.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfoOne.commandBufferCount = 1;
-    submitInfoOne.pCommandBuffers = &m_commandBuffer;
-
-    vkResetFences(m_logicalDevice, 1, &m_fence);
-
-    if (vkQueueSubmit(m_queue, 1, &submitInfoOne, m_fence) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit mapAgentToX command buffer");
-    }
-    vkWaitForFences(m_logicalDevice, 1, &m_fence, VK_TRUE, UINT64_MAX);
+    Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
 }
