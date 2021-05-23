@@ -17,7 +17,7 @@ Agent createSpaceShip(uint32_t typeId, float radius) {
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
-    const float mass = 75;
+    const float mass = 120000;
 
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
@@ -53,7 +53,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI * 0.2};
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
-    const float mass = 5000;
+    const float mass = 7500000;
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 
@@ -70,7 +70,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.1f, 0.0f};
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
-    const float mass = 99999999;
+    const float mass = 54000000000;
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 

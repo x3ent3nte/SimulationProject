@@ -30,3 +30,7 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AgentTypeIdSortGather.comp -o sr
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ResetIndirectDrawCommands.comp -o src/GLSL/spv/ResetIndirectDrawCommands.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/UpdateIndirectDrawCommands.comp -o src/GLSL/spv/UpdateIndirectDrawCommands.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/UpdateInstanceCountForIndirectDrawCommands.comp -o src/GLSL/spv/UpdateInstanceCountForIndirectDrawCommands.spv
+
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/GravityMap.comp -o src/GLSL/spv/GravityMap.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/GravityScatter.comp -o src/GLSL/spv/GravityScatter.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Gravity.comp -o src/GLSL/spv/Gravity.spv

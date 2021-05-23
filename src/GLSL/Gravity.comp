@@ -1,0 +1,70 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 512
+#define GRAVITATIONAL_CONSTANT 6.67408e-11
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+struct Agent {
+    uint typeId;
+    int playerId;
+    vec3 position;
+    vec3 velocity;
+    vec3 acceleration;
+    vec3 target;
+    vec3 rotationalVelocity;
+    vec4 rotation;
+    float radius;
+    float mass;
+};
+
+struct MassiveAgent {
+    vec3 position;
+    float mass;
+};
+
+layout (std430, binding = 0) buffer agentsBuffer {
+    Agent agents[];
+};
+
+readonly layout (std430, binding = 1) buffer massiveAgentsBuffer {
+    MassiveAgent massiveAgents[];
+};
+
+readonly layout (std430, binding = 2) buffer numberOfAgentsBuffer {
+    uint numberOfAgents;
+};
+
+readonly layout (std430, binding = 3) buffer scanBuffer {
+    uint scan[];
+};
+
+readonly layout (std430, binding = 4) buffer timeDeltaBuffer {
+    float timeDelta;
+};
+
+void main() {
+    const uint index = gl_GlobalInvocationID.x;
+
+    if (index >= numberOfAgents) { return; }
+
+    Agent agent = agents[index];
+
+    const uint numberOfMassiveAgents = scan[numberOfAgents - 1];
+    for (uint i = 0; i < numberOfMassiveAgents; ++i) {
+        MassiveAgent massive = massiveAgents[i];
+
+        const vec3 delta = massive.position - agent.position;
+        const float dist = length(delta);
+        if (dist > 0.0f) {
+            const vec3 deltaNorm = delta / dist;
+            const float force = (GRAVITATIONAL_CONSTANT * massive.mass * agent.mass) / (dist * dist);
+            const vec3 forceVec = deltaNorm * force;
+            const vec3 acceleration = forceVec / agent.mass;
+            agent.velocity += acceleration * timeDelta;
+        }
+    }
+
+    agents[index] = agent;
+}
