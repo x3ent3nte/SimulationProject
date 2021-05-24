@@ -300,6 +300,14 @@ Simulator::Simulator(
         maxNumberOfAgents,
         false);
 
+    m_gravity = std::make_shared<Gravity>(
+        physicalDevice,
+        m_logicalDevice,
+        m_computeQueue,
+        m_computeCommandPool,
+        m_agentsBuffer,
+        maxNumberOfAgents);
+
     m_boids = std::make_shared<Boids>(
         physicalDevice,
         m_logicalDevice,
@@ -450,6 +458,7 @@ void Simulator::runSimulatorTask() {
 
         m_collider->run(timeDelta, m_currentNumberOfElements);
         m_agentSorter->run(timeDelta, m_currentNumberOfElements);
+        m_gravity->run(timeDelta, m_currentNumberOfElements);
 
         const std::vector<InputState> inputStates = m_inputTerminal->readInputStates();
         std::vector<uint32_t> inputStatesInt(inputStates.size());
