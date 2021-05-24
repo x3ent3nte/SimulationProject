@@ -26,8 +26,8 @@ public:
 
 private:
 
-    void setNumberOfElements(uint32_t numberOfElements);
     void createCommandBuffer();
+    void setNumberOfElements(uint32_t numberOfElements);
     void createCommandBufferIfNecessary(uint32_t numberOfElements);
 
 

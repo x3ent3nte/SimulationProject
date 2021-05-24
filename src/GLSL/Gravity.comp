@@ -33,7 +33,7 @@ readonly layout (std430, binding = 1) buffer massiveAgentsBuffer {
 };
 
 readonly layout (std430, binding = 2) buffer scanBuffer {
-    uint scan[];
+    int scan[];
 };
 
 readonly layout (std430, binding = 3) buffer timeDeltaBuffer {
@@ -51,15 +51,15 @@ void main() {
 
     Agent agent = agents[index];
 
-    const uint numberOfMassiveAgents = scan[numberOfAgents - 1];
-    for (uint i = 0; i < numberOfMassiveAgents; ++i) {
+    const int numberOfMassiveAgents = scan[numberOfAgents - 1];
+    for (int i = 0; i < numberOfMassiveAgents; ++i) {
         MassiveAgent massive = massiveAgents[i];
 
         const vec3 delta = massive.position - agent.position;
         const float dist = length(delta);
         if (dist > 0.0f) {
-            const vec3 deltaNorm = delta / dist;
             const float force = (GRAVITATIONAL_CONSTANT * massive.mass * agent.mass) / (dist * dist);
+            const vec3 deltaNorm = delta / dist;
             const vec3 forceVec = deltaNorm * force;
             const vec3 acceleration = forceVec / agent.mass;
             agent.velocity += acceleration * timeDelta;

@@ -23,7 +23,7 @@ readonly layout (std430, binding = 0) buffer agentsBuffer {
 };
 
 writeonly layout (std430, binding = 1) buffer flagsBuffer {
-    uint flags[];
+    int flags[];
 };
 
 readonly layout (std430, binding = 2) buffer numberOfAgentsBuffer {
@@ -35,5 +35,5 @@ void main() {
 
     if (index >= numberOfAgents) { return; }
 
-    flags[index] = uint(agents[index].mass > 10000000000.0f);
+    flags[index] = int(agents[index].mass > 10000000000.0f);
 }

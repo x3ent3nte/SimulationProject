@@ -35,7 +35,6 @@ Gravity::Gravity(
     m_logicalDevice = logicalDevice;
     m_queue = queue;
     m_commandPool = commandPool;
-    m_currentNumberOfElements = maxNumberOfElements;
 
     m_scanner = std::make_shared<Scanner<int32_t>>(
         physicalDevice,
@@ -100,7 +99,7 @@ Gravity::Gravity(
     m_mapPipeline = Compute::createPipeline("src/GLSL/spv/GravityMap.spv", m_logicalDevice, m_mapPipelineLayout);
 
     const size_t agentsMemorySize = maxNumberOfElements * sizeof(Agent);
-    const size_t scanMemorySize = maxNumberOfElements * sizeof(uint32_t);
+    const size_t scanMemorySize = maxNumberOfElements * sizeof(int32_t);
 
     const std::vector<Compute::BufferAndSize> mapBufferAndSizes = {
         {agentsBuffer, agentsMemorySize},
@@ -213,12 +212,6 @@ Gravity::~Gravity() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-void Gravity::setNumberOfElements(uint32_t numberOfElements) {
-    m_currentNumberOfElements = numberOfElements;
-    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
-    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
-}
-
 void Gravity::createCommandBuffer() {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -317,6 +310,12 @@ void Gravity::createCommandBuffer() {
     if (vkEndCommandBuffer(m_commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to end compute command buffer");
     }
+}
+
+void Gravity::setNumberOfElements(uint32_t numberOfElements) {
+    m_currentNumberOfElements = numberOfElements;
+    Buffer::writeHostVisible(&numberOfElements, m_numberOfElementsHostVisibleDeviceMemory, 0, sizeof(uint32_t), m_logicalDevice);
+    Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
 void Gravity::createCommandBufferIfNecessary(uint32_t numberOfElements) {
