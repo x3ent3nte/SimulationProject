@@ -46,7 +46,7 @@ void main() {
 
     const float mass = agents[index].mass;
 
-    if (mass > 10000000000.0f) {
+    if (mass > 1.0e10) {
         int scan;
         if (index == 0) {
             scan = 0;

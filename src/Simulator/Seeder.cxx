@@ -9,7 +9,7 @@ namespace {
 
 Agent createSpaceShip(uint32_t typeId, float radius) {
     glm::vec3 position = MyMath::randomUnitVec3();
-    position = (position * 300.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
+    position = (position * 6000.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
@@ -37,7 +37,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
     const glm::vec2 xzDir = {sin(azimuth), cos(azimuth)};
-    const glm::vec2 xz = (xzDir * 5000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 3000.0f * xzDir);
+    const glm::vec2 xz = (xzDir * 8000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 5000.0f * xzDir);
     const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 250;
 
     const glm::vec3 position = {xz.x, y, xz.y};
@@ -70,7 +70,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.1f, 0.0f};
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
-    const float mass = 54000000000;
+    const float mass = 6.417e18;
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 

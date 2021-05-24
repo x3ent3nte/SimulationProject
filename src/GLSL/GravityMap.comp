@@ -35,5 +35,5 @@ void main() {
 
     if (index >= numberOfAgents) { return; }
 
-    flags[index] = int(agents[index].mass > 10000000000.0f);
+    flags[index] = int(agents[index].mass > 1.0e10);
 }

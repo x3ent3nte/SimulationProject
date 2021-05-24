@@ -58,7 +58,7 @@ void main() {
         const vec3 delta = massiveAgent.position - agent.position;
         const float dist = length(delta);
         if (dist > 0.0f) {
-            const float force = (massiveAgent.mass * agent.mass) / (dist * dist);
+            const float force = (GRAVITATIONAL_CONSTANT * massiveAgent.mass * agent.mass) / (dist * dist);
             const vec3 deltaNorm = delta / dist;
             const vec3 forceVec = deltaNorm * force;
             const vec3 acceleration = forceVec / agent.mass;
