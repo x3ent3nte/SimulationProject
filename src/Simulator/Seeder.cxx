@@ -37,11 +37,12 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
     const glm::vec2 xzDir = {sin(azimuth), cos(azimuth)};
-    const glm::vec2 xz = (xzDir * 8000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 5000.0f * xzDir);
-    const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 250;
+    const glm::vec2 xz = (xzDir * 3000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1500.0f * xzDir);
+    const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 350;
 
     const glm::vec3 position = {xz.x, y, xz.y};
-    const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
+    const glm::vec3 velocityDir = MyMath::rotatePointByAxisAndTheta({xzDir.x, 0.0f, xzDir.y}, {0.0f, 1.0f, 0.0f}, MyMath::PI / 2);
+    const glm::vec3 velocity = (velocityDir * 450.0f);
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
