@@ -12,14 +12,10 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_twoBuffer;
-    VkBuffer m_numberOfElementsBuffer;
-    VkBuffer m_numberOfElementsBufferHostVisible;
-
     VkDeviceMemory m_oneBufferMemory;
+
+    VkBuffer m_twoBuffer;
     VkDeviceMemory m_twoBufferMemory;
-    VkDeviceMemory m_numberOfElementsBufferMemory;
-    VkDeviceMemory m_numberOfElementsBufferMemoryHostVisible;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
@@ -31,7 +27,14 @@ private:
 
     VkFence m_fence;
 
-    void runReduceCommand(uint32_t numberOfElements, VkDescriptorSet descriptorSet);
+    VkCommandBuffer m_commandBuffer;
+
+    uint32_t m_currentNumberOfElements;
+
+    VkBuffer m_returnBuffer;
+
+    void createCommandBuffer();
+    void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
 
 public:
 

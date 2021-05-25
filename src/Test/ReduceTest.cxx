@@ -48,18 +48,7 @@ namespace {
         return collisions;
     }
 
-    void printCollision(const Collision& collision, std::stringstream& ss) {
-        ss << "one= " << collision.one << " two= " << collision.two << " time= " << collision.time;
-    }
-
     void expectEqual(const Collision& expected, const Collision& actual, std::shared_ptr<TestInstance> testInstance) {
-
-        std::stringstream ss;
-            ss << "expected = ";
-            printCollision(expected, ss);
-            ss << " actual= ";
-            printCollision(actual, ss);
-            std::cout << ss.str() << "\n";
 
         if ((expected.one != actual.one) || (expected.two != actual.two) || (expected.time != actual.time)) {
             testInstance->assertTrue(false);

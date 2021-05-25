@@ -19,22 +19,24 @@ writeonly layout (std430, binding = 1) buffer bufferDataOut {
     Collision dataOut[];
 };
 
-readonly layout (std430, binding = 2) buffer bufferNumberOfElements {
+readonly layout (push_constant) uniform Info {
     uint numberOfElements;
-};
+} info;
 
 shared Collision sharedData[X_DIM];
 
 void main() {
 
-    uint globalOffset = gl_WorkGroupID.x * X_DIM * 2;
-    uint localIndex = gl_LocalInvocationID.x;
-    uint globalIndex = globalOffset + localIndex;
+    const uint globalOffset = gl_WorkGroupID.x * X_DIM * 2;
+    const uint localIndex = gl_LocalInvocationID.x;
+    const uint globalIndex = globalOffset + localIndex;
+
+    const uint numberOfElements = info.numberOfElements;
 
     if (globalIndex >= numberOfElements) { return; }
 
     Collision myValue = dataIn[globalIndex];
-    uint firstOtherIndex = globalIndex + X_DIM;
+    const uint firstOtherIndex = globalIndex + X_DIM;
     if (firstOtherIndex < numberOfElements) {
         Collision otherValue = dataIn[firstOtherIndex];
         if (otherValue.time < myValue.time) {
@@ -44,7 +46,7 @@ void main() {
 
     sharedData[localIndex] = myValue;
 
-    uint localSize = min(X_DIM, numberOfElements - globalOffset);
+    const uint localSize = min(X_DIM, numberOfElements - globalOffset);
 
     for (int offset = (X_DIM / 2); offset > 0; offset >>= 1) {
         barrier();
