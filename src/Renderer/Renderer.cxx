@@ -490,28 +490,22 @@ private:
         Buffer::writeHostVisible(&ubo, m_uniformBuffersMemory[currentImage], 0, sizeof(UniformBufferObject), m_logicalDevice);
     }
 
-    struct RenderInfo {
-        uint32_t numberOfAgents;
-        AgentRenderInfo player;
-    };
 
-    RenderInfo updateAgentPositionsBuffer(size_t imageIndex) {
+    void updateAgentPositionsBuffer(size_t imageIndex) {
         //Timer timer("XXXUpdate Agent Positions Buffer");
 
         auto connection = m_connector->takeNewestConnection();
         uint32_t numberOfElements = connection->m_numberOfElements;
-        AgentRenderInfo player;
         if (connection->m_players.size() > 0) {
-            player = connection->m_players[0];
-            //std::cout << "Player x " << player.position.x << " y " << player.position.y << " z " << player.position.z << "\n";
+            AgentRenderInfo player = connection->m_players[0];
+            std::cout << "Player position x=" << player.position.x << " y=" << player.position.y << " z=" << player.position.z << "\n";
+            updateUniformBufferWithPlayer(imageIndex, player);
         }
 
         const size_t fnIndex = (connection->m_id * m_instanceBuffers.size()) + imageIndex;
         m_indirectDrawCommandUpdaterFunctions[fnIndex]->run(numberOfElements);
 
         m_connector->restoreConnection(connection);
-
-        return {numberOfElements, player};
     }
 
     VkCommandBuffer createRenCommandBuffer(
@@ -625,11 +619,7 @@ public:
 
         m_imagesInFlight[imageIndex] = m_inFlightFences[m_currentFrame];
 
-        auto renderInfo = updateAgentPositionsBuffer(imageIndex);
-
-        updateUniformBufferWithPlayer(imageIndex, renderInfo.player);
-        auto playerPos = renderInfo.player.position;
-        std::cout << "Player position x=" << playerPos.x << " y=" << playerPos.y << " z=" << playerPos.z << "\n";
+        updateAgentPositionsBuffer(imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

@@ -201,7 +201,7 @@ Collider::~Collider() {
 }
 
 Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
-    size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
+    const size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
     VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
         m_logicalDevice,
         m_commandPool,

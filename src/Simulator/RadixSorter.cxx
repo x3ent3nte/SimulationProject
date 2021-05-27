@@ -598,6 +598,8 @@ void RadixSorter::sort() {
 }
 
 void RadixSorter::run(uint32_t numberOfElements) {
-    createCommandBuffersIfNecessary(numberOfElements);
-    sort();
+    if (numberOfElements > 1) {
+        createCommandBuffersIfNecessary(numberOfElements);
+        sort();
+    }
 }

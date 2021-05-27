@@ -9,7 +9,7 @@ namespace {
 
 Agent createSpaceShip(uint32_t typeId, float radius) {
     glm::vec3 position = MyMath::randomUnitVec3();
-    position = (position * 6000.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
+    position = (position * 3500.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 1000.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
@@ -82,14 +82,17 @@ std::vector<Agent> Seeder::seed(
     uint32_t numberOfPlayers,
     std::shared_ptr<Mesh> mesh) {
 
-    const std::vector<Agent(*)(std::shared_ptr<Mesh>)> createFns = {createFreyja, createArwing, createAsteroid};
-
     std::vector<Agent> agents(numberOfAgents);
     for (size_t i = 0; i < numberOfAgents; ++i) {
         if (i == (numberOfAgents - 1)) {
             agents[i] = createSun(mesh);
         } else {
-            agents[i] = createFns[i % createFns.size()](mesh);
+            int choice = rand() % 100;
+            if (choice < 95) {
+                agents[i] = createFreyja(mesh);
+            } else {
+                agents[i] =  createAsteroid(mesh);
+            }
         }
     }
 
