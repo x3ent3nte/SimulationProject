@@ -3,7 +3,7 @@
 
 #define X_DIM 512
 
-#define DETECTION_RADIUS 45
+#define DETECTION_RADIUS 350
 
 #define PI 3.14159265358979323846264338327950288
 
@@ -255,7 +255,7 @@ vec3 calculateAcceleration(vec3 target, vec3 position, vec3 velocity) {
 
     vec3 acceleration = vec3(0.0f, 0.0f, 0.0f);
 
-    const float maxAcceleration = 450.0f;
+    const float maxAcceleration = 375.0f;
     const vec3 delta = target - position;
     const float deltaMag = length(delta);
     if (deltaMag > 0) {
