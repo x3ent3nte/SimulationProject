@@ -108,7 +108,7 @@ public:
             TestApplication(m_physicalDevice, m_logicalDevice, m_computeQueue, m_computeCommandPool).run();
         }
 
-        const uint32_t maxNumberOfAgents = 128 * 512;
+        const uint32_t maxNumberOfAgents = 32 * 512;
         const uint32_t maxNumberOfPlayers = 1;
 
         auto inputTerminal = std::make_shared<InputTerminal>();

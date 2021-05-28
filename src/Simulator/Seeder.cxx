@@ -9,7 +9,7 @@ namespace {
 
 Agent createSpaceShip(uint32_t typeId, float radius) {
     glm::vec3 position = MyMath::randomUnitVec3();
-    position = (position * 4500.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3500.0f);
+    position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 500.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
@@ -37,7 +37,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
     const glm::vec2 xzDir = {sin(azimuth), cos(azimuth)};
-    const glm::vec2 xz = (xzDir * 2000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 600.0f * xzDir);
+    const glm::vec2 xz = (xzDir * 2000.0f) + (MyMath::randomFloatBetweenZeroAndOne() * 1000.0f * xzDir);
     const float y = MyMath::randomFloatBetweenMinusOneAndOne() * 150;
 
     const glm::vec3 position = {xz.x, y, xz.y};
@@ -88,7 +88,7 @@ std::vector<Agent> Seeder::seed(
             agents[i] = createSun(mesh);
         } else {
             int choice = rand() % 100;
-            if (choice < 97) {
+            if (choice < 84) {
                 agents[i] = createFreyja(mesh);
             } else {
                 agents[i] =  createAsteroid(mesh);
@@ -96,6 +96,7 @@ std::vector<Agent> Seeder::seed(
         }
     }
 
+    agents[0] = createFreyja(mesh);
     agents[0].playerId = 0;
 
     return agents;
