@@ -468,7 +468,7 @@ private:
         //std::cout << "Player up ";
         //printVec3(playerUp);
 
-        glm::vec3 eye = (player.position - (10.0f * playerForward)) + (3.0f * playerUp);
+        glm::vec3 eye = (player.position - (20.0f * playerForward)) + (6.0f * playerUp);
         glm::vec3 target = player.position + (playerForward * 8.0f);
         glm::vec3 up = playerUp;
 

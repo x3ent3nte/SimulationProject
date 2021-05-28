@@ -115,8 +115,8 @@ public:
         inputTerminal->addPlayer(m_keyboardControl);
 
         const std::vector<std::pair<std::string, std::string>> modelAndTexturePaths = {
+            {Constants::kDragonModelPath, Constants::kDragonTexturePath},
             {Constants::kFreyjaModelPath, Constants::kFreyjaTexturePath},
-            {Constants::kArwingModelPath, Constants::kArwingTexturePath},
             {Constants::kAsteroidModelPath, Constants::kAsteroidTexturePath},
             {Constants::kMoonModelPath, Constants::kMoonTexturePath}
         };

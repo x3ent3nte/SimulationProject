@@ -26,6 +26,9 @@ namespace Constants {
     const std::string kMoonModelPath = "models/moon.obj";
     const std::string kMoonTexturePath = "textures/moon_texture.png";
 
+    const std::string kDragonModelPath = "models/dragon.obj";
+    const std::string kDragonTexturePath = "textures/dragon_texture.png";
+
     const std::vector<const char*> kValidationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };

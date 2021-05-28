@@ -9,7 +9,7 @@ namespace {
 
 Agent createSpaceShip(uint32_t typeId, float radius) {
     glm::vec3 position = MyMath::randomUnitVec3();
-    position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 4500.0f);
+    position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 10500.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
