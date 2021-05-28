@@ -379,9 +379,9 @@ void processSpaceShip(inout Agent agent, uint index) {
         Steering steering = calculateSteering(agent, index);
 
         const vec3 steeringVector = safeNormalize(
-            (5 * steering.alignment) +
-            (4 * steering.cohesion) +
-            (4 * steering.separation));
+            (6 * steering.alignment) +
+            (6 * steering.cohesion) +
+            (11 * steering.separation));
 
         const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
         agent.rotationalVelocity += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity);
