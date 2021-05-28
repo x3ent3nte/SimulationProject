@@ -75,6 +75,16 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
     return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
 }
 
+Agent createPlayer(std::shared_ptr<Mesh> mesh) {
+    Agent player = createFreyja(mesh);
+
+    player.playerId = 0;
+    player.position = {0.0f, 0.0f, 5000.0f};
+    player.rotation = MyMath::axisAndThetaToQuaternion({0.0f, 1.0f, 0.0f}, 0);
+
+    return player;
+}
+
 } // namespace anonymous
 
 std::vector<Agent> Seeder::seed(
@@ -96,8 +106,7 @@ std::vector<Agent> Seeder::seed(
         }
     }
 
-    agents[0] = createFreyja(mesh);
-    agents[0].playerId = 0;
+    agents[0] = createPlayer(mesh);
 
     return agents;
 }
