@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
+#define PI 3.14159265358979323846264338327950288
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -34,6 +35,39 @@ layout (push_constant) uniform InfoConstant {
     uint numberOfElements;
 } info;
 
+vec4 hamiltonProduct(vec4 a, vec4 b) {
+    const float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+    const float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+    const float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
+    const float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
+
+    return vec4(i, j, k, r);
+}
+
+vec4 inverseQuaternion(vec4 q) {
+    return vec4(-q.x, -q.y, -q.z, q.w);
+}
+
+vec3 rotatePointByQuaternion(vec3 p, vec4 q) {
+    const vec4 p4 = vec4(p, 0.0f);
+    const vec4 qi = inverseQuaternion(q);
+
+    return hamiltonProduct(hamiltonProduct(q, p4), qi).xyz;
+}
+
+vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
+    const float thetaHalved = theta / 2;
+    return vec4(axis * sin(thetaHalved), cos(thetaHalved));
+}
+
+float randomBetweenZeroAndOne(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float randomBetweenMinusOneAndOne(vec2 co){
+    return (randomBetweenZeroAndOne(co) * 2.0f) - 1.0f;
+}
+
 void main() {
     const uint index = gl_GlobalInvocationID.x;
 
@@ -52,6 +86,23 @@ void main() {
 
     Agent agentSpawn = agent;
     agentSpawn.playerId = -1;
+    agentSpawn.typeId = 4;
+
+    const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+    const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
+
+    const float xSpread = randomBetweenMinusOneAndOne(agent.position.xy) * PI * 0.01;
+    const float ySpread = randomBetweenMinusOneAndOne(agent.position.yz) * PI * 0.01;
+    const vec4 xSpreadQuaternion = axisAndThetaToQuaternion(vec3(1.0f, 0.0f, 0.0f), xSpread);
+    const vec4 ySpreadQuaternion = axisAndThetaToQuaternion(vec3(0.0f, 1.0f, 0.0f), ySpread);
+    const vec4 xySpreadQuaternion = hamiltonProduct(ySpreadQuaternion, xSpreadQuaternion);
+    const vec3 spreadDir = rotatePointByQuaternion(forward, xySpreadQuaternion);
+
+    agentSpawn.position += spreadDir * 20.0f;
+    agentSpawn.rotation = hamiltonProduct(xySpreadQuaternion, agentSpawn.rotation);
+    agentSpawn.velocity += spreadDir * 4700.0f;
+    agentSpawn.mass = 4000;
+    agentSpawn.radius = 5.0f;
 
     for (uint i = 1; i < numberToSpawn; ++i) {
         agentsOut[address + i] = agentSpawn;

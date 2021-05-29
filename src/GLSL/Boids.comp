@@ -2,9 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
-
 #define DETECTION_RADIUS 550
-
 #define PI 3.14159265358979323846264338327950288
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
@@ -380,8 +378,8 @@ void processSpaceShip(inout Agent agent, uint index) {
 
         const vec3 steeringVector = safeNormalize(
             (7 * steering.alignment) +
-            (7 * steering.cohesion) +
-            (11 * steering.separation));
+            (10 * steering.cohesion) +
+            (6 * steering.separation));
 
         const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
         agent.rotationalVelocity += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity);
@@ -418,7 +416,8 @@ void main() {
            break;
         }
         case 2:
-        case 3: {
+        case 3:
+        case 4: {
             processAsteroid(agent, index);
             break;
         }
