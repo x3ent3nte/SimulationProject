@@ -69,23 +69,7 @@ float randomBetweenMinusOneAndOne(vec2 co){
     return (randomBetweenZeroAndOne(co) * 2.0f) - 1.0f;
 }
 
-void main() {
-    const uint index = gl_GlobalInvocationID.x;
-
-    if (index >= info.numberOfElements) { return; }
-
-    uint address;
-    if (index == 0) {
-        address = 0;
-    } else {
-        address = addresses[index - 1];
-    }
-
-    Agent agent = agentsIn[index];
-
-    uint alive = uint(agent.life > 0.0f);
-    uint numberToSpawn = (addresses[index] - address) - alive;
-
+Agent spawnPlasma(inout Agent agent) {
     Agent agentSpawn = agent;
     agentSpawn.playerId = -1;
     agentSpawn.typeId = 3;
@@ -107,8 +91,47 @@ void main() {
     agentSpawn.radius = 5.0f;
     agentSpawn.life = 100.0f;
 
+    return agentSpawn;
+}
+
+Agent spawnSmallAsteroid(inout Agent agent) {
+    Agent agentSpawn = agent;
+    agentSpawn.playerId = -1;
+    agentSpawn.typeId = 4;
+    agentSpawn.life = 100.0f;
+    agentSpawn.radius = agent.radius / 3.0f;
+    agentSpawn.mass = agent.mass / 27.0f;
+
+    return agentSpawn;
+}
+
+Agent spawnAgent(inout Agent agent) {
+    if (agent.typeId == 0) {
+        return spawnPlasma(agent);
+    } else {
+        return spawnSmallAsteroid(agent);
+    }
+}
+
+void main() {
+    const uint index = gl_GlobalInvocationID.x;
+
+    if (index >= info.numberOfElements) { return; }
+
+    uint address;
+    if (index == 0) {
+        address = 0;
+    } else {
+        address = addresses[index - 1];
+    }
+
+    Agent agent = agentsIn[index];
+
+    const uint alive = uint(agent.life > 0.0f);
+    const uint numberToSpawn = (addresses[index] - address) - alive;
+
     for (uint i = 0; i < numberToSpawn; ++i) {
-        agentsOut[address + alive + i] = agentSpawn;
+        agentsOut[address + alive + i] = spawnAgent(agent);
     }
 
     if (alive == 1) {

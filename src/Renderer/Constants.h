@@ -15,6 +15,7 @@ namespace Constants {
     const std::string kArwingTexturePath = "textures/arwing_texture.png";
 
     const std::string kAsteroidModelPath = "models/asteroid.obj";
+    const std::string kSmallAsteroidModelPath = "models/small_asteroid.obj";
     const std::string kAsteroidTexturePath = "textures/asteroid_texture.png";
 
     const std::string kVikingRoomModelPath = "models/viking_room.obj";

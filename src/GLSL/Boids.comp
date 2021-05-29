@@ -398,6 +398,14 @@ void processSpaceShip(inout Agent agent, uint index) {
 }
 
 void processAsteroid(inout Agent agent, uint index) {
+    if (agent.life > 0.0f) {
+        reproduction[index] = 1;
+    } else {
+        reproduction[index] = 8;
+    }
+}
+
+void processDefault(inout Agent agent, uint index) {
     reproduction[index] = uint(agent.life > 0.0f);
 }
 
@@ -415,10 +423,12 @@ void main() {
            processSpaceShip(agent, index);
            break;
         }
-        case 1:
-        case 2:
-        case 3: {
+        case 1: {
             processAsteroid(agent, index);
+            break;
+        }
+        default: {
+            processDefault(agent, index);
             break;
         }
     }

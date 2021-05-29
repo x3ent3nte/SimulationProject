@@ -118,7 +118,8 @@ public:
             {Constants::kDragonModelPath, Constants::kDragonTexturePath},
             {Constants::kAsteroidModelPath, Constants::kAsteroidTexturePath},
             {Constants::kMoonModelPath, Constants::kMoonTexturePath},
-            {Constants::kPlasmaModelPath, Constants::kPlasmaTexturePath}
+            {Constants::kPlasmaModelPath, Constants::kPlasmaTexturePath},
+            {Constants::kSmallAsteroidModelPath, Constants::kAsteroidTexturePath}
         };
 
         std::vector<std::string> modelPaths(modelAndTexturePaths.size());
