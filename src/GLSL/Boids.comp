@@ -410,14 +410,13 @@ void main() {
     Agent agent = agentsIn[index];
 
     switch (agent.typeId) {
-        case 0:
-        case 1: {
+        case 0: {
            processSpaceShip(agent, index);
            break;
         }
+        case 1:
         case 2:
-        case 3:
-        case 4: {
+        case 3: {
             processAsteroid(agent, index);
             break;
         }

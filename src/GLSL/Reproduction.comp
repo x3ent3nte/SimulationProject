@@ -86,7 +86,7 @@ void main() {
 
     Agent agentSpawn = agent;
     agentSpawn.playerId = -1;
-    agentSpawn.typeId = 4;
+    agentSpawn.typeId = 3;
 
     const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
     const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);

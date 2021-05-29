@@ -7,7 +7,8 @@
 
 namespace {
 
-Agent createSpaceShip(uint32_t typeId, float radius) {
+Agent createSpaceShip(std::shared_ptr<Mesh> mesh) {
+    const uint32_t typeId = 0;
     glm::vec3 position = MyMath::randomUnitVec3();
     position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 6500.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
@@ -19,21 +20,11 @@ Agent createSpaceShip(uint32_t typeId, float radius) {
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const float mass = 120000;
 
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
-}
-
-Agent createFreyja(std::shared_ptr<Mesh> mesh) {
-    const uint32_t typeId = 0;
-    return createSpaceShip(typeId, mesh->m_subMeshInfos[typeId].radius);
-}
-
-Agent createArwing(std::shared_ptr<Mesh> mesh) {
-    const uint32_t typeId = 1;
-    return createSpaceShip(typeId, mesh->m_subMeshInfos[typeId].radius);
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, mesh->m_subMeshInfos[typeId].radius, mass};
 }
 
 Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
-    const uint32_t typeId = 2;
+    const uint32_t typeId = 1;
 
     const float azimuth = MyMath::randomFloatBetweenMinusOneAndOne() * MyMath::PI;
     const glm::vec2 xzDir = {sin(azimuth), cos(azimuth)};
@@ -59,7 +50,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 }
 
 Agent createSun(std::shared_ptr<Mesh> mesh) {
-    const uint32_t typeId = 3;
+    const uint32_t typeId = 2;
 
     const glm::vec3 position = {0.0f, 0.0f, 0.0f};
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
@@ -76,7 +67,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
 }
 
 Agent createPlayer(std::shared_ptr<Mesh> mesh) {
-    Agent player = createFreyja(mesh);
+    Agent player = createSpaceShip(mesh);
 
     player.playerId = 0;
     player.position = {0.0f, 0.0f, 5000.0f};
@@ -99,7 +90,7 @@ std::vector<Agent> Seeder::seed(
         } else {
             int choice = rand() % 100;
             if (choice < 92) {
-                agents[i] = createFreyja(mesh);
+                agents[i] = createSpaceShip(mesh);
             } else {
                 agents[i] =  createAsteroid(mesh);
             }
