@@ -16,6 +16,7 @@ struct Agent {
     vec4 rotation;
     float radius;
     float mass;
+    float life;
 };
 
 struct MassiveAgent {

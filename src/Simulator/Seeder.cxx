@@ -20,7 +20,7 @@ Agent createSpaceShip(std::shared_ptr<Mesh> mesh) {
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const float mass = 120000;
 
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, mesh->m_subMeshInfos[typeId].radius, mass};
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, mesh->m_subMeshInfos[typeId].radius, mass, 100.0f};
 }
 
 Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
@@ -46,7 +46,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
     const float mass = 7500000;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 100.0f};
 }
 
 Agent createSun(std::shared_ptr<Mesh> mesh) {
@@ -63,7 +63,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
     const float mass = 6.417e18;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass};
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 100.f};
 }
 
 Agent createPlayer(std::shared_ptr<Mesh> mesh) {

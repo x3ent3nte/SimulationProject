@@ -14,6 +14,7 @@ struct Agent {
     glm::vec4 rotation;
     float radius;
     float mass;
+    float life;
 };
 
 struct AgentRenderInfo {

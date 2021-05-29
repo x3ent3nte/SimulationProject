@@ -16,6 +16,7 @@ struct Agent {
     vec4 rotation;
     float radius;
     float mass;
+    float life;
 };
 
 readonly layout (std430, binding = 0) buffer agentsBuffer {

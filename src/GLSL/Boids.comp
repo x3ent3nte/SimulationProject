@@ -18,6 +18,7 @@ struct Agent {
     vec4 rotation;
     float radius;
     float mass;
+    float life;
 };
 
 readonly layout (std430, binding = 0) buffer bufAgentsIn {
@@ -371,7 +372,7 @@ void processPlayerAgent(inout Agent agent) {
 
 void processSpaceShip(inout Agent agent, uint index) {
 
-    uint reproductionFactor = 1;
+    uint numberToSpawn = 0;
 
     if (agent.playerId < 0) {
         Steering steering = calculateSteering(agent, index);
@@ -389,15 +390,15 @@ void processSpaceShip(inout Agent agent, uint index) {
     } else {
         processPlayerAgent(agent);
         if (computeInputValue(playerInputStates[agent.playerId], kSpawnBit) == 1) {
-            reproductionFactor = 2;
+            numberToSpawn += 1;
         }
     }
 
-    reproduction[index] = reproductionFactor;
+    reproduction[index] = uint(agent.life > 0.0f) + numberToSpawn;
 }
 
 void processAsteroid(inout Agent agent, uint index) {
-    reproduction[index] = 1;
+    reproduction[index] = uint(agent.life > 0.0f);
 }
 
 void main() {

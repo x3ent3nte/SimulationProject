@@ -16,6 +16,7 @@ struct Agent {
     vec4 rotation;
     float radius;
     float mass;
+    float life;
 };
 
 struct Collision {
@@ -69,6 +70,9 @@ void main() {
 
     one.velocity += (-oneImpactVelocityPre + oneImpactVelocityPost);
     two.velocity += (-twoImpactVelocityPre + twoImpactVelocityPost);
+
+    one.life -= 4.0f;
+    two.life -= 4.0f;
 
     agents[col.one] = one;
     agents[col.two] = two;
