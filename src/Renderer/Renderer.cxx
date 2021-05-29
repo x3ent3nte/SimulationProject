@@ -482,7 +482,7 @@ private:
         UniformBufferObject ubo{};
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(eye, target, up);
-        ubo.proj = glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 50000.f);
+        ubo.proj = glm::perspective(glm::radians(75.0f), m_swapChainExtent.width / (float) m_swapChainExtent.height, 0.1f, 50000.f);
         ubo.cameraPosition = eye;
 
         ubo.proj[1][1] *= -1;
