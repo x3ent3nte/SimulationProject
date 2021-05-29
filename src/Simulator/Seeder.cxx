@@ -63,7 +63,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
     const float mass = 6.417e18;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 100.f};
+    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 1000000000.f};
 }
 
 Agent createPlayer(std::shared_ptr<Mesh> mesh) {
