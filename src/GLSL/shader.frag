@@ -25,16 +25,17 @@ vec3 safeNormalize(vec3 v) {
 void main() {
     vec3 lightColour = vec3(1.0f, 1.0f, 1.0f);
 
-    float ambientStrength = 0.0001f;
+    float ambientStrength = 0.001f;
     vec3 ambient = ambientStrength * lightColour;
 
     vec3 normalizedNormal = safeNormalize(fragNormal);
     vec3 sunPosition = vec3(10000, 300, 10000);
     vec3 lightVector = safeNormalize(sunPosition - fragPosition);
     float lightCosSim = max(dot(normalizedNormal, lightVector), 0.0f);
-    vec3 diffuse = lightCosSim * lightColour;
+    float diffuseStrength = 0.9;
+    vec3 diffuse = lightCosSim * lightColour * diffuseStrength;
 
-    float specularStrength = 0.5;
+    float specularStrength = 0.99;
     vec3 viewVector = safeNormalize(fragCameraPosition - fragPosition);
     vec3 reflectVector = reflect(-lightVector, normalizedNormal);
 
