@@ -42,11 +42,41 @@ readonly layout (std430, binding = 3) buffer numberOfElementsBuffer {
 };
 
 readonly layout (std430, binding = 4) buffer numberOfCollisionsBuffer {
-    uint numberOfCollisions;
+    int numberOfCollisions;
 };
 
 int findStartIndex(uint index) {
-    return -1;
+    int left = 0;
+    int right = numberOfCollisions;
+
+    int startIndex = -1;
+
+    while (true) {
+        if (right <= left) {
+            break;
+        }
+
+        int mid = ((right - left) / 2) + left;
+        const uint agentIndex = collisions[mid].agentIndex;
+        if (agentIndex == index) {
+            startIndex = mid;
+            break;
+        } else if (index < agentIndex) {
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+
+    for (int i = startIndex; i >= 0; --i) {
+        if (collisions[i].agentIndex == index) {
+            startIndex = i;
+        } else {
+            break;
+        }
+    }
+
+    return startIndex;
 }
 
 void main() {

@@ -14,7 +14,7 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/MapXToAgent.comp -o src/GLSL/spv
 
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionDetection.comp -o src/GLSL/spv/CollisionDetection.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsScatter.comp -o src/GLSL/spv/CollisionsScatter.spv
-C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Impact.comp -o src/GLSL/spv/Impact.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsImpact.comp -o src/GLSL/spv/CollisionsImpact.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsApply.comp -o src/GLSL/spv/CollisionsApply.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AdvanceTime.comp -o src/GLSL/spv/AdvanceTime.spv
 

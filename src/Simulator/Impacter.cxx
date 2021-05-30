@@ -10,9 +10,9 @@
 
 namespace ImpacterUtil {
 
-    constexpr size_t xDim = 1;
+    constexpr size_t xDim = 256;
 
-    constexpr size_t kNumberOfBindings = 2;
+    constexpr size_t kNumberOfBindings = 4;
 
     VkDescriptorSetLayout createDescriptorSetLayout(VkDevice logicalDevice) {
         return Compute::createDescriptorSetLayout(logicalDevice, kNumberOfBindings);
@@ -46,7 +46,7 @@ namespace ImpacterUtil {
         VkDevice logicalDevice,
         VkPipelineLayout pipelineLayout) {
 
-        return Compute::createPipeline("src/GLSL/spv/Impact.spv", logicalDevice, pipelineLayout);
+        return Compute::createPipeline("src/GLSL/spv/CollisionsImpact.spv", logicalDevice, pipelineLayout);
     }
 
     VkCommandBuffer createCommandBuffer(
