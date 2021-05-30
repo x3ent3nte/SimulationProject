@@ -89,7 +89,7 @@ std::vector<Agent> Seeder::seed(
             agents[i] = createSun(mesh);
         } else {
             int choice = rand() % 100;
-            if (choice < 80) {
+            if (choice < 97) {
                 agents[i] = createSpaceShip(mesh);
             } else {
                 agents[i] =  createAsteroid(mesh);

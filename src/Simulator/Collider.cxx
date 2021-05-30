@@ -268,5 +268,5 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
         numberOfSteps += 1;
     }
 
-    std::cout << "Number of Collider steps= " << numberOfSteps << "\n";
+    std::cout << "Number of Collider steps = " << numberOfSteps << "\n";
 }
