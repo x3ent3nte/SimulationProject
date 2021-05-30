@@ -6,6 +6,7 @@
 #include <Simulator/Reducer.h>
 #include <Simulator/TimeAdvancer.h>
 #include <Simulator/Impacter.h>
+#include <Simulator/Scanner.h>
 
 #include <vulkan/vulkan.h>
 
@@ -22,11 +23,21 @@ private:
 
     std::shared_ptr<AgentSorter> m_agentSorter;
     std::shared_ptr<Reducer> m_reducer;
+    std::shared_ptr<Scanner<int32_t>> m_scanner;
     std::shared_ptr<TimeAdvancer> m_timeAdvancer;
     std::shared_ptr<Impacter> m_impacter;
 
-    VkBuffer m_collisionsHostVisibleBuffer;
-    VkDeviceMemory m_collisionsHostVisibleDeviceMemory;
+    VkBuffer m_collisionsBuffer;
+    VkDeviceMemory m_collisionsDeviceMemory;
+
+    VkBuffer m_compactedCollisionsBuffer;
+    VkDeviceMemory m_compactedCollisionsDeviceMemory;
+
+    VkBuffer m_senderCollisionsBuffer;
+    VkDeviceMemory m_senderCollisionsDeviceMemory;
+
+    VkBuffer m_receiverCollisionsBuffer;
+    VkDeviceMemory m_receiverCollisionsDeviceMemory;
 
     VkBuffer m_timeDeltaBuffer;
     VkDeviceMemory m_timeDeltaDeviceMemory;
@@ -47,7 +58,8 @@ private:
 
     VkDescriptorSet m_descriptorSet;
 
-    VkCommandBuffer m_commandBuffer;
+    VkCommandBuffer m_collisionDetectionCommandBuffer;
+    VkCommandBuffer m_scatterCollisionsCommandBuffer;
     VkCommandBuffer m_setNumberOfElementsCommandBuffer;
 
     VkFence m_fence;
@@ -56,8 +68,6 @@ private:
 
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createCommandBuffer(uint32_t numberOfElements);
-    void runCollisionDetection(float timeDelta);
-    Collision extractEarliestCollision(VkBuffer reduceResult);
     float computeNextStep(float timeDelta);
 
 public:

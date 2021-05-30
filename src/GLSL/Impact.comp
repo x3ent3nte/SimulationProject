@@ -1,7 +1,7 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-#define X_DIM 1
+#define X_DIM 256
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -25,22 +25,27 @@ struct Collision {
     float time;
 };
 
-layout (std430, binding = 0) buffer bufferAgents {
+struct ComputedCollision {
+    uint agentIndex;
+    float time;
+    vec3 velocityDelta;
+};
+
+readonly layout (std430, binding = 0) buffer bufferAgentsBuffer {
     Agent agents[];
 };
 
-readonly layout (std430, binding = 1) buffer bufferCollisions {
+readonly layout (std430, binding = 1) buffer bufferCollisionsBuffer {
     Collision collisions[];
 };
 
-float cosineSimilarity(vec3 a, vec3 b) {
-    const float magMult = length(a) * length(b);
-    if (magMult == 0.0f) {
-        return 0.0f;
-    }
+writeonly layout (std430, binding = 2) buffer computedCollisionsBuffer {
+    ComputedCollision computedCollisions[];
+};
 
-    return dot(a, b) / magMult;
-}
+readonly layout (std430, binding = 3) buffer numberOfCollisionsBuffer {
+    uint numberOfCollisions;
+};
 
 vec3 projection(vec3 u, vec3 v) {
     const float magV = length(v);
@@ -49,17 +54,24 @@ vec3 projection(vec3 u, vec3 v) {
 
 void main() {
 
-    Collision col = collisions[0];
+    const uint index = gl_GlobalInvocationID.x;
 
-    Agent one = agents[col.one];
-    Agent two = agents[col.two];
+    if (index >= numberOfCollisions) { return; }
+
+    const Collision col = collisions[index];
+
+    const Agent one = agents[col.one];
+    const Agent two = agents[col.two];
+
+    const vec3 onePosition = one.position + (one.velocity * col.time);
+    const vec3 twoPosition = two.position + (two.velocity * col.time);
 
     const float oneMass = one.mass;
     const float twoMass = two.mass;
 
-    const vec3 posDiff = two.position - one.position;
+    const vec3 posDiff = twoPosition - onePosition;
     const vec3 oneImpactVelocityPre = projection(one.velocity, posDiff);
-    vec3 twoImpactVelocityPre = projection(two.velocity, -posDiff);
+    const vec3 twoImpactVelocityPre = projection(two.velocity, -posDiff);
 
     const vec3 oneMomentumPre = oneImpactVelocityPre * oneMass;
     const vec3 twoMomentumPre = twoImpactVelocityPre * twoMass;
@@ -68,12 +80,19 @@ void main() {
     const vec3 oneImpactVelocityPost = (((oneMass - twoMass) / (oneMass + twoMass)) * oneImpactVelocityPre) + (((2 * twoMass) / (oneMass + twoMass)) * twoImpactVelocityPre);
     const vec3 twoImpactVelocityPost = (totalMomentumPre - (oneImpactVelocityPost * oneMass)) / twoMass;
 
-    one.velocity += (-oneImpactVelocityPre + oneImpactVelocityPost);
-    two.velocity += (-twoImpactVelocityPre + twoImpactVelocityPost);
+    const vec3 oneVelocityDelta = -oneImpactVelocityPre + oneImpactVelocityPost;
+    const vec3 twoVelocityDelta = -twoImpactVelocityPre + twoImpactVelocityPost;
 
-    one.life -= 4.0f;
-    two.life -= 4.0f;
+    //one.velocity += (-oneImpactVelocityPre + oneImpactVelocityPost);
+    //two.velocity += (-twoImpactVelocityPre + twoImpactVelocityPost);
 
-    agents[col.one] = one;
-    agents[col.two] = two;
+    //one.life -= 4.0f;
+    //two.life -= 4.0f;
+
+    //agents[col.one] = one;
+    //agents[col.two] = two;
+
+    const uint computedCollisionsIndex = 2 * index;
+    computedCollisions[computedCollisionsIndex] = ComputedCollision(col.one, col.time, oneVelocityDelta);
+    computedCollisions[computedCollisionsIndex + 1] = ComputedCollision(col.two, col.time, twoVelocityDelta);
 }

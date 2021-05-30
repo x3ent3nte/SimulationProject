@@ -1,0 +1,87 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 256
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+struct Agent {
+    uint typeId;
+    int playerId;
+    vec3 position;
+    vec3 velocity;
+    vec3 acceleration;
+    vec3 target;
+    vec3 rotationalVelocity;
+    vec4 rotation;
+    float radius;
+    float mass;
+    float life;
+};
+
+struct ComputedCollision {
+    uint agentIndex;
+    float time;
+    vec3 velocityDelta;
+};
+
+layout (std430, binding = 0) buffer agentsBuffer {
+    Agent agents[];
+};
+
+readonly layout (std430, binding = 1) buffer collisionsBuffer {
+    ComputedCollision collisions[];
+};
+
+readonly layout (std430, binding = 2) buffer timeDeltaBuffer {
+    float timeDelta;
+};
+
+readonly layout (std430, binding = 3) buffer numberOfElementsBuffer {
+    uint numberOfElements;
+};
+
+readonly layout (std430, binding = 4) buffer numberOfCollisionsBuffer {
+    uint numberOfCollisions;
+};
+
+int findStartIndex(uint index) {
+    return -1;
+}
+
+void main() {
+    const uint index = gl_GlobalInvocationID.x;
+
+    if (index >= numberOfElements) { return; }
+
+    const Agent agent = agents[index];
+
+    const int startIndex = findStartIndex(index);
+
+    const vec3 originalVelocity = agent.velocity;
+    const vec3 originalPosition = agent.position;
+
+    float currentTime = 0.0f;
+    vec3 newVelocity = originalVelocity;
+    vec3 newPosition = originalPosition;
+
+    if (startIndex >= 0) {
+        for (int i = startIndex; i < numberOfCollisions; ++i) {
+            ComputedCollision col = collisions[i];
+            if (col.agentIndex != index) {
+                break;
+            }
+
+            newPosition += originalVelocity * col.time;
+            newVelocity += col.velocityDelta;
+        }
+    }
+
+    const float timeRemaining = timeDelta - currentTime;
+    if (timeRemaining > 0.0f) {
+        newPosition += originalVelocity * timeRemaining;
+    }
+
+    agents[index].position = newPosition;
+    agents[index].velocity = newVelocity;
+}

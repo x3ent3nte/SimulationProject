@@ -11,9 +11,12 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Reduce.comp -o src/GLSL/spv/Redu
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/MapAgentToMaxX.comp -o src/GLSL/spv/MapAgentToMaxX.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/MapAgentToCurrentX.comp -o src/GLSL/spv/MapAgentToCurrentX.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/MapXToAgent.comp -o src/GLSL/spv/MapXToAgent.spv
+
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionDetection.comp -o src/GLSL/spv/CollisionDetection.spv
-C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AdvanceTime.comp -o src/GLSL/spv/AdvanceTime.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsScatter.comp -o src/GLSL/spv/CollisionsScatter.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/Impact.comp -o src/GLSL/spv/Impact.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsApply.comp -o src/GLSL/spv/CollisionsApply.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AdvanceTime.comp -o src/GLSL/spv/AdvanceTime.spv
 
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanInt.comp -o src/GLSL/spv/ScanInt.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanIntAddOffsets.comp -o src/GLSL/spv/ScanIntAddOffsets.spv

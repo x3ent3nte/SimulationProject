@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 256
+#define MAX_COLLISIONS_PER_AGENT 10
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
 
@@ -25,19 +26,23 @@ struct Collision {
     float time;
 };
 
-readonly layout (std430, binding = 0) buffer bufferAgents {
+readonly layout (std430, binding = 0) buffer agentsBuffer {
     Agent agents[];
 };
 
-writeonly layout (std430, binding = 1) buffer bufferCollision {
+writeonly layout (std430, binding = 1) buffer collisionsBuffer {
     Collision collisions[];
 };
 
-readonly layout (std430, binding = 2) buffer bufferTimeDelta {
+writeonly layout (std430, binding = 2) buffer numberOfCollisionsBuffer {
+    uint numberOfCollisions[];
+};
+
+readonly layout (std430, binding = 3) buffer timeDeltaBuffer {
     float timeDelta;
 };
 
-readonly layout (std430, binding = 3) buffer bufferNumberOfElements {
+readonly layout (std430, binding = 4) buffer numberOfElementsBuffer {
     uint numberOfElements;
 };
 
@@ -87,45 +92,61 @@ bool isEarlierCollision(float new, float currentEarliest) {
     return (new > 0.0f) && (new < currentEarliest);
 }
 
+float timeOfCollision(float x, float y) {
+    if (x < 0.0f) {
+        return y;
+    } else if (y < 0.0f) {
+        return x;
+    } else {
+        return min(x, y);
+    }
+}
+
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
-    if (index >= numberOfElements) {
-        return;
-    }
+    if (index >= numberOfElements) { return; }
 
-    Collision earliestCollision = Collision(0, 0, timeDelta + 2);
     Agent agent = agents[index];
 
-    float minX = min(agent.position.x, agent.position.x + (agent.velocity.x * timeDelta)) - agent.radius;
+    const float minX = min(agent.position.x, agent.position.x + (agent.velocity.x * timeDelta)) - agent.radius;
+
+    uint numCol = 0;
+    Collision agentCollisions[MAX_COLLISIONS_PER_AGENT];
 
     for (uint i = index; i >= 1; --i) {
-        uint otherIndex = i - 1;
+        const uint otherIndex = i - 1;
         Agent other = agents[otherIndex];
-        float maxX = other.radius + max(other.position.x, other.position.x + (other.velocity.x * timeDelta));
+        const float maxX = other.radius + max(other.position.x, other.position.x + (other.velocity.x * timeDelta));
 
-        float xDiff = minX - maxX;
+        const float xDiff = minX - maxX;
         if (xDiff > 0.0f) {
             break;
         }
 
-        float radiusSum = agent.radius + other.radius;
+        const float radiusSum = agent.radius + other.radius;
         if (length(agent.position - other.position) > radiusSum)
         {
             QuadraticSolution impact = calculateTimeOfImpact(agent, other);
             if (impact.exists) {
-                if (isEarlierCollision(impact.sol1, earliestCollision.time)) {
-                    earliestCollision = Collision(otherIndex, index, impact.sol1);
-                } else {
-                    if (isEarlierCollision(impact.sol2, earliestCollision.time)) {
-                        earliestCollision = Collision(otherIndex, index, impact.sol2);
+                const float time = timeOfCollision(impact.sol1, impact.sol2);
+                if (time >= 0.0f) {
+                    agentCollisions[numCol] = Collision(index, otherIndex, time);
+                    numCol++;
+                    if (numCol == MAX_COLLISIONS_PER_AGENT) {
+                        break;
                     }
                 }
             }
         }
     }
 
-    collisions[index] = earliestCollision;
+    const uint collisionsIndex = index * MAX_COLLISIONS_PER_AGENT;
+    for (uint i = 0 ; i < numCol; ++i) {
+        collisions[collisionsIndex + i] = agentCollisions[i];
+    }
+
+    numberOfCollisions[index] = numCol;
 }
 
 

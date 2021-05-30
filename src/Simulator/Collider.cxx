@@ -1,14 +1,115 @@
 #include <Simulator/Collider.h>
 
-#include <Simulator/ColliderUtil.h>
+#include <Simulator/Agent.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
 #include <Utils/Command.h>
+#include <Utils/MyGLM.h>
 
 #include <array>
 #include <stdexcept>
 #include <iostream>
+
+namespace ColliderUtil {
+    constexpr size_t xDim = 256;
+    constexpr size_t kNumberOfBindings = 5;
+    constexpr uint32_t kMaxCollisionsPerAgent = 10;
+
+    struct ComputedCollision {
+        uint32_t agentIndex;
+        float time;
+        glm::vec3 velocityDelta;
+    };
+
+    VkDescriptorSet createDescriptorSet(
+        VkDevice logicalDevice,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkDescriptorPool descriptorPool,
+        VkBuffer agentsBuffer,
+        VkBuffer collisionsBuffer,
+        VkBuffer numberOfCollisionsBuffer,
+        VkBuffer timeDeltaBuffer,
+        VkBuffer numberOfElementsBuffer,
+        uint32_t numberOfElements) {
+
+        std::vector<Compute::BufferAndSize> bufferAndSizes = {
+            {agentsBuffer, numberOfElements * sizeof(Agent)},
+            {collisionsBuffer, numberOfElements * kMaxCollisionsPerAgent * sizeof(Collision)},
+            {numberOfCollisionsBuffer, numberOfElements * sizeof(uint32_t)},
+            {timeDeltaBuffer, sizeof(float)},
+            {numberOfElementsBuffer, sizeof(uint32_t)}
+        };
+
+        return Compute::createDescriptorSet(
+            logicalDevice,
+            descriptorSetLayout,
+            descriptorPool,
+            bufferAndSizes);
+    }
+
+    VkCommandBuffer createCommandBuffer(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkPipeline pipeline,
+        VkPipelineLayout pipelineLayout,
+        VkDescriptorSet descriptorSet,
+        VkBuffer timeDeltaBuffer,
+        VkBuffer timeDeltaHostVisibleBuffer,
+        uint32_t numberOfElements) {
+
+        VkCommandBuffer commandBuffer;
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create compute command buffer");
+        }
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to begin compute command buffer");
+        }
+
+        VkBufferCopy copyRegion{};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size = sizeof(float);
+        vkCmdCopyBuffer(commandBuffer, timeDeltaHostVisibleBuffer, timeDeltaBuffer, 1, &copyRegion);
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            0,
+            nullptr);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+
+        uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to end compute command buffer");
+        }
+
+        return commandBuffer;
+    }
+} // namespace anonymous
 
 Collider::Collider(
     VkPhysicalDevice physicalDevice,
@@ -40,6 +141,13 @@ Collider::Collider(
         m_commandPool,
         numberOfElements);
 
+    m_scanner = std::make_shared<Scanner<int32_t>>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        numberOfElements);
+
     m_timeAdvancer = std::make_shared<TimeAdvancer>(
         physicalDevice,
         m_logicalDevice,
@@ -59,11 +167,38 @@ Collider::Collider(
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        numberOfElements * sizeof(Collision),
+        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(Collision),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        m_collisionsHostVisibleBuffer,
-        m_collisionsHostVisibleDeviceMemory);
+        m_collisionsBuffer,
+        m_collisionsDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(Collision),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_compactedCollisionsBuffer,
+        m_compactedCollisionsDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(ColliderUtil::ComputedCollision),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_senderCollisionsBuffer,
+        m_senderCollisionsDeviceMemory);
+
+    Buffer::createBuffer(
+        physicalDevice,
+        m_logicalDevice,
+        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(ColliderUtil::ComputedCollision),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_receiverCollisionsBuffer,
+        m_receiverCollisionsDeviceMemory);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -103,21 +238,22 @@ Collider::Collider(
         m_numberOfElementsBufferHostVisible,
         m_numberOfElementsDeviceMemoryHostVisible);
 
-    m_descriptorSetLayout = ColliderUtil::createDescriptorSetLayout(m_logicalDevice);
-    m_descriptorPool = ColliderUtil::createDescriptorPool(m_logicalDevice, 1);
+    m_descriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, ColliderUtil::kNumberOfBindings);
+    m_descriptorPool = Compute::createDescriptorPool(m_logicalDevice, ColliderUtil::kNumberOfBindings, 1);
     m_pipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_descriptorSetLayout);
-    m_pipeline = ColliderUtil::createPipeline(m_logicalDevice, m_pipelineLayout);
+    m_pipeline = Compute::createPipeline("src/GLSL/spv/CollisionDetection.spv", m_logicalDevice, m_pipelineLayout);
     m_descriptorSet = ColliderUtil::createDescriptorSet(
         m_logicalDevice,
         m_descriptorSetLayout,
         m_descriptorPool,
         m_agentsBuffer,
-        m_reducer->m_oneBuffer,
+        m_collisionsBuffer,
+        m_scanner->m_dataBuffer,
         m_timeDeltaBuffer,
         m_numberOfElementsBuffer,
         numberOfElements);
 
-    m_commandBuffer = VK_NULL_HANDLE;
+    m_collisionDetectionCommandBuffer = VK_NULL_HANDLE;
     createCommandBuffer(numberOfElements);
 
     m_setNumberOfElementsCommandBuffer = Buffer::recordCopyCommand(
@@ -137,8 +273,8 @@ Collider::Collider(
 }
 
 void Collider::createCommandBuffer(uint32_t numberOfElements) {
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
-    m_commandBuffer = ColliderUtil::createCommandBuffer(
+    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_collisionDetectionCommandBuffer);
+    m_collisionDetectionCommandBuffer = ColliderUtil::createCommandBuffer(
         m_logicalDevice,
         m_commandPool,
         m_pipeline,
@@ -163,17 +299,19 @@ void Collider::updateNumberOfElementsIfNecessary(uint32_t numberOfElements) {
     Command::runAndWait(m_setNumberOfElementsCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
 
-void Collider::runCollisionDetection(float timeDelta) {
-
-    Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
-
-    Command::runAndWait(m_commandBuffer, m_fence, m_queue, m_logicalDevice);
-}
-
 Collider::~Collider() {
 
-    vkFreeMemory(m_logicalDevice, m_collisionsHostVisibleDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_collisionsHostVisibleBuffer, nullptr);
+    vkFreeMemory(m_logicalDevice, m_collisionsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_collisionsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_compactedCollisionsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_compactedCollisionsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_senderCollisionsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_senderCollisionsBuffer, nullptr);
+
+    vkFreeMemory(m_logicalDevice, m_receiverCollisionsDeviceMemory, nullptr);
+    vkDestroyBuffer(m_logicalDevice, m_receiverCollisionsBuffer, nullptr);
 
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
@@ -193,47 +331,17 @@ Collider::~Collider() {
     vkDestroyPipeline(m_logicalDevice,  m_pipeline, nullptr);
 
     std::array<VkCommandBuffer, 2> commandBuffers = {
-        m_commandBuffer,
+        m_collisionDetectionCommandBuffer,
         m_setNumberOfElementsCommandBuffer};
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
-Collision Collider::extractEarliestCollision(VkBuffer reduceResult) {
-    const size_t collisionsSize = m_currentNumberOfElements * sizeof(Collision);
-    VkCommandBuffer copyCollisionsCommandBuffer = Buffer::recordCopyCommand(
-        m_logicalDevice,
-        m_commandPool,
-        reduceResult,
-        m_collisionsHostVisibleBuffer,
-        collisionsSize);
-
-    Command::runAndWait(copyCollisionsCommandBuffer, m_fence, m_queue, m_logicalDevice);
-
-    vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &copyCollisionsCommandBuffer);
-
-    Collision earliestCollision;
-    Buffer::readHostVisible(m_collisionsHostVisibleDeviceMemory, &earliestCollision, 0, sizeof(Collision), m_logicalDevice);
-
-    return earliestCollision;
-}
-
 float Collider::computeNextStep(float timeDelta) {
-    m_agentSorter->run(timeDelta, m_currentNumberOfElements);
-    {
-        //Timer timer("runCollisionDetection");
-        runCollisionDetection(timeDelta);
-    }
-    Collision earliestCollision;
-    {
-        //Timer timer("Reduce Collisions");
-        VkBuffer reduceResult = m_reducer->run(m_currentNumberOfElements);
-        earliestCollision = extractEarliestCollision(reduceResult);
-    }
-
-    //std::cout << "Earliest collision one= " << earliestCollision.one << " two= " << earliestCollision.two
-    //    << " time= " << earliestCollision.time << " timeDelta=" << timeDelta << " equal=" << (earliestCollision.time == timeDelta) << "\n";
+    return timeDelta;
+    //Collision earliestCollision = extractEarliestCollision(reduceResult);
+    /*
     if (earliestCollision.time < timeDelta) {
         {
             //Timer timer("Advance Time");
@@ -251,11 +359,26 @@ float Collider::computeNextStep(float timeDelta) {
         }
         return timeDelta;
     }
-
+    */
 }
 
 void Collider::run(float timeDelta, uint32_t numberOfElements) {
     updateNumberOfElementsIfNecessary(numberOfElements);
+
+    m_agentSorter->run(timeDelta, m_currentNumberOfElements);
+
+    Buffer::writeHostVisible(&timeDelta, m_timeDeltaDeviceMemoryHostVisible, 0, sizeof(float), m_logicalDevice);
+    Command::runAndWait(m_collisionDetectionCommandBuffer, m_fence, m_queue, m_logicalDevice);
+    m_scanner->run(m_currentNumberOfElements);
+
+    // scatter collisions
+    // resolve collisions
+    // sender evaluate
+    // receiver evaluate
+
+    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
+
+    /*
 
     int numberOfSteps = 0;
     while (timeDelta > 0.0f) {
@@ -269,4 +392,5 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     }
 
     std::cout << "Number of Collider steps = " << numberOfSteps << "\n";
+    */
 }

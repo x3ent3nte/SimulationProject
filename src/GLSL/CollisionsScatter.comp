@@ -1,0 +1,51 @@
+#version 460
+#extension GL_ARB_separate_shader_objects : enable
+
+#define X_DIM 256
+#define MAX_COLLISIONS_PER_AGENT 10
+
+layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
+
+struct Collision {
+    uint one;
+    uint two;
+    float time;
+};
+
+readonly layout (std430, binding = 0) buffer collisionsInputBuffer {
+    Collision collisionsInput[];
+};
+
+readonly layout (std430, binding = 1) buffer scannedBuffer {
+    uint scanned[];
+};
+
+writeonly layout (std430, binding = 2) buffer collisionsOutputBuffer {
+    Collision collisionsOutput[];
+};
+
+readonly layout (std430, binding = 3) buffer numberOfElementsBuffer {
+    uint numberOfElements;
+};
+
+void main() {
+    const uint index = gl_GlobalInvocationID.x;
+
+    if (index >= numberOfElements) { return; }
+
+    const uint collisionsIndex = index * MAX_COLLISIONS_PER_AGENT;
+
+    uint scanIndex;
+    uint numberOfCollisions;
+    if (index == 0) {
+        scanIndex = 0;
+        numberOfCollisions = scanned[index];
+    } else {
+        scanIndex = scanned[index - 1];
+        numberOfCollisions = scanned[index] - scanIndex;
+    }
+
+    for (int i = 0; i < numberOfCollisions; ++i) {
+        collisionsOutput[scanIndex + i] = collisionsInput[collisionsIndex + i];
+    }
+}
