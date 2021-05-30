@@ -117,7 +117,7 @@ public:
         const std::vector<std::pair<std::string, std::string>> modelAndTexturePaths = {
             {Constants::kDragonModelPath, Constants::kDragonTexturePath},
             {Constants::kAsteroidModelPath, Constants::kAsteroidTexturePath},
-            {Constants::kMoonModelPath, Constants::kMoonTexturePath},
+            {Constants::kPlanetModelPath, Constants::kPlanetTexturePath},
             {Constants::kPlasmaModelPath, Constants::kPlasmaTexturePath},
             {Constants::kSmallAsteroidModelPath, Constants::kAsteroidTexturePath}
         };
