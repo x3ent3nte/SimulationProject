@@ -27,6 +27,13 @@ CollisionsApplyer::CollisionsApplyer(
     m_queue = queue;
     m_commandPool = commandPool;
 
+    m_radixSorter = std::make_shared<RadixSorter>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent);
+
     const size_t computedCollisionsMemorySize = maxNumberOfAgents * 2 * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(ComputedCollision);
 
     Buffer::createBuffer(
@@ -56,6 +63,6 @@ CollisionsApplyer::~CollisionsApplyer() {
     vkDestroyBuffer(m_logicalDevice, m_otherComputedCollisionsBuffer, nullptr);
 }
 
-void CollisionsApplyer::run(uint32_t numberOfAgents, uint32_t numberOfCollisions) {
+void CollisionsApplyer::run(uint32_t numberOfAgents, uint32_t numberOfCollisions, float timeDelta) {
 
 }

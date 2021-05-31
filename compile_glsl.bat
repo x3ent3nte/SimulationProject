@@ -16,6 +16,9 @@ C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionDetection.comp -o src/G
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsScatter.comp -o src/GLSL/spv/CollisionsScatter.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsImpact.comp -o src/GLSL/spv/CollisionsImpact.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsApply.comp -o src/GLSL/spv/CollisionsApply.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsRadixSortTimeMap.comp -o src/GLSL/spv/CollisionsRadixSortTimeMap.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsRadixSortAgentIndexMap.comp -o src/GLSL/spv/CollisionsRadixSortAgentIndexMap.spv
+C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/CollisionsRadixSortGather.comp -o src/GLSL/spv/CollisionsRadixSortGather.spv
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/AdvanceTime.comp -o src/GLSL/spv/AdvanceTime.spv
 
 C:/VulkanSDK/1.2.141.2/Bin32/glslc.exe src/GLSL/ScanInt.comp -o src/GLSL/spv/ScanInt.spv

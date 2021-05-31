@@ -68,7 +68,6 @@ private:
     void updateNumberOfElementsIfNecessary(uint32_t numberOfElements);
     void createDetectionCommandBuffer();
     void createScatterCommandBuffer();
-    float computeNextStep(float timeDelta);
 
 public:
 

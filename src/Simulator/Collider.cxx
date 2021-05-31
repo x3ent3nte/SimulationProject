@@ -406,10 +406,9 @@ Collider::~Collider() {
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
 
+/*
 float Collider::computeNextStep(float timeDelta) {
-    return timeDelta;
-    //Collision earliestCollision = extractEarliestCollision(reduceResult);
-    /*
+    Collision earliestCollision = extractEarliestCollision(reduceResult);
     if (earliestCollision.time < timeDelta) {
         {
             //Timer timer("Advance Time");
@@ -427,8 +426,8 @@ float Collider::computeNextStep(float timeDelta) {
         }
         return timeDelta;
     }
-    */
 }
+*/
 
 void Collider::run(float timeDelta, uint32_t numberOfElements) {
     updateNumberOfElementsIfNecessary(numberOfElements);
@@ -447,8 +446,10 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     Buffer::readHostVisible(m_numberOfCollisionsDeviceMemoryHostVisible, &numberOfCollisions, 0, sizeof(uint32_t), m_logicalDevice);
 
     std::cout << "Number of collisions = " << numberOfCollisions << "\n";
+    // impact
     m_impacter->run(numberOfCollisions);
-    m_applyer->run(m_currentNumberOfElements, numberOfCollisions * 2);
+    // apply
+    m_applyer->run(m_currentNumberOfElements, numberOfCollisions * 2, timeDelta);
 
     m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
 
