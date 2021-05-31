@@ -61,12 +61,20 @@ private:
     VkDescriptorPool m_radixGatherDescriptorPool;
     VkPipelineLayout m_radixGatherPipelineLayout;
     VkPipeline m_radixGatherPipeline;
-
     VkDescriptorSet m_radixTimeGatherDescriptorSet;
+
+    VkDescriptorSetLayout m_radixAgentIndexMapDescriptorSetLayout;
+    VkDescriptorPool m_radixAgentIndexMapDescriptorPool;
+    VkPipelineLayout m_radixAgentIndexMapPipelineLayout;
+    VkPipeline m_radixAgentIndexMapPipeline;
+    VkDescriptorSet m_radixAgentIndexMapDescriptorSet;
+
     VkDescriptorSet m_radixAgentIndexGatherDescriptorSet;
 
     VkCommandBuffer m_radixTimeMapCommandBuffer;
     VkCommandBuffer m_radixTimeGatherCommandBuffer;
+    VkCommandBuffer m_radixAgentIndexMapCommandBuffer;
+    VkCommandBuffer m_radixAgentIndexGatherCommandBuffer;
 
     VkFence m_fence;
 };

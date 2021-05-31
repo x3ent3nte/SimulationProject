@@ -13,6 +13,7 @@ namespace CollisionsApplyerUtil {
     constexpr uint32_t kMaxCollisionsPerAgent = 10;
 
     constexpr size_t kRadixTimeMapNumberOfBindings = 3;
+    constexpr size_t kRadixAgentIndexMapNumberOfBindings = 3;
     constexpr size_t kRadixGatherNumberOfBindings = 4;
 
     constexpr size_t kNumberOfBindings = 5;
@@ -86,6 +87,48 @@ namespace CollisionsApplyerUtil {
     }
 
     VkCommandBuffer createRadixGatherCommandBuffer(
+        VkDevice logicalDevice,
+        VkCommandPool commandPool,
+        VkPipeline pipeline,
+        VkPipelineLayout pipelineLayout,
+        VkDescriptorSet descriptorSet,
+        uint32_t numberOfElements) {
+
+        VkCommandBuffer commandBuffer;
+
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create compute command buffer");
+        }
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to begin compute command buffer");
+        }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+
+        uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to end compute command buffer");
+        }
+
+        return commandBuffer;
+    }
+
+    VkCommandBuffer createRadixAgentIndexMapCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
         VkPipeline pipeline,
@@ -231,6 +274,23 @@ CollisionsApplyer::CollisionsApplyer(
 
     // Radix Agent Index Map
 
+    m_radixAgentIndexMapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, CollisionsApplyerUtil::kRadixAgentIndexMapNumberOfBindings);;
+    m_radixAgentIndexMapDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, CollisionsApplyerUtil::kRadixAgentIndexMapNumberOfBindings, 1);
+    m_radixAgentIndexMapPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_radixAgentIndexMapDescriptorSetLayout);
+    m_radixAgentIndexMapPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsRadixSortAgentIndexMap.spv", m_logicalDevice, m_radixAgentIndexMapPipelineLayout);
+
+    std::vector<Compute::BufferAndSize> radixAgentIndexMapBufferAndSizes = {
+        {m_otherComputedCollisionsBuffer, computedCollisionsMemorySize},
+        {m_radixSorter->m_dataBuffer, maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(uint32_t)},
+        {m_numberOfCollisionsBuffer, sizeof(uint32_t)}
+    };
+
+    m_radixAgentIndexMapDescriptorSet = Compute::createDescriptorSet(
+        m_logicalDevice,
+        m_radixAgentIndexMapDescriptorSetLayout,
+        m_radixAgentIndexMapDescriptorPool,
+        radixAgentIndexMapBufferAndSizes);
+
     // Radix Agent Index Gather
 
     std::vector<Compute::BufferAndSize> radixAgentIndexGatherBufferAndSizes = {
@@ -258,6 +318,8 @@ CollisionsApplyer::CollisionsApplyer(
 
     m_radixTimeMapCommandBuffer = VK_NULL_HANDLE;
     m_radixTimeGatherCommandBuffer = VK_NULL_HANDLE;
+    m_radixAgentIndexMapCommandBuffer = VK_NULL_HANDLE;
+    m_radixAgentIndexGatherCommandBuffer = VK_NULL_HANDLE;
     createRadixSortCommandBuffers();
 }
 
@@ -273,9 +335,16 @@ CollisionsApplyer::~CollisionsApplyer() {
     vkDestroyPipelineLayout(m_logicalDevice, m_radixGatherPipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_radixGatherPipeline, nullptr);
 
-    std::array<VkCommandBuffer, 2> commandBuffers = {
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_radixAgentIndexMapDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_radixAgentIndexMapDescriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_radixAgentIndexMapPipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_radixAgentIndexMapPipeline, nullptr);
+
+    std::array<VkCommandBuffer, 4> commandBuffers = {
         m_radixTimeMapCommandBuffer,
-        m_radixTimeGatherCommandBuffer
+        m_radixTimeGatherCommandBuffer,
+        m_radixAgentIndexMapCommandBuffer,
+        m_radixAgentIndexGatherCommandBuffer
     };
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
@@ -295,9 +364,11 @@ CollisionsApplyer::~CollisionsApplyer() {
 }
 
 void CollisionsApplyer::createRadixSortCommandBuffers() {
-    std::array<VkCommandBuffer, 2> commandBuffers = {
+    std::array<VkCommandBuffer, 4> commandBuffers = {
         m_radixTimeMapCommandBuffer,
-        m_radixTimeGatherCommandBuffer
+        m_radixTimeGatherCommandBuffer,
+        m_radixAgentIndexMapCommandBuffer,
+        m_radixAgentIndexGatherCommandBuffer
     };
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
@@ -318,6 +389,22 @@ void CollisionsApplyer::createRadixSortCommandBuffers() {
         m_radixGatherPipelineLayout,
         m_radixTimeGatherDescriptorSet,
         m_currentNumberOfCollisions);
+
+    m_radixAgentIndexMapCommandBuffer = CollisionsApplyerUtil::createRadixAgentIndexMapCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_radixAgentIndexMapPipeline,
+        m_radixAgentIndexMapPipelineLayout,
+        m_radixAgentIndexMapDescriptorSet,
+        m_currentNumberOfCollisions);
+
+    m_radixAgentIndexGatherCommandBuffer = CollisionsApplyerUtil::createRadixGatherCommandBuffer(
+        m_logicalDevice,
+        m_commandPool,
+        m_radixGatherPipeline,
+        m_radixGatherPipelineLayout,
+        m_radixAgentIndexGatherDescriptorSet,
+        m_currentNumberOfCollisions);
 }
 
 void CollisionsApplyer::updateNumberOfElementsIfNecessary(uint32_t numberOfAgents, uint32_t numberOfCollisions) {
@@ -330,7 +417,12 @@ void CollisionsApplyer::updateNumberOfElementsIfNecessary(uint32_t numberOfAgent
 
 void CollisionsApplyer::run(uint32_t numberOfAgents, uint32_t numberOfCollisions, float timeDelta) {
     updateNumberOfElementsIfNecessary(numberOfAgents, numberOfCollisions);
+
     Command::runAndWait(m_radixTimeMapCommandBuffer, m_fence, m_queue, m_logicalDevice);
     m_radixSorter->run(numberOfCollisions);
     Command::runAndWait(m_radixTimeGatherCommandBuffer, m_fence, m_queue, m_logicalDevice);
+
+    Command::runAndWait(m_radixAgentIndexMapCommandBuffer, m_fence, m_queue, m_logicalDevice);
+    m_radixSorter->run(numberOfCollisions);
+    Command::runAndWait(m_radixAgentIndexGatherCommandBuffer, m_fence, m_queue, m_logicalDevice);
 }
