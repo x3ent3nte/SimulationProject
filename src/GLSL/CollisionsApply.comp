@@ -79,6 +79,30 @@ int findStartIndex(uint index) {
     return startIndex;
 }
 
+vec4 hamiltonProduct(vec4 a, vec4 b) {
+    float r = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+    float i = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+    float j = (a.w * b.y) - (a.x * b.z) + (a.y * b.w) + (a.z * b.x);
+    float k = (a.w * b.z) + (a.x * b.y) - (a.y * b.x) + (a.z * b.w);
+
+    return vec4(i, j, k, r);
+}
+
+vec4 axisAndThetaToQuaternion(vec3 axis, float theta) {
+    float thetaHalved = theta / 2;
+    return vec4(axis * sin(thetaHalved), cos(thetaHalved));
+}
+
+const vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
+const vec3 canonicalUp = vec3(0.0f, 1.0f, 0.0f);
+const vec3 canonicalRight = vec3(1.0f, 0.0f, 0.0f);
+
+vec4 eulerToQuaternion(vec3 euler) {
+    vec4 q = axisAndThetaToQuaternion(canonicalRight, euler.x);
+    q = normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalUp, euler.y), q));
+    return normalize(hamiltonProduct(axisAndThetaToQuaternion(canonicalForward, euler.z), q));
+}
+
 void main() {
     const uint index = gl_GlobalInvocationID.x;
 
@@ -112,6 +136,8 @@ void main() {
         newPosition += originalVelocity * timeRemaining;
     }
 
+
     agents[index].position = newPosition;
     agents[index].velocity = newVelocity;
+    agents[index].rotation = normalize(hamiltonProduct(eulerToQuaternion(agent.rotationalVelocity * timeDelta), agent.rotation));
 }

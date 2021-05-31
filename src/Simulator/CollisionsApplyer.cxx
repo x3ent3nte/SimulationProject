@@ -477,6 +477,11 @@ CollisionsApplyer::~CollisionsApplyer() {
     vkDestroyPipelineLayout(m_logicalDevice, m_radixAgentIndexMapPipelineLayout, nullptr);
     vkDestroyPipeline(m_logicalDevice, m_radixAgentIndexMapPipeline, nullptr);
 
+    vkDestroyDescriptorSetLayout(m_logicalDevice, m_applyDescriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(m_logicalDevice, m_applyDescriptorPool, nullptr);
+    vkDestroyPipelineLayout(m_logicalDevice, m_applyPipelineLayout, nullptr);
+    vkDestroyPipeline(m_logicalDevice, m_applyPipeline, nullptr);
+
     std::array<VkCommandBuffer, 4> commandBuffers = {
         m_radixTimeMapCommandBuffer,
         m_radixTimeGatherCommandBuffer,

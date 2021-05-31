@@ -451,7 +451,7 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     // apply
     m_applyer->run(m_currentNumberOfElements, numberOfCollisions * 2, timeDelta);
 
-    m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
+    //m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
 
     /*
 
