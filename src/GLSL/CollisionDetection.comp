@@ -130,7 +130,7 @@ void main() {
             QuadraticSolution impact = calculateTimeOfImpact(agent, other);
             if (impact.exists) {
                 const float time = timeOfCollision(impact.sol1, impact.sol2);
-                if (time >= 0.0f) {
+                if (time >= 0.0f && time < timeDelta) {
                     agentCollisions[numCol] = Collision(index, otherIndex, time);
                     numCol++;
                     if (numCol == MAX_COLLISIONS_PER_AGENT) {
