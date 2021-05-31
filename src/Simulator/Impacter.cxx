@@ -1,6 +1,8 @@
 #include <Simulator/Impacter.h>
 
 #include <Simulator/Agent.h>
+#include <Simulator/Collision.h>
+#include <Simulator/ComputedCollision.h>
 #include <Utils/Buffer.h>
 #include <Utils/Compute.h>
 #include <Utils/Command.h>
@@ -14,12 +16,6 @@ namespace ImpacterUtil {
     constexpr size_t xDim = 256;
     constexpr uint32_t kMaxCollisionsPerAgent = 10;
     constexpr size_t kNumberOfBindings = 4;
-
-    struct ComputedCollision {
-        uint32_t agentIndex;
-        float time;
-        glm::vec3 velocityDelta;
-    };
 
     VkCommandBuffer createImpactCommandBuffer(
         VkDevice logicalDevice,
@@ -96,6 +92,7 @@ Impacter::Impacter(
     VkQueue queue,
     VkCommandPool commandPool,
     VkBuffer agentsBuffer,
+    VkBuffer computedCollisionsBuffer,
     uint32_t numberOfElements)
     : m_logicalDevice(logicalDevice)
     , m_queue(queue)
@@ -103,7 +100,7 @@ Impacter::Impacter(
 
     m_currentNumberOfElements = numberOfElements;
     const size_t collisionsMemorySize = numberOfElements * ImpacterUtil::kMaxCollisionsPerAgent * sizeof(Collision);
-    const size_t computedCollisionsMemorySize = numberOfElements * 2 * ImpacterUtil::kMaxCollisionsPerAgent * sizeof(ImpacterUtil::ComputedCollision);
+    const size_t computedCollisionsMemorySize = numberOfElements * 2 * ImpacterUtil::kMaxCollisionsPerAgent * sizeof(ComputedCollision);
 
     Buffer::createBuffer(
         physicalDevice,
@@ -113,24 +110,6 @@ Impacter::Impacter(
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         m_collisionBuffer,
         m_collisionDeviceMemory);
-
-    Buffer::createBuffer(
-        physicalDevice,
-        m_logicalDevice,
-        computedCollisionsMemorySize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        m_computedCollisionsBuffer,
-        m_computedCollisionsDeviceMemory);
-
-    Buffer::createBuffer(
-        physicalDevice,
-        m_logicalDevice,
-        computedCollisionsMemorySize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        m_otherComputedCollisionsBuffer,
-        m_otherComputedCollisionsDeviceMemory);
 
     Buffer::createBufferWithData(
         &numberOfElements,
@@ -160,7 +139,7 @@ Impacter::Impacter(
     std::vector<Compute::BufferAndSize> bufferAndSizes = {
         {agentsBuffer, numberOfElements * sizeof(Agent)},
         {m_collisionBuffer, collisionsMemorySize},
-        {m_computedCollisionsBuffer, computedCollisionsMemorySize},
+        {computedCollisionsBuffer, computedCollisionsMemorySize},
         {m_numberOfElementsBuffer, sizeof(uint32_t)}
     };
 
@@ -185,12 +164,6 @@ Impacter::Impacter(
 Impacter::~Impacter() {
     vkFreeMemory(m_logicalDevice, m_collisionDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_collisionBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_computedCollisionsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_computedCollisionsBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_otherComputedCollisionsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_otherComputedCollisionsBuffer, nullptr);
 
     vkFreeMemory(m_logicalDevice, m_numberOfElementsDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfElementsBuffer, nullptr);

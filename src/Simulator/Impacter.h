@@ -1,8 +1,6 @@
 #ifndef IMPACTER_H
 #define IMPACTER_H
 
-#include <Simulator/Collision.h>
-
 #include <vulkan/vulkan.h>
 
 class Impacter {
@@ -16,12 +14,6 @@ private:
     VkCommandPool m_commandPool;
 
     VkDeviceMemory m_collisionDeviceMemory;
-
-    VkBuffer m_computedCollisionsBuffer;
-    VkDeviceMemory m_computedCollisionsDeviceMemory;
-
-    VkBuffer m_otherComputedCollisionsBuffer;
-    VkDeviceMemory m_otherComputedCollisionsDeviceMemory;
 
     VkBuffer m_numberOfElementsBuffer;
     VkDeviceMemory m_numberOfElementsDeviceMemory;
@@ -52,6 +44,7 @@ public:
         VkQueue queue,
         VkCommandPool commandPool,
         VkBuffer agentsBuffer,
+        VkBuffer computedCollisionsBuffer,
         uint32_t numberOfElements);
 
     virtual ~Impacter();

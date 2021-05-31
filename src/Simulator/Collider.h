@@ -6,6 +6,7 @@
 #include <Simulator/TimeAdvancer.h>
 #include <Simulator/Impacter.h>
 #include <Simulator/Scanner.h>
+#include <Simulator/CollisionsApplyer.h>
 
 #include <vulkan/vulkan.h>
 
@@ -24,6 +25,7 @@ private:
     std::shared_ptr<Scanner<int32_t>> m_scanner;
     std::shared_ptr<TimeAdvancer> m_timeAdvancer;
     std::shared_ptr<Impacter> m_impacter;
+    std::shared_ptr<CollisionsApplyer> m_applyer;
 
     VkBuffer m_collisionsBuffer;
     VkDeviceMemory m_collisionsDeviceMemory;

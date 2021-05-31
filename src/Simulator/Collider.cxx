@@ -193,12 +193,21 @@ Collider::Collider(
         m_agentsBuffer,
         numberOfElements);
 
+    m_applyer = std::make_shared<CollisionsApplyer>(
+        physicalDevice,
+        m_logicalDevice,
+        m_queue,
+        m_commandPool,
+        m_agentsBuffer,
+        numberOfElements);
+
     m_impacter = std::make_shared<Impacter>(
         physicalDevice,
         m_logicalDevice,
         m_queue,
         m_commandPool,
         m_agentsBuffer,
+        m_applyer->m_computedCollisionsBuffer,
         numberOfElements);
 
     Buffer::createBuffer(
@@ -439,12 +448,7 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
 
     std::cout << "Number of collisions = " << numberOfCollisions << "\n";
     m_impacter->run(numberOfCollisions);
-
-    // resolve collisions
-
-    // sort by time
-    // sort by agentIndex
-    // apply
+    m_applyer->run(m_currentNumberOfElements, numberOfCollisions * 2);
 
     m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
 
