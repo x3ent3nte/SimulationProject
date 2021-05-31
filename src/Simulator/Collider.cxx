@@ -5,7 +5,6 @@
 #include <Utils/Compute.h>
 #include <Utils/Timer.h>
 #include <Utils/Command.h>
-#include <Utils/MyGLM.h>
 
 #include <array>
 #include <stdexcept>
@@ -17,12 +16,6 @@ namespace ColliderUtil {
     constexpr uint32_t kMaxCollisionsPerAgent = 10;
     constexpr size_t kDetectionNumberOfBindings = 5;
     constexpr size_t kScatterNumberOfBindings = 4;
-
-    struct ComputedCollision {
-        uint32_t agentIndex;
-        float time;
-        glm::vec3 velocityDelta;
-    };
 
     VkCommandBuffer createDetectionCommandBuffer(
         VkDevice logicalDevice,
@@ -220,24 +213,6 @@ Collider::Collider(
     Buffer::createBuffer(
         physicalDevice,
         m_logicalDevice,
-        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(ColliderUtil::ComputedCollision),
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        m_computedCollisionsBuffer,
-        m_computedCollisionsDeviceMemory);
-
-    Buffer::createBuffer(
-        physicalDevice,
-        m_logicalDevice,
-        numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(ColliderUtil::ComputedCollision),
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        m_otherComputedCollisionsBuffer,
-        m_otherComputedCollisionsDeviceMemory);
-
-    Buffer::createBuffer(
-        physicalDevice,
-        m_logicalDevice,
         sizeof(float),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -388,12 +363,6 @@ Collider::~Collider() {
     vkFreeMemory(m_logicalDevice, m_collisionsDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_collisionsBuffer, nullptr);
 
-    vkFreeMemory(m_logicalDevice, m_computedCollisionsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_computedCollisionsBuffer, nullptr);
-
-    vkFreeMemory(m_logicalDevice, m_otherComputedCollisionsDeviceMemory, nullptr);
-    vkDestroyBuffer(m_logicalDevice, m_otherComputedCollisionsBuffer, nullptr);
-
     vkFreeMemory(m_logicalDevice, m_timeDeltaDeviceMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_timeDeltaBuffer, nullptr);
 
@@ -468,6 +437,7 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     uint32_t numberOfCollisions;
     Buffer::readHostVisible(m_numberOfCollisionsDeviceMemoryHostVisible, &numberOfCollisions, 0, sizeof(uint32_t), m_logicalDevice);
 
+    std::cout << "Number of collisions = " << numberOfCollisions << "\n";
     m_impacter->run(numberOfCollisions);
 
     // resolve collisions

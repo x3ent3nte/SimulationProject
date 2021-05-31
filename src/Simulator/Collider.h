@@ -28,12 +28,6 @@ private:
     VkBuffer m_collisionsBuffer;
     VkDeviceMemory m_collisionsDeviceMemory;
 
-    VkBuffer m_computedCollisionsBuffer;
-    VkDeviceMemory m_computedCollisionsDeviceMemory;
-
-    VkBuffer m_otherComputedCollisionsBuffer;
-    VkDeviceMemory m_otherComputedCollisionsDeviceMemory;
-
     VkBuffer m_timeDeltaBuffer;
     VkDeviceMemory m_timeDeltaDeviceMemory;
 
