@@ -13,11 +13,7 @@ private:
     VkQueue m_queue;
     VkCommandPool m_commandPool;
 
-    VkBuffer m_collisionBuffer;
     VkDeviceMemory m_collisionDeviceMemory;
-
-    VkBuffer m_collisionHostVisibleBuffer;
-    VkDeviceMemory m_collisionHostVisibleDeviceMemory;
 
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkDescriptorPool m_descriptorPool;
@@ -31,6 +27,8 @@ private:
 
 public:
 
+    VkBuffer m_collisionBuffer;
+
     Impacter(
         VkPhysicalDevice physicalDevice,
         VkDevice logicalDevice,
@@ -41,8 +39,7 @@ public:
 
     virtual ~Impacter();
 
-    void run(const Collision& collision);
-
+    void run(uint32_t numberOfElements);
 };
 
 #endif
