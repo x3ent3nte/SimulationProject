@@ -28,6 +28,7 @@ public:
 
 private:
 
+    void createCollisionsApplyCommandBuffer();
     void createRadixSortCommandBuffers();
     void updateNumberOfElementsIfNecessary(uint32_t numberOfAgents, uint32_t numberOfCollisions);
 
@@ -51,6 +52,18 @@ private:
     VkBuffer m_numberOfCollisionsHostVisibleBuffer;
     VkDeviceMemory m_numberOfCollisionsHostVisibleDeviceMemory;
 
+    VkBuffer m_numberOfAgentsBuffer;
+    VkDeviceMemory m_numberOfAgentsDeviceMemory;
+
+    VkBuffer m_numberOfAgentsHostVisibleBuffer;
+    VkDeviceMemory m_numberOfAgentsHostVisibleDeviceMemory;
+
+    VkBuffer m_timeDeltaBuffer;
+    VkDeviceMemory m_timeDeltaDeviceMemory;
+
+    VkBuffer m_timeDeltaHostVisibleBuffer;
+    VkDeviceMemory m_timeDeltaHostVisibleDeviceMemory;
+
     VkDescriptorSetLayout m_radixTimeMapDescriptorSetLayout;
     VkDescriptorPool m_radixTimeMapDescriptorPool;
     VkPipelineLayout m_radixTimeMapPipelineLayout;
@@ -71,10 +84,17 @@ private:
 
     VkDescriptorSet m_radixAgentIndexGatherDescriptorSet;
 
+    VkDescriptorSetLayout m_applyDescriptorSetLayout;
+    VkDescriptorPool m_applyDescriptorPool;
+    VkPipelineLayout m_applyPipelineLayout;
+    VkPipeline m_applyPipeline;
+    VkDescriptorSet m_applyDescriptorSet;
+
     VkCommandBuffer m_radixTimeMapCommandBuffer;
     VkCommandBuffer m_radixTimeGatherCommandBuffer;
     VkCommandBuffer m_radixAgentIndexMapCommandBuffer;
     VkCommandBuffer m_radixAgentIndexGatherCommandBuffer;
+    VkCommandBuffer m_applyCommandBuffer;
 
     VkFence m_fence;
 };
