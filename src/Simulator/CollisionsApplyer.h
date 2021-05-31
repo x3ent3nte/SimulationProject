@@ -28,7 +28,11 @@ public:
 
 private:
 
+    void createRadixSortCommandBuffers();
+    void updateNumberOfElementsIfNecessary(uint32_t numberOfAgents, uint32_t numberOfCollisions);
+
     uint32_t m_currentNumberOfAgents;
+    uint32_t m_currentNumberOfCollisions;
 
     std::shared_ptr<RadixSorter> m_radixSorter;
 
@@ -40,6 +44,31 @@ private:
 
     VkBuffer m_otherComputedCollisionsBuffer;
     VkDeviceMemory m_otherComputedCollisionsDeviceMemory;
+
+    VkBuffer m_numberOfCollisionsBuffer;
+    VkDeviceMemory m_numberOfCollisionsDeviceMemory;
+
+    VkBuffer m_numberOfCollisionsHostVisibleBuffer;
+    VkDeviceMemory m_numberOfCollisionsHostVisibleDeviceMemory;
+
+    VkDescriptorSetLayout m_radixTimeMapDescriptorSetLayout;
+    VkDescriptorPool m_radixTimeMapDescriptorPool;
+    VkPipelineLayout m_radixTimeMapPipelineLayout;
+    VkPipeline m_radixTimeMapPipeline;
+    VkDescriptorSet m_radixTimeMapDescriptorSet;
+
+    VkDescriptorSetLayout m_radixGatherDescriptorSetLayout;
+    VkDescriptorPool m_radixGatherDescriptorPool;
+    VkPipelineLayout m_radixGatherPipelineLayout;
+    VkPipeline m_radixGatherPipeline;
+
+    VkDescriptorSet m_radixTimeGatherDescriptorSet;
+    VkDescriptorSet m_radixAgentIndexGatherDescriptorSet;
+
+    VkCommandBuffer m_radixTimeMapCommandBuffer;
+    VkCommandBuffer m_radixTimeGatherCommandBuffer;
+
+    VkFence m_fence;
 };
 
 #endif
