@@ -1,7 +1,7 @@
 #ifndef INSERTION_SORTER_H
 #define INSERTION_SORTER_H
 
-#include <Simulator/InsertionSorterUtil.h>
+#include <Utils/ShaderFunction.h>
 
 #include <vulkan/vulkan.h>
 
@@ -31,13 +31,8 @@ private:
     VkDeviceMemory m_offsetOneBufferMemory;
     VkDeviceMemory m_offsetTwoBufferMemory;
 
-    VkDescriptorSetLayout m_descriptorSetLayout;
-    VkDescriptorPool m_descriptorPool;
-    VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_pipeline;
-
-    VkDescriptorSet m_descriptorSetOne;
-    VkDescriptorSet m_descriptorSetTwo;
+    std::shared_ptr<ShaderLambda> m_lambdaOne;
+    std::shared_ptr<ShaderLambda> m_lambdaTwo;
 
     VkCommandBuffer m_commandBuffer;
     VkCommandBuffer m_setNumberOfElementsCommandBuffer;

@@ -12,6 +12,105 @@
 #include <stdexcept>
 #include <iostream>
 
+namespace InsertionSorterUtil {
+
+constexpr size_t xDim = 256;
+
+VkCommandBuffer createCommandBuffer(
+    VkDevice logicalDevice,
+    VkCommandPool commandPool,
+    VkBuffer wasSwappedBuffer,
+    VkBuffer wasSwappedBufferHostVisible,
+    std::shared_ptr<ShaderLambda> lambdaOne,
+    std::shared_ptr<ShaderLambda> lambdaTwo,
+    uint32_t numberOfElements) {
+
+    VkCommandBuffer commandBuffer;
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = commandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(logicalDevice, &commandBufferAllocateInfo, &commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create compute command buffer");
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to begin compute command buffer");
+    }
+
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = sizeof(uint32_t);
+    vkCmdCopyBuffer(commandBuffer, wasSwappedBufferHostVisible, wasSwappedBuffer, 1, &copyRegion);
+
+    VkMemoryBarrier memoryBarrier = {};
+    memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    memoryBarrier.pNext = nullptr;
+    memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+    memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &memoryBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * xDim));
+    //std::cout << "Number of X groups = " << xGroups << "\n";
+
+    lambdaOne->bind(commandBuffer, xGroups, 1, 1);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &memoryBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    lambdaTwo->bind(commandBuffer, xGroups, 1, 1);
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        1,
+        &memoryBarrier,
+        0,
+        nullptr,
+        0,
+        nullptr);
+
+    vkCmdCopyBuffer(commandBuffer, wasSwappedBuffer, wasSwappedBufferHostVisible, 1, &copyRegion);
+
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to end compute command buffer");
+    }
+
+    return commandBuffer;
+}
+
+};
+
 InsertionSorter::InsertionSorter(
     VkPhysicalDevice physicalDevice,
     VkDevice logicalDevice,
@@ -98,33 +197,24 @@ InsertionSorter::InsertionSorter(
         m_offsetTwoBuffer,
         m_offsetTwoBufferMemory);
 
-    m_descriptorSetLayout = InsertionSorterUtil::createDescriptorSetLayout(logicalDevice);
-    m_descriptorPool = InsertionSorterUtil::createDescriptorPool(logicalDevice, 2);
-    m_pipelineLayout = Compute::createPipelineLayout(logicalDevice, m_descriptorSetLayout);
+    auto shaderFn = std::make_shared<ShaderFunction>(logicalDevice, 4, "src/GLSL/spv/InsertionSort.spv");
+    auto shaderPool = std::make_shared<ShaderPool>(shaderFn, 2);
 
-    m_pipeline = InsertionSorterUtil::createPipeline(
-        logicalDevice,
-        m_pipelineLayout);
+    std::vector<Compute::BufferAndSize> oneBufferAndSizes = {
+        {m_valueAndIndexBuffer, numberOfElements * sizeof(ValueAndIndex)},
+        {m_wasSwappedBuffer, sizeof(uint32_t)},
+        {m_numberOfElementsBuffer, sizeof(uint32_t)},
+        {m_offsetOneBuffer, sizeof(uint32_t)}
+    };
+    m_lambdaOne = std::make_shared<ShaderLambda>(shaderPool, oneBufferAndSizes);
 
-    m_descriptorSetOne = InsertionSorterUtil::createDescriptorSet(
-        logicalDevice,
-        m_descriptorSetLayout,
-        m_descriptorPool,
-        m_valueAndIndexBuffer,
-        m_wasSwappedBuffer,
-        m_numberOfElementsBuffer,
-        m_offsetOneBuffer,
-        numberOfElements);
-
-    m_descriptorSetTwo = InsertionSorterUtil::createDescriptorSet(
-        logicalDevice,
-        m_descriptorSetLayout,
-        m_descriptorPool,
-        m_valueAndIndexBuffer,
-        m_wasSwappedBuffer,
-        m_numberOfElementsBuffer,
-        m_offsetTwoBuffer,
-        numberOfElements);
+    std::vector<Compute::BufferAndSize> twoBufferAndSizes = {
+        {m_valueAndIndexBuffer, numberOfElements * sizeof(ValueAndIndex)},
+        {m_wasSwappedBuffer, sizeof(uint32_t)},
+        {m_numberOfElementsBuffer, sizeof(uint32_t)},
+        {m_offsetTwoBuffer, sizeof(uint32_t)}
+    };
+    m_lambdaTwo = std::make_shared<ShaderLambda>(shaderPool, twoBufferAndSizes);
 
     m_commandBuffer = VK_NULL_HANDLE;
     createCommandBuffer(numberOfElements);
@@ -170,12 +260,6 @@ InsertionSorter::~InsertionSorter() {
     vkFreeMemory(m_logicalDevice, m_offsetTwoBufferMemory, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_offsetTwoBuffer, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_descriptorSetLayout, nullptr);
-
-    vkDestroyDescriptorPool(m_logicalDevice, m_descriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_pipeline, nullptr);
-
     std::array<VkCommandBuffer, 2> commandBuffers = {m_commandBuffer, m_setNumberOfElementsCommandBuffer};
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, commandBuffers.size(), commandBuffers.data());
 
@@ -200,16 +284,14 @@ void InsertionSorter::setNumberOfElements(uint32_t numberOfElements) {
 void InsertionSorter::createCommandBuffer(uint32_t numberOfElements) {
 
     vkFreeCommandBuffers(m_logicalDevice, m_commandPool, 1, &m_commandBuffer);
+
     m_commandBuffer = InsertionSorterUtil::createCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_pipeline,
-        m_pipelineLayout,
-        m_descriptorSetOne,
-        m_descriptorSetTwo,
-        m_valueAndIndexBuffer,
         m_wasSwappedBuffer,
         m_wasSwappedBufferHostVisible,
+        m_lambdaOne,
+        m_lambdaTwo,
         numberOfElements);
 }
 

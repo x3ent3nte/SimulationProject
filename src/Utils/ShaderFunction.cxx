@@ -48,3 +48,9 @@ ShaderLambda::~ShaderLambda() {
 
 }
 
+void ShaderLambda::bind(VkCommandBuffer commandBuffer, size_t x, size_t y, size_t z) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_shaderPool->m_shaderFn->m_pipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_shaderPool->m_shaderFn->m_pipelineLayout, 0, 1, &m_descriptorSet, 0, nullptr);
+    vkCmdDispatch(commandBuffer, x, y, z);
+}
+

@@ -2,7 +2,6 @@
 
 #include <Simulator/Agent.h>
 #include <Simulator/Collision.h>
-#include <Simulator/InsertionSorterUtil.h>
 
 #include <Utils/Compute.h>
 

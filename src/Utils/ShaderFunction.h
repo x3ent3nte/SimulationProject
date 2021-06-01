@@ -63,6 +63,8 @@ public:
     std::shared_ptr<ShaderPool> m_shaderPool;
     VkDescriptorSet m_descriptorSet;
 
+    void bind(VkCommandBuffer commandBuffer, size_t x, size_t y, size_t z);
+
 private:
 
 };

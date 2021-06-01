@@ -22,6 +22,26 @@ namespace {
         100,
         99};
 
+    std::vector<float> generateDataAlreadySorted(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            data[i] = i;
+        }
+        return data;
+    }
+
+    std::vector<float> generateDataAlmostSorted(uint32_t size) {
+        std::vector<float> data(size);
+        for (uint32_t i = 0; i < size; ++i) {
+            if (i % 20) {
+                data[i] = i + 3.0f;
+            } else {
+                data[i] = i;
+            }
+        }
+        return data;
+    }
+
     std::vector<float> generateDataWithReverseOrder(uint32_t size) {
         std::vector<float> data(size);
         for (uint32_t i = 0; i < size; ++i) {
@@ -128,6 +148,8 @@ void InsertionSortTest::run(std::shared_ptr<TestRunner> testRunner) {
     std::cout << "\n" << TextColour::BLUE << "InsertionSortTest started " << TextColour::END << "\n";
 
     std::vector<std::pair<std::string, std::vector<float>(*)(uint32_t)>> nameAndFns = {
+        {"AlreadySorted", generateDataAlreadySorted},
+        {"AlmostSorted", generateDataAlmostSorted},
         {"Reverse", generateDataWithReverseOrder},
         {"Repeated", generateDataWithRepeatedOrder},
         {"Random", generateDataWithRandomOrder}
