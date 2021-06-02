@@ -14,18 +14,10 @@ namespace CollisionsApplyerUtil {
     constexpr size_t xDim = 256;
     constexpr uint32_t kMaxCollisionsPerAgent = 10;
 
-    constexpr size_t kRadixTimeMapNumberOfBindings = 3;
-    constexpr size_t kRadixAgentIndexMapNumberOfBindings = 3;
-    constexpr size_t kRadixGatherNumberOfBindings = 4;
-
-    constexpr size_t kApplyNumberOfBindings = 5;
-
     VkCommandBuffer createRadixTimeMapCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         VkBuffer numberOfElementsHostVisibleBuffer,
         VkBuffer numberOfElementsBuffer,
         uint32_t numberOfElements) {
@@ -74,12 +66,8 @@ namespace CollisionsApplyerUtil {
             0,
             nullptr);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -91,9 +79,7 @@ namespace CollisionsApplyerUtil {
     VkCommandBuffer createRadixGatherCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         uint32_t numberOfElements) {
 
         VkCommandBuffer commandBuffer;
@@ -116,12 +102,8 @@ namespace CollisionsApplyerUtil {
             throw std::runtime_error("Failed to begin compute command buffer");
         }
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -133,9 +115,7 @@ namespace CollisionsApplyerUtil {
     VkCommandBuffer createRadixAgentIndexMapCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         uint32_t numberOfElements) {
 
         VkCommandBuffer commandBuffer;
@@ -158,12 +138,8 @@ namespace CollisionsApplyerUtil {
             throw std::runtime_error("Failed to begin compute command buffer");
         }
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -175,9 +151,7 @@ namespace CollisionsApplyerUtil {
     VkCommandBuffer createApplyCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         VkBuffer timeDeltaHostVisibleBuffer,
         VkBuffer timeDeltaBuffer,
         VkBuffer numberOfAgentsHostVisibleBuffer,
@@ -229,12 +203,8 @@ namespace CollisionsApplyerUtil {
             0,
             nullptr);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -349,30 +319,17 @@ CollisionsApplyer::CollisionsApplyer(
         m_timeDeltaHostVisibleDeviceMemory);
 
     // Radix Time Map
-    m_radixTimeMapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, CollisionsApplyerUtil::kRadixTimeMapNumberOfBindings);;
-    m_radixTimeMapDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, CollisionsApplyerUtil::kRadixTimeMapNumberOfBindings, 1);
-    m_radixTimeMapPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_radixTimeMapDescriptorSetLayout);
-    m_radixTimeMapPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsRadixSortTimeMap.spv", m_logicalDevice, m_radixTimeMapPipelineLayout);
-
     std::vector<Compute::BufferAndSize> radixTimeMapBufferAndSizes = {
         {m_computedCollisionsBuffer, computedCollisionsMemorySize},
         {m_radixSorter->m_dataBuffer, maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(uint32_t)},
         {m_numberOfCollisionsBuffer, sizeof(uint32_t)}
     };
 
-    m_radixTimeMapDescriptorSet = Compute::createDescriptorSet(
-        m_logicalDevice,
-        m_radixTimeMapDescriptorSetLayout,
-        m_radixTimeMapDescriptorPool,
-        radixTimeMapBufferAndSizes);
+    auto radixTimeMapFn = std::make_shared<ShaderFunction>(m_logicalDevice, 3, "src/GLSL/spv/CollisionsRadixSortTimeMap.spv");
+    auto radixTimeMapPool = std::make_shared<ShaderPool>(radixTimeMapFn, 1);
+    m_radixTimeMapLambda = std::make_shared<ShaderLambda>(radixTimeMapPool, radixTimeMapBufferAndSizes);
 
     // Radix Time Gather
-
-    m_radixGatherDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, CollisionsApplyerUtil::kRadixGatherNumberOfBindings);;
-    m_radixGatherDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, CollisionsApplyerUtil::kRadixGatherNumberOfBindings, 2);
-    m_radixGatherPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_radixGatherDescriptorSetLayout);
-    m_radixGatherPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsRadixSortGather.spv", m_logicalDevice, m_radixGatherPipelineLayout);
-
     std::vector<Compute::BufferAndSize> radixTimeGatherBufferAndSizes = {
         {m_computedCollisionsBuffer, computedCollisionsMemorySize},
         {m_radixSorter->m_dataBuffer, maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(uint32_t)},
@@ -380,33 +337,22 @@ CollisionsApplyer::CollisionsApplyer(
         {m_numberOfCollisionsBuffer, sizeof(uint32_t)}
     };
 
-    m_radixTimeGatherDescriptorSet = Compute::createDescriptorSet(
-        m_logicalDevice,
-        m_radixGatherDescriptorSetLayout,
-        m_radixGatherDescriptorPool,
-        radixTimeGatherBufferAndSizes);
+    auto radixGatherFn = std::make_shared<ShaderFunction>(m_logicalDevice, 4, "src/GLSL/spv/CollisionsRadixSortGather.spv");
+    auto radixGatherPool = std::make_shared<ShaderPool>(radixGatherFn, 2);
+    m_radixTimeGatherLambda = std::make_shared<ShaderLambda>(radixGatherPool, radixTimeGatherBufferAndSizes);
 
     // Radix Agent Index Map
-
-    m_radixAgentIndexMapDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, CollisionsApplyerUtil::kRadixAgentIndexMapNumberOfBindings);;
-    m_radixAgentIndexMapDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, CollisionsApplyerUtil::kRadixAgentIndexMapNumberOfBindings, 1);
-    m_radixAgentIndexMapPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_radixAgentIndexMapDescriptorSetLayout);
-    m_radixAgentIndexMapPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsRadixSortAgentIndexMap.spv", m_logicalDevice, m_radixAgentIndexMapPipelineLayout);
-
     std::vector<Compute::BufferAndSize> radixAgentIndexMapBufferAndSizes = {
         {m_otherComputedCollisionsBuffer, computedCollisionsMemorySize},
         {m_radixSorter->m_dataBuffer, maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(uint32_t)},
         {m_numberOfCollisionsBuffer, sizeof(uint32_t)}
     };
 
-    m_radixAgentIndexMapDescriptorSet = Compute::createDescriptorSet(
-        m_logicalDevice,
-        m_radixAgentIndexMapDescriptorSetLayout,
-        m_radixAgentIndexMapDescriptorPool,
-        radixAgentIndexMapBufferAndSizes);
+    auto radixAgentIndexMapFn = std::make_shared<ShaderFunction>(m_logicalDevice, 3, "src/GLSL/spv/CollisionsRadixSortAgentIndexMap.spv");
+    auto radixAgentIndexMapPool = std::make_shared<ShaderPool>(radixAgentIndexMapFn, 1);
+    m_radixAgentIndexMapLambda = std::make_shared<ShaderLambda>(radixAgentIndexMapPool, radixAgentIndexMapBufferAndSizes);
 
     // Radix Agent Index Gather
-
     std::vector<Compute::BufferAndSize> radixAgentIndexGatherBufferAndSizes = {
         {m_otherComputedCollisionsBuffer, computedCollisionsMemorySize},
         {m_radixSorter->m_dataBuffer, maxNumberOfAgents * CollisionsApplyerUtil::kMaxCollisionsPerAgent * sizeof(uint32_t)},
@@ -414,19 +360,9 @@ CollisionsApplyer::CollisionsApplyer(
         {m_numberOfCollisionsBuffer, sizeof(uint32_t)}
     };
 
-    m_radixAgentIndexGatherDescriptorSet = Compute::createDescriptorSet(
-        m_logicalDevice,
-        m_radixGatherDescriptorSetLayout,
-        m_radixGatherDescriptorPool,
-        radixAgentIndexGatherBufferAndSizes);
+    m_radixAgentIndexGatherLambda = std::make_shared<ShaderLambda>(radixGatherPool, radixAgentIndexGatherBufferAndSizes);
 
     // Apply
-
-    m_applyDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, CollisionsApplyerUtil::kApplyNumberOfBindings);;
-    m_applyDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, CollisionsApplyerUtil::kApplyNumberOfBindings, 1);
-    m_applyPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_applyDescriptorSetLayout);
-    m_applyPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsApply.spv", m_logicalDevice, m_applyPipelineLayout);
-
     std::vector<Compute::BufferAndSize> applyBufferAndSizes = {
         {agentsBuffer, maxNumberOfAgents * sizeof(Agent)},
         {m_computedCollisionsBuffer, computedCollisionsMemorySize},
@@ -435,11 +371,9 @@ CollisionsApplyer::CollisionsApplyer(
         {m_numberOfCollisionsBuffer, sizeof(uint32_t)},
     };
 
-    m_applyDescriptorSet = Compute::createDescriptorSet(
-        m_logicalDevice,
-        m_applyDescriptorSetLayout,
-        m_applyDescriptorPool,
-        applyBufferAndSizes);
+    auto applyFn = std::make_shared<ShaderFunction>(m_logicalDevice, 5, "src/GLSL/spv/CollisionsApply.spv");
+    auto applyPool = std::make_shared<ShaderPool>(applyFn, 1);
+    m_applyLambda = std::make_shared<ShaderLambda>(applyPool, applyBufferAndSizes);
 
     // Commands
 
@@ -461,26 +395,6 @@ CollisionsApplyer::CollisionsApplyer(
 }
 
 CollisionsApplyer::~CollisionsApplyer() {
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_radixTimeMapDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_radixTimeMapDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_radixTimeMapPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_radixTimeMapPipeline, nullptr);
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_radixGatherDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_radixGatherDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_radixGatherPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_radixGatherPipeline, nullptr);
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_radixAgentIndexMapDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_radixAgentIndexMapDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_radixAgentIndexMapPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_radixAgentIndexMapPipeline, nullptr);
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_applyDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_applyDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_applyPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice, m_applyPipeline, nullptr);
 
     std::array<VkCommandBuffer, 4> commandBuffers = {
         m_radixTimeMapCommandBuffer,
@@ -529,9 +443,7 @@ void CollisionsApplyer::createRadixSortCommandBuffers() {
     m_radixTimeMapCommandBuffer = CollisionsApplyerUtil::createRadixTimeMapCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_radixTimeMapPipeline,
-        m_radixTimeMapPipelineLayout,
-        m_radixTimeMapDescriptorSet,
+        m_radixTimeMapLambda,
         m_numberOfCollisionsHostVisibleBuffer,
         m_numberOfCollisionsBuffer,
         m_currentNumberOfCollisions);
@@ -539,25 +451,19 @@ void CollisionsApplyer::createRadixSortCommandBuffers() {
     m_radixTimeGatherCommandBuffer = CollisionsApplyerUtil::createRadixGatherCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_radixGatherPipeline,
-        m_radixGatherPipelineLayout,
-        m_radixTimeGatherDescriptorSet,
+        m_radixTimeGatherLambda,
         m_currentNumberOfCollisions);
 
     m_radixAgentIndexMapCommandBuffer = CollisionsApplyerUtil::createRadixAgentIndexMapCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_radixAgentIndexMapPipeline,
-        m_radixAgentIndexMapPipelineLayout,
-        m_radixAgentIndexMapDescriptorSet,
+        m_radixAgentIndexMapLambda,
         m_currentNumberOfCollisions);
 
     m_radixAgentIndexGatherCommandBuffer = CollisionsApplyerUtil::createRadixGatherCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_radixGatherPipeline,
-        m_radixGatherPipelineLayout,
-        m_radixAgentIndexGatherDescriptorSet,
+        m_radixAgentIndexGatherLambda,
         m_currentNumberOfCollisions);
 }
 
@@ -567,9 +473,7 @@ void CollisionsApplyer::createCollisionsApplyCommandBuffer() {
     m_applyCommandBuffer = CollisionsApplyerUtil::createApplyCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_applyPipeline,
-        m_applyPipelineLayout,
-        m_applyDescriptorSet,
+        m_applyLambda,
         m_timeDeltaHostVisibleBuffer,
         m_timeDeltaBuffer,
         m_numberOfAgentsHostVisibleBuffer,

@@ -2,6 +2,7 @@
 #define COLLISIONS_APPLYER_H
 
 #include <Simulator/RadixSorter.h>
+#include <Utils/ShaderFunction.h>
 
 #include <vulkan/vulkan.h>
 
@@ -64,31 +65,11 @@ private:
     VkBuffer m_timeDeltaHostVisibleBuffer;
     VkDeviceMemory m_timeDeltaHostVisibleDeviceMemory;
 
-    VkDescriptorSetLayout m_radixTimeMapDescriptorSetLayout;
-    VkDescriptorPool m_radixTimeMapDescriptorPool;
-    VkPipelineLayout m_radixTimeMapPipelineLayout;
-    VkPipeline m_radixTimeMapPipeline;
-    VkDescriptorSet m_radixTimeMapDescriptorSet;
-
-    VkDescriptorSetLayout m_radixGatherDescriptorSetLayout;
-    VkDescriptorPool m_radixGatherDescriptorPool;
-    VkPipelineLayout m_radixGatherPipelineLayout;
-    VkPipeline m_radixGatherPipeline;
-    VkDescriptorSet m_radixTimeGatherDescriptorSet;
-
-    VkDescriptorSetLayout m_radixAgentIndexMapDescriptorSetLayout;
-    VkDescriptorPool m_radixAgentIndexMapDescriptorPool;
-    VkPipelineLayout m_radixAgentIndexMapPipelineLayout;
-    VkPipeline m_radixAgentIndexMapPipeline;
-    VkDescriptorSet m_radixAgentIndexMapDescriptorSet;
-
-    VkDescriptorSet m_radixAgentIndexGatherDescriptorSet;
-
-    VkDescriptorSetLayout m_applyDescriptorSetLayout;
-    VkDescriptorPool m_applyDescriptorPool;
-    VkPipelineLayout m_applyPipelineLayout;
-    VkPipeline m_applyPipeline;
-    VkDescriptorSet m_applyDescriptorSet;
+    std::shared_ptr<ShaderLambda> m_radixTimeMapLambda;
+    std::shared_ptr<ShaderLambda> m_radixTimeGatherLambda;
+    std::shared_ptr<ShaderLambda> m_radixAgentIndexMapLambda;
+    std::shared_ptr<ShaderLambda> m_radixAgentIndexGatherLambda;
+    std::shared_ptr<ShaderLambda> m_applyLambda;
 
     VkCommandBuffer m_radixTimeMapCommandBuffer;
     VkCommandBuffer m_radixTimeGatherCommandBuffer;

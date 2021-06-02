@@ -20,9 +20,7 @@ namespace ColliderUtil {
     VkCommandBuffer createDetectionCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         VkBuffer timeDeltaBuffer,
         VkBuffer timeDeltaHostVisibleBuffer,
         uint32_t numberOfElements) {
@@ -71,13 +69,9 @@ namespace ColliderUtil {
             0,
             nullptr);
 
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to end compute command buffer");
@@ -89,9 +83,7 @@ namespace ColliderUtil {
     VkCommandBuffer createScatterCommandBuffer(
         VkDevice logicalDevice,
         VkCommandPool commandPool,
-        VkPipeline pipeline,
-        VkPipelineLayout pipelineLayout,
-        VkDescriptorSet descriptorSet,
+        std::shared_ptr<ShaderLambda> shaderLambda,
         VkBuffer scanBuffer,
         VkBuffer numberOfCollisionsBuffer,
         uint32_t numberOfElements) {
@@ -116,12 +108,9 @@ namespace ColliderUtil {
             throw std::runtime_error("Failed to begin compute command buffer");
         }
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
         uint32_t xGroups = ceil(((float) numberOfElements) / ((float) xDim));
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-        vkCmdDispatch(commandBuffer, xGroups, 1, 1);
+        shaderLambda->record(commandBuffer, xGroups, 1, 1);
 
         VkMemoryBarrier memoryBarrier = {};
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -267,11 +256,6 @@ Collider::Collider(
         m_numberOfCollisionsDeviceMemoryHostVisible);
 
     // Detect
-    m_detectionDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, ColliderUtil::kDetectionNumberOfBindings);
-    m_detectionDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, ColliderUtil::kDetectionNumberOfBindings, 1);
-    m_detectionPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_detectionDescriptorSetLayout);
-    m_detectionPipeline = Compute::createPipeline("src/GLSL/spv/CollisionDetection.spv", m_logicalDevice, m_detectionPipelineLayout);
-
     std::vector<Compute::BufferAndSize> detectionBufferAndSizes = {
         {m_agentsBuffer, numberOfElements * sizeof(Agent)},
         {m_collisionsBuffer, numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(Collision)},
@@ -280,18 +264,11 @@ Collider::Collider(
         {m_numberOfElementsBuffer, sizeof(uint32_t)}
     };
 
-    m_detectionDescriptorSet = Compute::createDescriptorSet(
-            m_logicalDevice,
-            m_detectionDescriptorSetLayout,
-            m_detectionDescriptorPool,
-            detectionBufferAndSizes);
+    auto detectionFn = std::make_shared<ShaderFunction>(m_logicalDevice, 5, "src/GLSL/spv/CollisionDetection.spv");
+    auto detectionPool = std::make_shared<ShaderPool>(detectionFn, 1);
+    m_detectionLambda = std::make_shared<ShaderLambda>(detectionPool, detectionBufferAndSizes);
 
     // Scatter
-    m_scatterDescriptorSetLayout = Compute::createDescriptorSetLayout(m_logicalDevice, ColliderUtil::kScatterNumberOfBindings);
-    m_scatterDescriptorPool = Compute::createDescriptorPool(m_logicalDevice, ColliderUtil::kScatterNumberOfBindings, 1);
-    m_scatterPipelineLayout = Compute::createPipelineLayout(m_logicalDevice, m_scatterDescriptorSetLayout);
-    m_scatterPipeline = Compute::createPipeline("src/GLSL/spv/CollisionsScatter.spv", m_logicalDevice, m_scatterPipelineLayout);
-
     std::vector<Compute::BufferAndSize> scatterBufferAndSizes = {
         {m_collisionsBuffer, numberOfElements * ColliderUtil::kMaxCollisionsPerAgent * sizeof(Collision)},
         {m_scanner->m_dataBuffer, numberOfElements * sizeof(uint32_t)},
@@ -299,11 +276,9 @@ Collider::Collider(
         {m_numberOfElementsBuffer, sizeof(uint32_t)}
     };
 
-    m_scatterDescriptorSet = Compute::createDescriptorSet(
-            m_logicalDevice,
-            m_scatterDescriptorSetLayout,
-            m_scatterDescriptorPool,
-            scatterBufferAndSizes);
+    auto scatterFn = std::make_shared<ShaderFunction>(m_logicalDevice, 4, "src/GLSL/spv/CollisionsScatter.spv");
+    auto scatterPool = std::make_shared<ShaderPool>(scatterFn, 1);
+    m_scatterLambda = std::make_shared<ShaderLambda>(scatterPool, scatterBufferAndSizes);
 
     m_collisionDetectionCommandBuffer = VK_NULL_HANDLE;
     m_scatterCommandBuffer = VK_NULL_HANDLE;
@@ -331,9 +306,7 @@ void Collider::createDetectionCommandBuffer() {
     m_collisionDetectionCommandBuffer = ColliderUtil::createDetectionCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_detectionPipeline,
-        m_detectionPipelineLayout,
-        m_detectionDescriptorSet,
+        m_detectionLambda,
         m_timeDeltaBuffer,
         m_timeDeltaBufferHostVisible,
         m_currentNumberOfElements);
@@ -344,9 +317,7 @@ void Collider::createScatterCommandBuffer() {
     m_scatterCommandBuffer = ColliderUtil::createScatterCommandBuffer(
         m_logicalDevice,
         m_commandPool,
-        m_scatterPipeline,
-        m_scatterPipelineLayout,
-        m_scatterDescriptorSet,
+        m_scatterLambda,
         m_scanner->m_dataBuffer,
         m_numberOfCollisionsBufferHostVisible,
         m_currentNumberOfElements);
@@ -387,16 +358,6 @@ Collider::~Collider() {
     vkFreeMemory(m_logicalDevice, m_numberOfCollisionsDeviceMemoryHostVisible, nullptr);
     vkDestroyBuffer(m_logicalDevice, m_numberOfCollisionsBufferHostVisible, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_detectionDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_detectionDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_detectionPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice,  m_detectionPipeline, nullptr);
-
-    vkDestroyDescriptorSetLayout(m_logicalDevice, m_scatterDescriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(m_logicalDevice, m_scatterDescriptorPool, nullptr);
-    vkDestroyPipelineLayout(m_logicalDevice, m_scatterPipelineLayout, nullptr);
-    vkDestroyPipeline(m_logicalDevice,  m_scatterPipeline, nullptr);
-
     std::array<VkCommandBuffer, 3> commandBuffers = {
         m_collisionDetectionCommandBuffer,
         m_scatterCommandBuffer,
@@ -405,29 +366,6 @@ Collider::~Collider() {
 
     vkDestroyFence(m_logicalDevice, m_fence, nullptr);
 }
-
-/*
-float Collider::computeNextStep(float timeDelta) {
-    Collision earliestCollision = extractEarliestCollision(reduceResult);
-    if (earliestCollision.time < timeDelta) {
-        {
-            //Timer timer("Advance Time");
-            m_timeAdvancer->run(earliestCollision.time, m_currentNumberOfElements);
-        }
-        {
-            //Timer timer("Impacter");
-            m_impacter->run(earliestCollision);
-        }
-        return earliestCollision.time;
-    } else {
-        {
-            //Timer timer("Advance Time Full");
-            m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
-        }
-        return timeDelta;
-    }
-}
-*/
 
 void Collider::run(float timeDelta, uint32_t numberOfElements) {
     updateNumberOfElementsIfNecessary(numberOfElements);

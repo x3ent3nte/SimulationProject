@@ -7,6 +7,7 @@
 #include <Simulator/Impacter.h>
 #include <Simulator/Scanner.h>
 #include <Simulator/CollisionsApplyer.h>
+#include <Utils/ShaderFunction.h>
 
 #include <vulkan/vulkan.h>
 
@@ -45,17 +46,8 @@ private:
     VkBuffer m_numberOfCollisionsBufferHostVisible;
     VkDeviceMemory m_numberOfCollisionsDeviceMemoryHostVisible;
 
-    VkDescriptorSetLayout m_detectionDescriptorSetLayout;
-    VkDescriptorPool m_detectionDescriptorPool;
-    VkPipelineLayout m_detectionPipelineLayout;
-    VkPipeline m_detectionPipeline;
-    VkDescriptorSet m_detectionDescriptorSet;
-
-    VkDescriptorSetLayout m_scatterDescriptorSetLayout;
-    VkDescriptorPool m_scatterDescriptorPool;
-    VkPipelineLayout m_scatterPipelineLayout;
-    VkPipeline m_scatterPipeline;
-    VkDescriptorSet m_scatterDescriptorSet;
+    std::shared_ptr<ShaderLambda> m_detectionLambda;
+    std::shared_ptr<ShaderLambda> m_scatterLambda;
 
     VkCommandBuffer m_setNumberOfElementsCommandBuffer;
     VkCommandBuffer m_collisionDetectionCommandBuffer;

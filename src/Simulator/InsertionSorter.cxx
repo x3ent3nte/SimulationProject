@@ -72,7 +72,7 @@ VkCommandBuffer createCommandBuffer(
     uint32_t xGroups = ceil(((float) numberOfElements) / ((float) 2 * xDim));
     //std::cout << "Number of X groups = " << xGroups << "\n";
 
-    lambdaOne->bind(commandBuffer, xGroups, 1, 1);
+    lambdaOne->record(commandBuffer, xGroups, 1, 1);
 
     vkCmdPipelineBarrier(
         commandBuffer,
@@ -86,7 +86,7 @@ VkCommandBuffer createCommandBuffer(
         0,
         nullptr);
 
-    lambdaTwo->bind(commandBuffer, xGroups, 1, 1);
+    lambdaTwo->record(commandBuffer, xGroups, 1, 1);
 
     vkCmdPipelineBarrier(
         commandBuffer,
