@@ -125,8 +125,8 @@ void main() {
         }
 
         const float radiusSum = agent.radius + other.radius;
-        if (length(agent.position - other.position) > radiusSum)
-        {
+        // Only collide if they are not already colliding
+        if (length(agent.position - other.position) > radiusSum) {
             QuadraticSolution impact = calculateTimeOfImpact(agent, other);
             if (impact.exists) {
                 const float time = timeOfCollision(impact.sol1, impact.sol2);
