@@ -47,12 +47,12 @@ readonly layout (std430, binding = 4) buffer numberOfCollisionsBuffer {
 
 int findStartIndex(uint index) {
     int left = 0;
-    int right = numberOfCollisions;
+    int right = numberOfCollisions - 1;
 
     int startIndex = -1;
 
     while (true) {
-        if (right <= left) {
+        if (left > right) {
             break;
         }
 
