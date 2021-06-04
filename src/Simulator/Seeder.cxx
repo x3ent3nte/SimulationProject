@@ -33,7 +33,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const glm::vec3 position = {xz.x, y, xz.y};
     const glm::vec3 velocityDir = MyMath::rotatePointByAxisAndTheta({xzDir.x, 0.0f, xzDir.y}, {0.0f, 1.0f, 0.0f}, MyMath::PI / 2);
-    const glm::vec3 velocity = (velocityDir * 520.0f);
+    const glm::vec3 velocity = (velocityDir * 420.0f);
     const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
     const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
@@ -89,7 +89,7 @@ std::vector<Agent> Seeder::seed(
             agents[i] = createSun(mesh);
         } else {
             int choice = rand() % 100;
-            if (choice < 97) {
+            if (choice < 93) {
                 agents[i] = createSpaceShip(mesh);
             } else {
                 agents[i] =  createAsteroid(mesh);

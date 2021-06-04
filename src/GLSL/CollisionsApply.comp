@@ -112,12 +112,9 @@ void main() {
 
     const int startIndex = findStartIndex(index);
 
-    const vec3 originalVelocity = agent.velocity;
-    const vec3 originalPosition = agent.position;
-
     float currentTime = 0.0f;
-    vec3 newVelocity = originalVelocity;
-    vec3 newPosition = originalPosition;
+    vec3 newVelocity = agent.velocity;
+    vec3 newPosition = agent.position;
 
     if (startIndex >= 0) {
         for (int i = startIndex; i < numberOfCollisions; ++i) {
@@ -126,14 +123,15 @@ void main() {
                 break;
             }
 
-            newPosition += originalVelocity * col.time;
+            newPosition += newVelocity * (col.time - currentTime);
             newVelocity += col.velocityDelta;
+            currentTime = col.time;
         }
     }
 
     const float timeRemaining = timeDelta - currentTime;
     if (timeRemaining > 0.0f) {
-        newPosition += originalVelocity * timeRemaining;
+        newPosition += newVelocity * timeRemaining;
     }
 
 
