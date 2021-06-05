@@ -390,20 +390,4 @@ void Collider::run(float timeDelta, uint32_t numberOfElements) {
     m_applyer->run(m_currentNumberOfElements, numberOfCollisions * 2, timeDelta);
 
     //m_timeAdvancer->run(timeDelta, m_currentNumberOfElements);
-
-    /*
-
-    int numberOfSteps = 0;
-    while (timeDelta > 0.0f) {
-        {
-            //Timer timer("computeNextStep");
-            float timeDepleted = computeNextStep(timeDelta);
-            std::cout << "Time depleted= " << timeDepleted << "\n";
-            timeDelta -= timeDepleted;
-        }
-        numberOfSteps += 1;
-    }
-
-    std::cout << "Number of Collider steps = " << numberOfSteps << "\n";
-    */
 }
