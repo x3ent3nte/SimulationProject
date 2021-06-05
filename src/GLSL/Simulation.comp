@@ -12,8 +12,6 @@ struct Agent {
     int playerId;
     vec3 position;
     vec3 velocity;
-    vec3 acceleration;
-    vec3 target;
     vec3 rotationalVelocity;
     vec4 rotation;
     float radius;
@@ -115,27 +113,6 @@ vec3 rotatePointByAxisAndTheta(vec3 p, vec3 axis, float theta) {
     return rotatePointByQuaternion(p, axisAndThetaToQuaternion(axis, theta));
 }
 
-void rotateAgent(inout Agent agent, inout vec3 forward, float timeDelta) {
-    vec3 canonicalForward = vec3(0.0f, 0.0f, -1.0f);
-
-    vec3 initialForward = rotatePointByQuaternion(canonicalForward, agent.rotation);
-    vec3 targetDelta = normalize(agent.target - agent.position);
-
-    float cosSim = cosineSimilarity(initialForward, targetDelta);
-    float angleBetween = acos(cosSim);
-
-    if (angleBetween == 0.0f) {
-        forward = initialForward;
-    } else {
-        float theta = min(angleBetween, 0.05);
-        vec3 targetRight = cross(initialForward, targetDelta);
-        vec4 changeInRotation = axisAndThetaToQuaternion(targetRight, theta);
-
-        agent.rotation = normalize(hamiltonProduct(changeInRotation, agent.rotation));
-        forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
-    }
-}
-
 vec3 quadraticEquationFromVec2(const vec2 v) {
     return vec3(v.x * v.x, 2 * v.x * v.y, v.y * v.y);
 }
@@ -166,122 +143,6 @@ QuadraticSolution solveQuadraticEquation(vec3 q) {
     return QuadraticSolution(1, sol1, sol2);
 }
 
-vec3 calculateQuadraticEquationOfTimeToTarget(inout Agent agent) {
-
-    vec3 qxt = quadraticEquationFromVec2(vec2(-agent.velocity.x, -(agent.target.x - agent.position.x)));
-    vec3 qyt = quadraticEquationFromVec2(vec2(-agent.velocity.y, -(agent.target.y - agent.position.y)));
-    vec3 qzt = quadraticEquationFromVec2(vec2(-agent.velocity.z, -(agent.target.z - agent.position.z)));
-
-    vec3 qt = qxt + qyt + qzt;
-    qt.z -= 100.0;
-
-    return qt;
-}
-
-float calculateTimeToTarget(vec3 target, vec3 velocity) {
-    float targetMag = length(target);
-    float velocityMag = length(velocity);
-
-    float cosSim = cosineSimilarity(target, velocity);
-    float initialVelocityMag = velocityMag * cosSim;
-
-    float tangentMagSquared = (velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag);
-    float tangentMag = (tangentMagSquared <= 0) ? 0.0f : sqrt(tangentMagSquared);
-    float tangentTime = sqrt((2 * tangentMag) / ACCELERATION_MAG);
-
-    float timeToZeroVelocity = initialVelocityMag / ACCELERATION_MAG;
-    float phantomDistance = ((initialVelocityMag / 2) * timeToZeroVelocity) + targetMag;
-    float phantomTime = sqrt((phantomDistance * 2.0f) / ACCELERATION_MAG);
-    float straightTime = phantomTime - timeToZeroVelocity;
-
-    return sqrt((straightTime * straightTime) + (tangentTime * tangentTime));
-}
-
-float calculateTimeToTargetNew(vec3 target, vec3 velocity) {
-    float targetMag = length(target);
-    float velocityMag = length(velocity);
-
-    float cosSim = cosineSimilarity(target, velocity);
-    float initialVelocityMag = velocityMag * cosSim;
-    float tangentMagSquared = (velocityMag * velocityMag) - (initialVelocityMag * initialVelocityMag);
-    float tangentMag = (tangentMagSquared <= 0) ? 0.0f : sqrt(tangentMagSquared);
-
-    float xDist = targetMag;
-    float yDist = 0.0f;
-
-    return 0.0f;
-
-    /*
-    xDist = (initialVelocityMag * t) + ((aX * t * t) / 2)
-    yDist = (tangentMag * t) + ((aY * t * t) / 2)
-
-    ACCELERATION_MAG * ACCELERATION_MAG = (aX * aX) + (aY * aY)
-    ay = sqrt(ACCELERATION_MAG * ACCELERATION_MAG) - (aX * aX)
-
-    xDist = (initialVelocityMag * t) + (((ACCMAG * Cos(theta)) * t * t) / 2)
-    yDist = (tangentMag * t) + (((ACCMAG * Sin(theta)) * t * t) / 2)
-    */
-}
-
-vec3 calculateAcceleration(inout Agent agent, float timeDelta) {
-
-    vec3 relativeTarget = agent.target - agent.position;
-    float timeToTarget = calculateTimeToTarget(relativeTarget, agent.velocity);
-
-    if (timeToTarget == 0.0f) {
-        return vec3(0.0f);
-    }
-
-    float xAcc = ((-2 * agent.velocity.x * timeToTarget) + (2 * relativeTarget.x)) / (timeToTarget * timeToTarget);
-    float yAcc = ((-2 * agent.velocity.y * timeToTarget) + (2 * relativeTarget.y)) / (timeToTarget * timeToTarget);
-    float zAcc = ((-2 * agent.velocity.z * timeToTarget) + (2 * relativeTarget.z)) / (timeToTarget * timeToTarget);
-
-    /*
-    accelerationSquared = xAcc^2 + yAcc^2 + zAcc^2
-    xAcc = (-2 * agent.velocity.x * timeToTarget^-1) + (2 * relativeTarget.x * timeToTarget^-2)
-    xAcc^2 = (4 * agent.velocity.x^2 * timeToTarget^-2) +
-            (-8 * agent.velocity.x * relativeTarget.x * timeToTarget^-3) +
-            (4 * relativeTarget.x^2 * timeToTarget^-4)
-
-    (4 * 4 * 4 * agent.velocity.x^2 * agent.velocity.y^2 * agent.velocity.z^2) * timeToTarget^-2 +
-    (-8 * -8 * -8 * agent.velocity.x * relativeTarget.x * agent.velocity.y * relativeTarget.y * agent.velocity.z * relativeTarget.z) * timeToTarget^-3 +
-    (4 * 4 * 4 * relativeTarget.x^2 * relativeTarget.y^2 * relativeTarget.z^2) * timeToTarget^-4 +
-    - AccelerationSquared
-    = 0
-
-    float timePowerMinusTwoComponent = 64 * agent.velocity.x * agent.velocity.x * agent.velocity.y * agent.velocity.y * agent.velocity.z * agent.velocity.z;
-    float timePowerMinusThreeComponent = -512 * agent.velocity.x * relativeTarget.x * agent.velocity.y * relativeTarget.y * agent.velocity.z * relativeTarget.z;
-    float timePowerMinusFourComponent = 64 * relativeTarget.x * relativeTarget.x * relativeTarget.y * relativeTarget.y * relativeTarget.z * relativeTarget.z;
-    float timeConstantComponent = -ACCELERATION_MAG * ACCELERATION_MAG;
-    */
-
-    vec3 acceleration = vec3(xAcc, yAcc, zAcc);
-
-    float targetMag = length(relativeTarget);
-    float velocityMag = length(agent.velocity);
-
-    float cosSim = cosineSimilarity(relativeTarget, agent.velocity);
-    float initialVelocityMag = velocityMag * cosSim;
-    float timeToStop = initialVelocityMag / ACCELERATION_MAG;
-
-    float timeUntilDeceleration = timeToTarget - timeToStop;
-
-    float timeAccelerating = max(0.0f, min(timeDelta, timeUntilDeceleration - timeDelta));
-
-    float proportionOfTimeAccelerating = timeAccelerating / timeDelta;
-    float proportionOfTimeDecelerating = 1.0f - proportionOfTimeAccelerating;
-
-    agent.acceleration = acceleration;
-    //return acceleration;
-    return (proportionOfTimeAccelerating * acceleration) - (proportionOfTimeDecelerating * acceleration);
-}
-
-void moveAgent(inout Agent agent, vec3 forward, vec3 diff, float timeDelta) {
-    agent.velocity += calculateAcceleration(agent, timeDelta) * timeDelta;
-
-    //agent.position += agent.velocity * timeDelta;
-}
-
 void main() {
     uint index = gl_GlobalInvocationID.x;
 
@@ -289,19 +150,6 @@ void main() {
 
     Agent agent = agents[index];
 
-    /*
-    vec3 forward = vec3(0.0f, 0.0f, -1.0f);
-    vec3 delta = agent.target - agent.position;
-    float distanceBetweenTargetAndPosition = length(delta);
-
-    rotateAgent(agent, forward, timeDelta);
-    moveAgent(agent, forward, delta / distanceBetweenTargetAndPosition, timeDelta);
-
-    float maxDistance = 0.1;
-    if (distanceBetweenTargetAndPosition < maxDistance) {
-        agent.target = hashVec3(256.0, agent.target);
-    }
-    */
     agents[index] = agent;
     agentRenderInfos[index] = AgentRenderInfo(agent.typeId, agent.position, agent.rotation);
 }

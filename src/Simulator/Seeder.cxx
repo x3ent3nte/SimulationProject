@@ -12,15 +12,13 @@ Agent createSpaceShip(std::shared_ptr<Mesh> mesh) {
     glm::vec3 position = MyMath::randomUnitVec3();
     position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
-    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
     const glm::vec3 rotationalVelocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const float mass = 120000;
 
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, mesh->m_subMeshInfos[typeId].radius, mass, 100.0f};
+    return Agent{typeId, -1, position, velocity, rotationalVelocity, rotation, mesh->m_subMeshInfos[typeId].radius, mass, 100.0f};
 }
 
 Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
@@ -34,8 +32,6 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
     const glm::vec3 position = {xz.x, y, xz.y};
     const glm::vec3 velocityDir = MyMath::rotatePointByAxisAndTheta({xzDir.x, 0.0f, xzDir.y}, {0.0f, 1.0f, 0.0f}, MyMath::PI / 2);
     const glm::vec3 velocity = (velocityDir * 420.0f);
-    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
@@ -46,7 +42,7 @@ Agent createAsteroid(std::shared_ptr<Mesh> mesh) {
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
     const float mass = 7500000;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 100.0f};
+    return Agent{typeId, -1, position, velocity, rotationalVelocity, rotation, radius, mass, 100.0f};
 }
 
 Agent createSun(std::shared_ptr<Mesh> mesh) {
@@ -54,8 +50,6 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
 
     const glm::vec3 position = {0.0f, 0.0f, 0.0f};
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
-    const glm::vec3 acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-    const glm::vec3 target = MyMath::randomVec3InSphere(256.f) + position;
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
         MyMath::randomVec3InSphere(1.0f),
         MyMath::randomFloatBetweenZeroAndOne() * MyMath::PI);
@@ -63,7 +57,7 @@ Agent createSun(std::shared_ptr<Mesh> mesh) {
 
     const float radius = mesh->m_subMeshInfos[typeId].radius;
     const float mass = 6.417e18;
-    return Agent{typeId, -1, position, velocity, acceleration, target, rotationalVelocity, rotation, radius, mass, 1000000000.f};
+    return Agent{typeId, -1, position, velocity, rotationalVelocity, rotation, radius, mass, 1000000000.f};
 }
 
 Agent createPlayer(std::shared_ptr<Mesh> mesh) {

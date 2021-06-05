@@ -10,8 +10,6 @@ struct Agent {
     int playerId;
     vec3 position;
     vec3 velocity;
-    vec3 acceleration;
-    vec3 target;
     vec3 rotationalVelocity;
     vec4 rotation;
     float radius;
