@@ -10,7 +10,7 @@ namespace {
 Agent createSpaceShip(std::shared_ptr<Mesh> mesh) {
     const uint32_t typeId = 0;
     glm::vec3 position = MyMath::randomUnitVec3();
-    position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 3000.0f);
+    position = (position * 1600.0f) + (position * MyMath::randomFloatBetweenZeroAndOne() * 500.0f);
     const glm::vec3 velocity = glm::vec3{0.0f, 0.0f, 0.0f};
     const glm::vec4 rotation = MyMath::axisAndThetaToQuaternion(
         MyMath::randomVec3InSphere(1.0f),

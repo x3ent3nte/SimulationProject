@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 #define X_DIM 512
-#define DETECTION_RADIUS 400
+#define DETECTION_RADIUS 150
 #define PI 3.14159265358979323846264338327950288
 
 layout (local_size_x = X_DIM, local_size_y = 1, local_size_z = 1) in;
@@ -252,7 +252,7 @@ vec3 calculateAcceleration(vec3 target, vec3 position, vec3 velocity) {
 
     vec3 acceleration = vec3(0.0f, 0.0f, 0.0f);
 
-    const float maxAcceleration = 2000.0f;
+    const float maxAcceleration = 4000.0f;
     const vec3 delta = target - position;
     const float deltaMag = length(delta);
     if (deltaMag > 0) {
@@ -315,7 +315,7 @@ void processPlayerAgent(inout Agent agent) {
     const vec3 up = rotatePointByQuaternion(canonicalUp, agent.rotation);
     const vec3 right = cross(forward, up);
 
-    const float accFloat = timeDelta * 2000.0f;
+    const float accFloat = timeDelta * 4000.0f;
     const float rotationalAccFloat = timeDelta * 7.0f;
 
     vec3 acceleration = forward * accFloat * (computeInputValue(inputState, kForwardBit) - computeInputValue(inputState, kBackBit));
@@ -376,9 +376,9 @@ void processSpaceShip(inout Agent agent, uint index) {
         Steering steering = calculateSteering(agent, index);
 
         const vec3 steeringVector = safeNormalize(
-            (10 * steering.alignment) +
-            (7 * steering.cohesion) +
-            (7 * steering.separation));
+            (1.0f * steering.alignment) +
+            (1.0f * steering.cohesion) +
+            (1.0f * steering.separation));
 
         const vec3 forward = rotatePointByQuaternion(canonicalForward, agent.rotation);
         agent.rotationalVelocity += calculateChangeInRotationalVelocity(forward, steeringVector, agent.rotation, agent.rotationalVelocity);
