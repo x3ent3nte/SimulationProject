@@ -2,6 +2,7 @@ nvcc -o game \
  \
 src/Renderer/*.cxx \
 src/Simulator/*.cxx \
+src/SimulatorCPU/*.cxx \
 src/Utils/*.cxx \
 src/*.cu \
 src/Cuda/*.cu \

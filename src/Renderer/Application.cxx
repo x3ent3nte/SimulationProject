@@ -13,6 +13,7 @@
 
 #include <Simulator/InputTerminal.h>
 #include <Simulator/Simulator.h>
+#include <SimulatorCPU/SimulatorCPU.h>
 
 #include <Test/TestApplication.h>
 #include <Utils/Timer.h>
@@ -174,6 +175,10 @@ public:
             textures,
             maxNumberOfAgents);
 
+        auto simulatorCPU = SimulatorCPU::create();
+
+        simulatorCPU->start();
+
         m_prevTime = std::chrono::high_resolution_clock::now();
 
         int numFramesRendered = 0;
@@ -195,6 +200,8 @@ public:
             std::cerr << e.what() << "\n";
             return EXIT_FAILURE;
         }
+
+        simulatorCPU->stop();
 
         simulator->stopSimulation(m_physicalDevice);
 
